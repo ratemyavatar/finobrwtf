@@ -37,6 +37,25 @@ CUSTOM_ICONS = {
 }
 
 
+# The client builds API hosts as "<service>." + "api." + domain (clientsettings.api.finobe.wtf), a name
+# finobe.wtf doesn't have; the site serves them as <service>.finobe.wtf. Drop the "api." (NUL-padded,
+# so nothing else in the file moves). Without this the client never gets its FFlags.
+API_HOST_FORMATS = [
+    (b"%s://%sapi.finobe.wtf/%s/?apiKey=%s\0", b"%s://%sfinobe.wtf/%s/?apiKey=%s\0"),
+    (b"%s://%sapi.%s%s/%s/?apiKey=%s\0", b"%s://%s%s%s/%s/?apiKey=%s\0"),
+    (b"%s://%sapi.sitetest3%s/%s/?apiKey=%s\0", b"%s://%ssitetest3%s/%s/?apiKey=%s\0"),
+]
+
+
+def fix_api_hosts(b: bytearray) -> None:
+    n = 0
+    for old, new in API_HOST_FORMATS:
+        new = new + b"\0" * (len(old) - len(new))
+        n += b.count(old)
+        b[:] = b.replace(old, new)
+    print(f"API hosts: {n} format string(s) -> <service>.finobe.wtf")
+
+
 def set_base_url(settings_path, url: str) -> None:
     """Change only the <BaseUrl> value, keeping the file byte-for-byte otherwise (the 2016 player's
     settings reader breaks if line endings change: it then reads the content folder as 'er>content')."""
@@ -119,6 +138,7 @@ def main():
     print("public key: replaced")
 
     patch_player_list(b)
+    fix_api_hosts(b)
 
     exe.write_bytes(bytes(b))
 
