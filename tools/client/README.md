@@ -11,13 +11,23 @@ A stock Roblox 2016 Windows player patched for finobe.wtf. The patched files are
 
 ## Player-list badges
 
-The stock 2016 player list shows Roblox's normal icons: BC / TBC / OBC for memberships, and the admin
-badge for anyone the site says is in group 1200769 (users with `status` `admin`).
+| Who | Badge | Where it comes from |
+| --- | --- | --- |
+| User 1 | Finobe's duck | client: `CUSTOM_ICONS` -> `textures/ui/icon_finobe1.png` (`icon_duck.png`) |
+| User 2 | their own badge | client: `CUSTOM_ICONS` -> `textures/ui/icon_finobe2.png` (`icon_user2.png`) |
+| Other admins | normal admin badge | site says they're in group 1200769 (`status` = `admin`) |
+| BC / TBC / OBC | membership badges | `MembershipType` in the join script |
 
-Per-user badges (Finobe's duck, a custom badge for one person) can't be added to the stock client: its
-player-list script is compiled and encrypted into `RobloxPlayerBeta.exe`. They need the client built
-from source (the `client` branch: `content/scripts/Modules/PlayerlistModule.lua`, `ADMINS` table).
-The duck image is in `tools/client/icon_duck.png`.
+The player list script (PlayerlistModule) is compiled into the exe as an encrypted "RSB1" blob.
+`rsb1.py` decodes/encodes that format (from `App/script/LuaSerializer.inl` in the 2016 source), and
+`patch_client.py` rewrites only the strings of its `CUSTOM_ICONS` table (Roblox's four staff entries)
+to user IDs 1 and 2 with Finobe icons; the script's code isn't touched. Users in that table skip the
+admin check, so other admins keep the normal badge.
+
+User 2's badge image isn't in this repo yet (on old Finobe it was asset 2626 on the website). Put a
+16x16 PNG at `tools/client/icon_user2.png` and re-run the patcher; until then user 2 shows no icon.
+
+Needs `pip install pefile xxhash lz4 cryptography`.
 
 ## Signing key
 
