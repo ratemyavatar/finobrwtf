@@ -21,6 +21,7 @@ sys.path.insert(0, str(HERE))
 import rsb1  # noqa: E402
 
 LOGO = HERE / "finobe_logo.png"           # the round F logo (site/launcher logo)
+WORDMARK = HERE / "finobe_wordmark.png"   # the FINOBE wordmark (site's public/s/img/fatnobe.png)
 PINK, GREY, WHITE = (248, 40, 96, 255), (112, 112, 112, 255), (255, 255, 255, 255)
 
 # whole strings (ASCII, NUL-terminated in the exe) that players can see
@@ -98,26 +99,14 @@ def logo(size: int):
 
 
 def wordmark(w: int, h: int):
-    """Round logo + 'Finobe' in the logo's pink with a white outline, fitted to w x h."""
-    from PIL import Image, ImageDraw
-    pad = max(2, h // 16)
-    lh = h - 2 * pad
-    mark = logo(lh)
-    font_size = int(lh * 0.8)
-    while True:
-        font = _font(font_size)
-        stroke = max(2, font_size // 12)
-        box = ImageDraw.Draw(Image.new("RGBA", (1, 1))).textbbox((0, 0), "Finobe", font=font, stroke_width=stroke)
-        tw, th = box[2] - box[0], box[3] - box[1]
-        total = lh + lh // 6 + tw
-        if (total <= w - 2 * pad and th <= lh) or font_size < 8:
-            break
-        font_size -= 2
+    """The FINOBE wordmark (site's fatnobe.png), fitted to w x h and centred, proportions kept."""
+    from PIL import Image
+    im = Image.open(WORDMARK).convert("RGBA")
+    im = im.crop(im.getchannel("A").getbbox())
+    scale = min(w / im.width, h / im.height)
+    im = im.resize((max(1, round(im.width * scale)), max(1, round(im.height * scale))), Image.LANCZOS)
     out = Image.new("RGBA", (w, h), (0, 0, 0, 0))
-    x = (w - total) // 2
-    out.paste(mark, (x, pad), mark)
-    ImageDraw.Draw(out).text((x + lh + lh // 6 - box[0], (h - th) // 2 - box[1]), "Finobe", font=font,
-                             fill=PINK, stroke_width=stroke, stroke_fill=WHITE)
+    out.paste(im, ((w - im.width) // 2, (h - im.height) // 2), im)
     return out
 
 
