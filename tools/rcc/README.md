@@ -11,7 +11,14 @@ RCC build: **0.257 (2016)** from `harryzawg/bubbablox-v2/RCCService`, matching
 - `bbblox.org` / `roblox.com` -> `finobe.wtf` (incl. the SOAP namespace, which must match `storage/rbx/files/RCCService.wsdl`)
 - `bbgame.zawg.ca` (third-party trusted domain) -> `cdn.finobe.wtf`
 - `AppSettings.xml` BaseUrl -> `http://www.finobe.wtf`
-- optional: embeds **your** signing public key (`--key`)
+- embeds Finobe's script-signing public key (`--blob finobe`, taken from `Base/rbx/Crypt.cpp`
+  in `ThugShaker3D/Karma-2016-Client`). The `rcc` branch already has it.
+
+`ThugShaker3D/Karma-2016-Client` is Finobe's own 2016 engine source, including an `RCCService`
+project. It has no prebuilt `RCCService.exe` and needs Windows + MSVC 2019, Boost, Qt 5.15,
+the DirectX SDK and VMProtect to build, so this patched binary is what to run until then.
+That source is compiled for `finobe.net`; change the domain checks in
+`App/util/Shared/Http.cpp` and `ClientShared/RobloxServicesTools.cpp` before building it for `finobe.wtf`.
 
 ## 1. Machine
 
@@ -26,14 +33,12 @@ RCC build: **0.257 (2016)** from `harryzawg/bubbablox-v2/RCCService`, matching
 git clone --branch rcc --depth 1 https://github.com/yewtubes/finobewtf C:\Finobe\rcc
 ```
 
-Optional but recommended, so RCC trusts scripts the site signs: copy the site's
-`storage/rbx/files/privateKey1024.pem` somewhere temporary and run (needs Python + `pip install cryptography`):
+The binary already trusts Finobe's signing key. If you ever generate a new key pair, re-run the
+patcher with the new private key (needs Python + `pip install cryptography`):
 
 ```bat
 python tools\rcc\patch_rcc.py C:\Finobe\rcc\RCCService --key C:\path\privateKey1024.pem
 ```
-
-Delete the key copy afterwards.
 
 ## 3. Firewall (do not skip)
 

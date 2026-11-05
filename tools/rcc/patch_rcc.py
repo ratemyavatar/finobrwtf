@@ -20,6 +20,13 @@ import argparse, base64, re, struct, sys
 from pathlib import Path
 
 DOMAIN = b"finobe.wtf"
+
+# Finobe's script-signing public key, from Base/rbx/Crypt.cpp in ThugShaker3D/Karma-2016-Client
+FINOBE_PUBLIC_KEY_BLOB = (
+    "BgIAAACkAABSU0ExAAQAAAEAAQAphSpUVOk+A75OmYA+sa2I0DXyXZhvM5dha2/31i5BiJZsWmvIwAmWgo9jhG8W"
+    "fNvGOZnGFwz6JnrRmcy9WP19a3xElt4c1zr4GNw8Y88HZg+6i5NWZ/fp2lS4cV+gnH4ewAcrRbKJZGF+EuhX0bzM"
+    "CFyf4dAp1rmsk2WeFoASzQ=="
+)
 REPLACEMENTS = [
     (b"bbblox.org", DOMAIN),
     (b"roblox.com", DOMAIN),
@@ -52,6 +59,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("folder", type=Path)
     ap.add_argument("--key", type=Path, help="PEM of Finobe's signing key")
+    ap.add_argument("--blob", help="base64 PUBLICKEYBLOB to embed directly (e.g. FINOBE_PUBLIC_KEY_BLOB)")
     args = ap.parse_args()
 
     exe = args.folder / "RCCService.exe"
@@ -71,13 +79,14 @@ def main():
     else:
         print("job-expiry patch: pattern NOT found - jobs may stop after 10 minutes")
 
-    if args.key:
+    if args.key or args.blob:
         blobs = [m for m in re.finditer(rb"BgIAAACkAABSU0Ex[A-Za-z0-9+/=]+", bytes(b))]
-        new = public_key_blob(args.key)
+        blob = FINOBE_PUBLIC_KEY_BLOB if args.blob == "finobe" else args.blob
+        new = blob.encode() if blob else public_key_blob(args.key)
         if len(blobs) != 1 or len(blobs[0].group(0)) != len(new):
             sys.exit(f"expected one {len(new)}-char key blob, found {[len(m.group(0)) for m in blobs]}")
         b[blobs[0].start():blobs[0].end()] = new
-        print("public key: replaced with key from", args.key)
+        print("public key: replaced", "with blob" if args.blob else f"with key from {args.key}")
     else:
         print("public key: left unchanged (pass --key to use Finobe's signing key)")
 
