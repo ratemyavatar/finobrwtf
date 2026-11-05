@@ -36,6 +36,17 @@ EXPIRY_OLD = bytes.fromhex("0000000000c08240")   # 600.0 seconds
 EXPIRY_NEW = bytes.fromhex("0000f81f5fa00242")   # effectively never
 
 
+def set_base_url(settings_path, url: str) -> None:
+    """Change only the <BaseUrl> value, keeping the file byte-for-byte otherwise (the 2016 player's
+    settings reader breaks if line endings change: it then reads the content folder as 'er>content')."""
+    raw = settings_path.read_bytes()
+    new = re.sub(rb"(<BaseUrl>)[^<]*(</BaseUrl>)", lambda m: m.group(1) + url.encode() + m.group(2), raw, count=1)
+    if new == raw and b"<BaseUrl>" not in raw:
+        nl = b"\r\n" if b"\r\n" in raw else b"\n"
+        new = raw.replace(b"</Settings>", b"\t<BaseUrl>" + url.encode() + b"</BaseUrl>" + nl + b"</Settings>", 1)
+    settings_path.write_bytes(new)
+
+
 def public_key_blob(pem_path: Path) -> bytes:
     """Build a Windows CryptoAPI PUBLICKEYBLOB (base64) from an RSA private or public key PEM."""
     from cryptography.hazmat.primitives import serialization
@@ -103,14 +114,7 @@ def main():
 
     exe.write_bytes(bytes(b))
 
-    settings = args.folder / "AppSettings.xml"
-    settings.write_text(
-        '<?xml version="1.0" encoding="UTF-8"?>\n'
-        "<Settings>\n"
-        "\t<ContentFolder>content</ContentFolder>\n"
-        f"\t<BaseUrl>http://www.{DOMAIN.decode()}</BaseUrl>\n"
-        "</Settings>\n"
-    )
+    set_base_url(args.folder / "AppSettings.xml", f"http://www.{DOMAIN.decode()}")
     print("AppSettings.xml: BaseUrl ->", f"http://www.{DOMAIN.decode()}")
 
     left = [d for d in (b"bbblox", b"zawg", b"roblox.com") if d in b]
