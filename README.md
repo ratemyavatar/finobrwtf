@@ -40,6 +40,33 @@ patcher with the new private key (needs Python + `pip install cryptography`):
 python tools\rcc\patch_rcc.py C:\Finobe\rcc\RCCService --key C:\path\privateKey1024.pem
 ```
 
+## Signing key (needed for joins)
+
+The site signs join scripts, CoreGui scripts and join tickets with
+`storage/rbx/files/privateKey1024.pem` (gitignored, never commit it). RCC and the game client
+check those signatures with the matching public key built into them, so all three must use the
+same keypair.
+
+On the **web server**, from the site folder:
+
+```bash
+openssl genrsa -traditional -out storage/rbx/files/privateKey1024.pem 1024
+chmod 640 storage/rbx/files/privateKey1024.pem
+pip install cryptography
+python3 tools/rcc/patch_rcc.py --key storage/rbx/files/privateKey1024.pem --print-blob
+```
+
+The last command prints the public blob (safe to copy; it's the public half). On the
+**arbiter**, embed it:
+
+```bat
+python tools\rcc\patch_rcc.py C:\Finobe\rcc\RCCService --blob <the printed blob>
+```
+
+Restart RCC afterwards. When the client is rebuilt from `ThugShaker3D/Karma-2016-Client`, put
+the same blob in `Base/rbx/Crypt.cpp` (`keyB64`). The current client builds are VMProtect-packed
+and can't be byte-patched; they also only trust `finobe.net`, so they need that rebuild anyway.
+
 ## 3. Firewall (do not skip)
 
 RCC's SOAP port executes whatever Lua it is sent. If it is reachable from the internet,

@@ -57,10 +57,21 @@ def public_key_blob(pem_path: Path) -> bytes:
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("folder", type=Path)
+    ap.add_argument("folder", type=Path, nargs="?")
     ap.add_argument("--key", type=Path, help="PEM of Finobe's signing key")
-    ap.add_argument("--blob", help="base64 PUBLICKEYBLOB to embed directly (e.g. FINOBE_PUBLIC_KEY_BLOB)")
+    ap.add_argument("--blob", help="base64 PUBLICKEYBLOB to embed directly, or 'finobe' for the Karma client key")
+    ap.add_argument("--print-blob", action="store_true",
+                    help="only print the PUBLICKEYBLOB for --key (e.g. on the web server), patch nothing")
     args = ap.parse_args()
+
+    if args.print_blob:
+        if not args.key:
+            sys.exit("--print-blob needs --key")
+        print(public_key_blob(args.key).decode())
+        return
+
+    if not args.folder:
+        sys.exit("give the RCCService folder to patch")
 
     exe = args.folder / "RCCService.exe"
     b = bytearray(exe.read_bytes())
