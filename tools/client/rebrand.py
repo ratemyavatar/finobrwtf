@@ -10,7 +10,7 @@ Run after patch_client.py (any order with set_key.py). Safe to run again.
 
 - exe: the app icon (all 6 sizes, overwritten in place), the window title and player-facing
   messages, the file's version info (what Windows shows as the app's name/company)
-- CoreScripts inside the exe: purchase prompt, developer console title, help menu text
+- CoreScripts inside the exe: purchase prompt (ROBUX -> Dius), developer console title, help menu text
 - content/textures: the Roblox logo images
 """
 import codecs, io, struct, sys
@@ -63,7 +63,9 @@ IMAGES = {
     "content/textures/Roblox-loading.png": "logo",
     "content/textures/Roblox-loading@2x.png": "logo",
     "content/textures/Roblox.bmp": "logo-white",
+    "content/textures/ui/RobuxIcon.png": "dius",            # purchase prompt currency icon
 }
+DIUS = HERE / "diu_icon.png"                              # the site's Dius icon (public/s/img/diu_256.png)
 WORDMARK_BOX = {"content/textures/loading/robloxlogo.png": (0, 95, 256, 160)}
 
 
@@ -127,7 +129,9 @@ def replace_images(folder: Path):
             print(f"  {rel}: missing, skipped"); continue
         old = Image.open(p)
         w, h = old.size
-        if kind == "wordmark":
+        if kind == "dius":
+            new = Image.open(DIUS).convert("RGBA").resize((w, h), Image.LANCZOS)
+        elif kind == "wordmark":
             # draw where the Roblox wordmark's artwork is (fixed, so re-running gives the same image)
             box = WORDMARK_BOX.get(rel, (0, 0, w, h))
             new = Image.new("RGBA", (w, h), (0, 0, 0, 0))
@@ -247,8 +251,9 @@ def replace_corescript_text(b: bytearray):
         for i, s in enumerate(strings):
             t = s.decode("latin1")
             # sentences/titles only: identifiers (RobloxGui, com.roblox.client.) and asset URLs stay
-            if " " in t and ("roblox" in t.lower()):
-                strings[i] = finobe(t).encode("latin1"); changed += 1
+            if " " in t and ("roblox" in t.lower() or "ROBUX" in t):
+                # sentences only: Robux/PriceInRobux/ROBUX_ICON are keys and names the scripts use
+                strings[i] = finobe(t).replace("ROBUX", "Dius").encode("latin1"); changed += 1
         if not changed:
             print(f"  {name}: already done"); continue
         blob = rsb1.encode(rsb1.join_strings(prefix, strings))
