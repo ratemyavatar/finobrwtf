@@ -47,3 +47,22 @@ python tools\client\patch_client.py <client folder> --key privateKey1024.pem
   `RobloxPlayerBeta.exe --play -a https://www.finobe.wtf/Login/Negotiate.ashx -t <ticket> -j <PlaceLauncher URL>`.
 - The binary is still signed by Roblox; patching breaks that signature. The client only reports this
   to the game server, and the RCC here has that check patched out.
+
+## Finobe branding (`rebrand.py`)
+
+    python3 tools/client/rebrand.py RobloxPlayer
+
+Swaps the app icon, the Roblox logo images (`content/textures/roblox-logo.png`,
+`loading/robloxlogo.png`, `Roblox-loading*.png`, `Roblox.bmp`) for the Finobe logo
+(`finobe_logo.png`), and changes the text players see to "Finobe": window title, error
+messages, the exe's version info, and the purchase prompt / developer console / help menu
+CoreScripts. Internal names (RobloxGui, RobloxLocked, the `<roblox>` place tags, the
+`Roblox/WinInet` user agent, registry keys) are left alone because things depend on them.
+Safe to run again. `RobloxPlayer/` in this branch is already rebranded.
+
+## Signing key (`set_key.py`)
+
+    python3 tools/client/set_key.py RobloxPlayer <site>/storage/rbx/files/privateKey1024.pem
+
+The client only accepts join scripts signed with the key built into it, so run this on the web
+server (where the private key is) before packaging.
