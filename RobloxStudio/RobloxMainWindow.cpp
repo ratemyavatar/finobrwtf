@@ -373,7 +373,7 @@ RobloxMainWindow::RobloxMainWindow(const QMap<QString, QString> argMap)
 			// Set the account property id to either the Build Mode production account or the test account
 			// by checking the baseURL for the company domain "roblox.com".
 			QString baseURL(RobloxSettings().getBaseURL());
-			if (baseURL.endsWith("finobe.net", Qt::CaseInsensitive))
+			if (baseURL.endsWith("finobe.wtf", Qt::CaseInsensitive))
 				googleAnalyticsAccountPropId = "UA-43420590-4"; // Production
 			else
 				googleAnalyticsAccountPropId = "UA-43420590-5"; // Test

@@ -757,7 +757,7 @@ bool Application::Initialize(HWND hWnd, HINSTANCE hInstance)
 	{
 		// Bootstrapper will wait for this event, to make sure that app was started
 		ATL::CEvent robloxStartedEvent;
-		if (robloxStartedEvent.Open(EVENT_MODIFY_STATE, FALSE, "www.roblox.com/robloxStartedEvent"))
+		if (robloxStartedEvent.Open(EVENT_MODIFY_STATE, FALSE, "www.finobe.wtf/robloxStartedEvent"))
 		{
 			robloxStartedEvent.Set();
 		}
@@ -1307,7 +1307,7 @@ void Application::waitForShowWindow(int delay)
 
 		// Bootstrapper will wait for this event, to make sure that app was started
 		ATL::CEvent robloxStartedEvent;
-		if (robloxStartedEvent.Open(EVENT_MODIFY_STATE, FALSE, "www.roblox.com/robloxStartedEvent"))
+		if (robloxStartedEvent.Open(EVENT_MODIFY_STATE, FALSE, "www.finobe.wtf/robloxStartedEvent"))
 		{
 			robloxStartedEvent.Set();
 		}

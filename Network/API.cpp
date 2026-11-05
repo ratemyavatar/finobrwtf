@@ -31,7 +31,7 @@
 
 FASTSTRINGVARIABLE(ClientExternalBrowserUserAgent, "Roblox/WinInet")
 
-#define ROBLOX_URL_IDENTIFIER "finobe.net/"
+#define ROBLOX_URL_IDENTIFIER "finobe.wtf/"
 #define ROBLOXLABS_URL_IDENTIFIER ".robloxlabs.com/"
 
 #pragma comment (lib, "Ws2_32.lib")

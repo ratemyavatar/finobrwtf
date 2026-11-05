@@ -25,7 +25,7 @@ static std::string BuildGenericApiUrl(const std::string &baseUrl, const std::str
 	if ("" != serviceName)
 		serviceName += ".";
 
-	return format_string("%s://%sfinobe.net/%s?apiKey=%s", scheme, serviceName.c_str(), path.c_str(), key.c_str());
+	return format_string("%s://%sfinobe.wtf/%s?apiKey=%s", scheme, serviceName.c_str(), path.c_str(), key.c_str());
 }
 
 std::string GetCountersUrl(const std::string &baseUrl, const std::string &key)

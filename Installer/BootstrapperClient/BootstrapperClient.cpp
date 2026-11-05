@@ -26,8 +26,8 @@
 
 static const TCHAR* BootstrapperFileName    = _T("PenelopeLauncher.exe");
 static const TCHAR* RobloxAppFileName		= _T(PLAYEREXENAME);
-static const TCHAR* BootstrapperMutexName   = _T("www.finobe.net/bootstrapper");
-static const TCHAR* StartRobloxAppMutex     = _T("www.finobe.net/startRobloxApp");
+static const TCHAR* BootstrapperMutexName   = _T("www.finobe.wtf/bootstrapper");
+static const TCHAR* StartRobloxAppMutex     = _T("www.finobe.wtf/startRobloxApp");
 static const TCHAR* LauncherFileName        = _T("RobloxProxy.dll");
 static const TCHAR* LauncherFileName64      = _T("RobloxProxy64.dll");
 static const TCHAR* FriendlyName            = _T("Finobe");
@@ -702,7 +702,7 @@ void BootstrapperClient::StartRobloxApp(bool fromInstall)
 	message("Finobe is up to date.");
 
 	LOG_ENTRY("Creating event");
-	CEvent robloxStartedEvent(NULL, TRUE, FALSE, _T("www.finobe.net/robloxStartedEvent"));
+	CEvent robloxStartedEvent(NULL, TRUE, FALSE, _T("www.finobe.wtf/robloxStartedEvent"));
 	LOG_ENTRY("Resetting event");
 	robloxStartedEvent.Reset();
 
@@ -1000,7 +1000,7 @@ void BootstrapperClient::deployRobloxProxy(bool commitData)
 
 		// For IE8:
 		CRegKey allowedDomainsKey = CreateKey(key, _T("AllowedDomains"));
-		CreateKey(allowedDomainsKey, _T("finobe.net"));
+		CreateKey(allowedDomainsKey, _T("finobe.wtf"));
 		CreateKey(allowedDomainsKey, _T("robloxlabs.com"));
 	}
 

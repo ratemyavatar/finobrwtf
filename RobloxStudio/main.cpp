@@ -223,7 +223,7 @@ int main(int argc, char *argv[])
 	
 	// Platform independent settings
 	QApplication::setOrganizationName("Roblox");
-    QApplication::setOrganizationDomain("finobe.net");
+    QApplication::setOrganizationDomain("finobe.wtf");
     QApplication::setApplicationName("RobloxStudio");  
     QApplication::setApplicationVersion(RobloxSettings::getVersionString());
 

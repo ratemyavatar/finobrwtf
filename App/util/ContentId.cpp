@@ -209,7 +209,7 @@ namespace RBX
                         if (baseUrlParsed.isSubdomainOf(testsite_domain)
                             && !parsed.isSubdomainOf(testsite_domain))
                         {
-                            host = "assetgame.finobe.net";
+                            host = "assetgame.finobe.wtf";
                         }
                         else
                         {
@@ -238,7 +238,7 @@ namespace RBX
                         else
                         {
                             scheme = "http";
-                            host = "www.finobe.net";
+                            host = "www.finobe.wtf";
                         }
                     }
 
@@ -284,7 +284,7 @@ namespace RBX
                 {
                     // Allow assets from prod to be used on test sites
                     if (baseUrl.find(domain) != std::string::npos && host.find(domain) == std::string::npos)
-                        id = "http://www.finobe.net/" + path;
+                        id = "http://www.finobe.wtf/" + path;
                     else
                         id = baseUrl + (baseUrl[baseUrl.size()-1] != '/' ? "/" : "") + path;
 
@@ -310,7 +310,7 @@ namespace RBX
                     if (robloxLabsPos != std::string::npos)
                         id = baseUrl + "/" + path;
                     else
-                        id = "http://www.finobe.net/" + path;
+                        id = "http://www.finobe.wtf/" + path;
                 }
 
                 return true;

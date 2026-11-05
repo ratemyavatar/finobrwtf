@@ -212,7 +212,7 @@ END
 
 STRINGTABLE
 BEGIN
-    IDS_DEFAULT_IMAGE_INFO  "A screenshot from Finobe.  Learn more at https://finobe.net"
+    IDS_DEFAULT_IMAGE_INFO  "A screenshot from Finobe.  Learn more at https://finobe.wtf"
 END
 
 #endif    // English (United States) resources

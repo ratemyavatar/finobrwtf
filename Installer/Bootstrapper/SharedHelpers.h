@@ -67,8 +67,8 @@ private:
 #define LLOG_ENTRY3(logger, msg, a1, a2, a3) logger.write_logentry(msg, reinterpret_cast<const void*>(a1), reinterpret_cast<const void*>(a2), reinterpret_cast<const void*>(a3))
 #define LLOG_ENTRY4(logger, msg, a1, a2, a3, a4) logger.write_logentry(msg, reinterpret_cast<const void*>(a1), reinterpret_cast<const void*>(a2), reinterpret_cast<const void*>(a3), reinterpret_cast<const void*>(a4))
 
-#define FIREFOXREGKEY               "@nsroblox.finobe.net/launcher"
-#define FIREFOXREGKEY64             "@nsroblox.finobe.net/launcher64"
+#define FIREFOXREGKEY               "@nsroblox.finobe.wtf/launcher"
+#define FIREFOXREGKEY64             "@nsroblox.finobe.wtf/launcher64"
 
 #define PLAYERLINKNAME_CUR          "Finobe Player"
 #define PLAYERLINKNAMELEGACY        "Play Finobe"
@@ -90,7 +90,7 @@ private:
 // Player names
 #define  PLAYEREXENAME				"FinobePlayer.exe"
 
-// Version URL string names (setup.finobe.net/XXX) - replace XXX with these values to get the most recent version
+// Version URL string names (setup.finobe.wtf/XXX) - replace XXX with these values to get the most recent version
 // Unfortunately these have to be defined globally so Player knows how to find the latest version of Studio to download
 #define VERSIONGUIDNAMESTUDIO       "versionQTStudio"
 #define VERSIONGUIDNAMERCC			"NOVERSION"

@@ -473,8 +473,8 @@ static const bool jobsAsArray = true;
 			std::string baseUrl = baseUrlInput;
 
 			RBXASSERT(baseUrl.substr(0, 7) == "http://");
-			if (baseUrl.find("www.finobe.net") != std::string::npos)
-				baseUrl = "http://logging.service.finobe.net/";
+			if (baseUrl.find("www.finobe.wtf") != std::string::npos)
+				baseUrl = "http://logging.service.finobe.wtf/";
 			else
 				baseUrl.insert(7, "logging.service.");	// Inserted after http://
 			return baseUrl + "Gatherer/LogEntry?Shard=" + shard;

@@ -1077,11 +1077,11 @@ bool Http::isStrictlyRobloxSite(const char* url)
     {
         RBX::Url parsed = RBX::Url::fromString(url);
     
-        return parsed.isSubdomainOf("finobe.net") || parsed.isSubdomainOf("robloxlabs.com");
+        return parsed.isSubdomainOf("finobe.wtf") || parsed.isSubdomainOf("robloxlabs.com");
     }
 
     std::string host(HTParse(url, NULL, PARSE_HOST));
-    if ("finobe.net" != host && !hasEnding(host, ".finobe.net") 
+    if ("finobe.wtf" != host && !hasEnding(host, ".finobe.wtf") 
         && "robloxlabs.com" != host && !hasEnding(host, ".robloxlabs.com"))
     {
         return false;
@@ -1115,7 +1115,7 @@ bool Http::isRobloxSite(const char* url)
             urlPath.MakeLower();
 
             // trust urls from roblox.com
-			if (hostName.Right(10)=="finobe.net" || hostName.Right(14)=="robloxlabs.com")
+			if (hostName.Right(10)=="finobe.wtf" || hostName.Right(14)=="robloxlabs.com")
 				return true;
 
             // trust facebook login
@@ -1154,7 +1154,7 @@ bool Http::isRobloxSite(const char* url)
         }
     
         const bool isRoblox =
-            parsed.isSubdomainOf("finobe.net") ||
+            parsed.isSubdomainOf("finobe.wtf") ||
             parsed.isSubdomainOf("robloxlabs.com");
 
         const bool isFacebook =
@@ -1201,7 +1201,7 @@ bool Http::isRobloxSite(const char* url)
     std::transform(path.begin(), path.end(), path.begin(), ::tolower);
 
     return
-        "finobe.net" == host || hasEnding(host, ".finobe.net") ||
+        "finobe.wtf" == host || hasEnding(host, ".finobe.wtf") ||
         "robloxlabs.com" == host || hasEnding(host, ".robloxlabs.com") ||
         // trust facebook login
         ("login.facebook.com" == host && "/login.php") ||
@@ -1236,7 +1236,7 @@ bool Http::isExternalRequest(const char* url)
 
         std::string hostname = urlParsed.GetHostName();
 
-        if(hostname.find("finobe.net") != std::string::npos || hostname.find("robloxlabs.com") != std::string::npos)
+        if(hostname.find("finobe.wtf") != std::string::npos || hostname.find("robloxlabs.com") != std::string::npos)
             return false;
 
         return true;
@@ -1251,7 +1251,7 @@ bool Http::isExternalRequest(const char* url)
             return false;
         }
 
-        return !parsed.isSubdomainOf("finobe.net")
+        return !parsed.isSubdomainOf("finobe.wtf")
             && !parsed.isSubdomainOf("robloxlabs.com");
     }
 
@@ -1269,7 +1269,7 @@ bool Http::isExternalRequest(const char* url)
     std::transform(host.begin(), host.end(), host.begin(), ::tolower);
 
     return
-        "finobe.net" != host && !hasEnding(host, ".finobe.net") &&
+        "finobe.wtf" != host && !hasEnding(host, ".finobe.wtf") &&
         "robloxlabs.com" != host && !hasEnding(host, ".robloxlabs.com");
 }
 
