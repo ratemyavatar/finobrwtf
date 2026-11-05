@@ -24,8 +24,9 @@ The player list script (PlayerlistModule) is compiled into the exe as an encrypt
 to user IDs 1 and 2 with Finobe icons; the script's code isn't touched. Users in that table skip the
 admin check, so other admins keep the normal badge.
 
-User 2's badge image isn't in this repo yet (on old Finobe it was asset 2626 on the website). Put a
-16x16 PNG at `tools/client/icon_user2.png` and re-run the patcher; until then user 2 shows no icon.
+User 2's badge is `tools/client/icon_user2.png`: the head of `icon_user2_source.jpg`, background
+removed, 16x16 (the whole figure is unreadable at that size; `icon_user2_fullbody.png` is that version
+if you prefer it: copy it over `icon_user2.png` and re-run).
 
 Needs `pip install pefile xxhash lz4 cryptography`.
 
