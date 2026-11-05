@@ -135,8 +135,8 @@ local SHADOW_SLICE_SIZE = 5
 local SHADOW_SLICE_RECT = Rect.new(SHADOW_SLICE_SIZE+1, SHADOW_SLICE_SIZE+1, SHADOW_SLICE_SIZE*2-1, SHADOW_SLICE_SIZE*2-1)
 
 local ADMINS = {	-- Admins with special icons
-    ['2394'] = 'http://www.finobe.wtf/asset/?id=2625', -- marsoc
-	['4812'] = 'http://www.finobe.wtf/asset/?id=2626', -- marsoc
+    ['1'] = 'http://www.finobe.wtf/asset/?id=2625', -- user 1
+	['2'] = 'http://www.finobe.wtf/asset/?id=2626', -- user 2
 }
 
 local ABUSES = {
