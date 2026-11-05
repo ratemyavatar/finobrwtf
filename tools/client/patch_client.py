@@ -7,8 +7,11 @@ Patch a stock 2016 Roblox Windows player (RobloxPlayerBeta.exe, 0.257) for Finob
   * embeds Finobe's script-signing public key (default: the one in tools/rcc/patch_rcc.py) or one
     derived from --key, so the client runs join scripts the site signs
   * AppSettings.xml BaseUrl -> http://www.finobe.wtf
-  * Finobe's admin badge (the duck) as content/textures/ui/icon_admin-16.png. The player list shows
-    it for anyone the site says is in group 1200769, i.e. users with status 'admin'.
+  * player-list badges (the site decides who gets which, see app/Services/PlayerBadges.php):
+      - user 1: the duck            -> content/textures/ui/icon_OBC-16.png   (MembershipType OBC)
+      - user 2: custom badge        -> content/textures/ui/icon_TBC-16.png   (MembershipType TBC),
+                                       from tools/client/icon_user2.png when that file exists
+      - other admins: the client's normal admin badge (icon_admin-16.png, left as shipped)
 
 Usage:  python3 patch_client.py <client folder> [--key privateKey1024.pem | --blob <base64>]
 """
@@ -52,9 +55,14 @@ def main():
         f"\t<BaseUrl>http://www.{DOMAIN.decode()}</BaseUrl>\n</Settings>\n")
     print("AppSettings.xml: BaseUrl -> http://www." + DOMAIN.decode())
 
-    icon = args.folder / "content" / "textures" / "ui" / "icon_admin-16.png"
-    shutil.copyfile(HERE / "icon_admin-16.png", icon)
-    print("admin badge: Finobe's duck icon installed")
+    ui = args.folder / "content" / "textures" / "ui"
+    shutil.copyfile(HERE / "icon_duck.png", ui / "icon_OBC-16.png")
+    print("user 1 badge: duck -> icon_OBC-16.png")
+    if (HERE / "icon_user2.png").exists():
+        shutil.copyfile(HERE / "icon_user2.png", ui / "icon_TBC-16.png")
+        print("user 2 badge: icon_user2.png -> icon_TBC-16.png")
+    else:
+        print("user 2 badge: tools/client/icon_user2.png not found, icon_TBC-16.png left as shipped")
 
     print("leftover roblox.com:", b.count(b"roblox.com"))
 

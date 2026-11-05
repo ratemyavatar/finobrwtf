@@ -7,14 +7,21 @@ A stock Roblox 2016 Windows player patched for finobe.wtf. The patched files are
   via archive.roblonium.com). Same 0.257 version as the RCC on the `rcc` branch (0.257.0.83946), so
   they speak the same network protocol.
 - **Patched by `patch_client.py`:** `roblox.com` -> `finobe.wtf` (16 places, same length), Finobe's
-  script-signing public key, `AppSettings.xml` BaseUrl, and Finobe's admin badge (the duck,
-  `content/textures/ui/icon_admin-16.png`).
+  script-signing public key, `AppSettings.xml` BaseUrl, and the player-list badges below.
 
-## Admin badges
+## Player-list badges
 
-The 2016 player list shows the admin icon for players in group 1200769 (`player:IsInGroup(1200769)`).
-The site answers that check (`/Game/LuaWebService/HandleSocialRequest.ashx`) with true for users whose
-`status` is `admin`, so making someone admin on the site gives them the duck in-game.
+The stock 2016 player list can't be edited (its scripts are compiled and encrypted into the exe), so
+badges use the two things it already reads: the player's membership type (sent by the site's join
+script) and the "is in group 1200769" admin check (answered by the site).
+
+| Who | Badge | How |
+| --- | --- | --- |
+| User 1 | the duck | MembershipType OBC; `icon_OBC-16.png` is the duck (`tools/client/icon_duck.png`) |
+| User 2 | their custom badge | MembershipType TBC; `icon_TBC-16.png` is `tools/client/icon_user2.png` (add it, then re-run) |
+| Other admins | normal admin badge | site says they're in group 1200769; `icon_admin-16.png` as shipped |
+
+Who gets what is in `app/Services/PlayerBadges.php` on the website.
 
 ## Signing key
 
