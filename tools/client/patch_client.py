@@ -7,15 +7,13 @@ Patch a stock 2016 Roblox Windows player (RobloxPlayerBeta.exe, 0.257) for Finob
   * embeds Finobe's script-signing public key (default: the one in tools/rcc/patch_rcc.py) or one
     derived from --key, so the client runs join scripts the site signs
   * AppSettings.xml BaseUrl -> http://www.finobe.wtf
-  * player-list badges (the site decides who gets which, see app/Services/PlayerBadges.php):
-      - user 1: the duck            -> content/textures/ui/icon_OBC-16.png   (MembershipType OBC)
-      - user 2: custom badge        -> content/textures/ui/icon_TBC-16.png   (MembershipType TBC),
-                                       from tools/client/icon_user2.png when that file exists
-      - other admins: the client's normal admin badge (icon_admin-16.png, left as shipped)
+  * the player list's admin badge stays as shipped; who gets it is decided by the site
+    (group 1200769 check). Finobe's duck icon is kept in tools/client/icon_duck.png but not used:
+    per-user badges need the player-list script changed, which the stock client compiles in.
 
 Usage:  python3 patch_client.py <client folder> [--key privateKey1024.pem | --blob <base64>]
 """
-import argparse, re, shutil, sys
+import argparse, re, sys
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -54,15 +52,6 @@ def main():
         '<?xml version="1.0" encoding="UTF-8"?>\n<Settings>\n\t<ContentFolder>content</ContentFolder>\n'
         f"\t<BaseUrl>http://www.{DOMAIN.decode()}</BaseUrl>\n</Settings>\n")
     print("AppSettings.xml: BaseUrl -> http://www." + DOMAIN.decode())
-
-    ui = args.folder / "content" / "textures" / "ui"
-    shutil.copyfile(HERE / "icon_duck.png", ui / "icon_OBC-16.png")
-    print("user 1 badge: duck -> icon_OBC-16.png")
-    if (HERE / "icon_user2.png").exists():
-        shutil.copyfile(HERE / "icon_user2.png", ui / "icon_TBC-16.png")
-        print("user 2 badge: icon_user2.png -> icon_TBC-16.png")
-    else:
-        print("user 2 badge: tools/client/icon_user2.png not found, icon_TBC-16.png left as shipped")
 
     print("leftover roblox.com:", b.count(b"roblox.com"))
 

@@ -11,17 +11,13 @@ A stock Roblox 2016 Windows player patched for finobe.wtf. The patched files are
 
 ## Player-list badges
 
-The stock 2016 player list can't be edited (its scripts are compiled and encrypted into the exe), so
-badges use the two things it already reads: the player's membership type (sent by the site's join
-script) and the "is in group 1200769" admin check (answered by the site).
+The stock 2016 player list shows Roblox's normal icons: BC / TBC / OBC for memberships, and the admin
+badge for anyone the site says is in group 1200769 (users with `status` `admin`).
 
-| Who | Badge | How |
-| --- | --- | --- |
-| User 1 | the duck | MembershipType OBC; `icon_OBC-16.png` is the duck (`tools/client/icon_duck.png`) |
-| User 2 | their custom badge | MembershipType TBC; `icon_TBC-16.png` is `tools/client/icon_user2.png` (add it, then re-run) |
-| Other admins | normal admin badge | site says they're in group 1200769; `icon_admin-16.png` as shipped |
-
-Who gets what is in `app/Services/PlayerBadges.php` on the website.
+Per-user badges (Finobe's duck, a custom badge for one person) can't be added to the stock client: its
+player-list script is compiled and encrypted into `RobloxPlayerBeta.exe`. They need the client built
+from source (the `client` branch: `content/scripts/Modules/PlayerlistModule.lua`, `ADMINS` table).
+The duck image is in `tools/client/icon_duck.png`.
 
 ## Signing key
 
