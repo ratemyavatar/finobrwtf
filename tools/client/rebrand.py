@@ -190,6 +190,59 @@ def replace_icon(b: bytearray):
     print(f"  exe icon: {done} size(s)")
 
 
+# the main window's title comes from a protected LoadString stub that always returns "ROBLOX", so
+# CreateWindowExA is pointed at a "Finobe" string in .rdata instead: `lea eax,[ebp-0x280]` becomes
+# `mov eax,<"Finobe">; nop`, with a base relocation for the new address (the exe is ASLR-enabled)
+TITLE_SITE = bytes.fromhex("8d8580fdffff" "6a00" "57" "6a00" "6a00" "6858020000" "6820030000")
+
+
+def _pe(b):
+    pe = struct.unpack_from("<I", b, 0x3C)[0]
+    nsec = struct.unpack_from("<H", b, pe + 6)[0]
+    opt = pe + 24
+    secs = []
+    for i in range(nsec):
+        o = opt + struct.unpack_from("<H", b, pe + 20)[0] + i * 40
+        name = bytes(b[o:o + 8]).rstrip(b"\0")
+        vsize, va, rsize, raw = struct.unpack_from("<IIII", b, o + 8)
+        secs.append((name, va, vsize, raw, rsize, o))
+    return opt, secs
+
+
+def replace_window_title(b: bytearray):
+    opt, secs = _pe(b)
+    base = struct.unpack_from("<I", b, opt + 28)[0]
+    to_rva = lambda off: next(va + off - raw for _, va, _, raw, rs, _ in secs if raw <= off < raw + rs)
+
+    i = b.find(TITLE_SITE)
+    if i == -1:
+        if b.find(TITLE_SITE[6:]) != -1 and b[b.find(TITLE_SITE[6:]) - 6] == 0xB8:
+            print("  window title: already Finobe")
+            return
+        print("  window title: patch site not found, skipped")
+        return
+    s = b.find(b"\0Finobe\0") + 1
+    if s == 0:
+        print("  window title: no 'Finobe' string, skipped")
+        return
+    imm_rva = to_rva(i + 1)
+    b[i:i + 6] = b"\xB8" + struct.pack("<I", base + to_rva(s)) + b"\x90"
+
+    # append a relocation block for the new immediate
+    name, va, vsize, raw, rsize, hdr = next(x for x in secs if x[0] == b".reloc")
+    dd = opt + 96 + 5 * 8
+    rva_dir, size_dir = struct.unpack_from("<II", b, dd)
+    page = imm_rva & ~0xFFF
+    block = struct.pack("<IIHH", page, 12, 0x3000 | (imm_rva - page), 0)
+    at = raw + (rva_dir - va) + size_dir
+    if size_dir + 12 > rsize:
+        sys.exit("window title: no room in .reloc")
+    b[at:at + 12] = block
+    struct.pack_into("<I", b, dd + 4, size_dir + 12)
+    struct.pack_into("<I", b, hdr + 8, max(vsize, rva_dir - va + size_dir + 12))
+    print("  window title: ROBLOX -> Finobe")
+
+
 def corescript_entries(b: bytes):
     import pefile
     pe = pefile.PE(data=b, fast_load=True)
@@ -266,6 +319,7 @@ def main():
     print("RobloxPlayerBeta.exe")
     replace_text(b)
     replace_icon(b)
+    replace_window_title(b)
     replace_corescript_text(b)
     exe.write_bytes(bytes(b))
     print("images")
