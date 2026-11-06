@@ -150,6 +150,9 @@ def main():
             sys.exit(f"expected one 200-char key blob, found {len(found)}")
         b[found[0].start():found[0].end()] = blob
         print("  signing key replaced")
+        if not a.key and not a.blob:
+            print("  WARNING: that's the stock Finobe key, not your site's. Players will be kicked (join script\n"
+                  "           rejected) unless you run this again with --key .../storage/rbx/files/privateKey1024.pem")
     else:
         print("  signing key NOT changed (pass --key with the site's privateKey1024.pem)")
 

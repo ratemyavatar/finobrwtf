@@ -4,22 +4,31 @@ The 2012 ROBLOX client (RobloxApp.exe **0.65.0.596**, an unprotected build) rebr
 There is no public 2012 RCC, so the same client also hosts the game servers.
 
 ```
-Client2012/                    the client players download (zip this folder → Finobe2012.zip)
+Client2012/                    the client (FinobeLauncher installs it for players, see below)
   RobloxApp.exe                already patched by tools/client2012/patch2012.py
-  FinobeLaunch2012.ps1         finobe2012: link handler (asks PlaceLauncher for a server, starts the client)
-  install.bat                  registers the finobe2012: link for the current user
+  FinobeLaunch2012.ps1, install.bat  old stand-alone finobe2012: launcher, not needed any more
 tools/client2012/patch2012.py  re-applies every patch to a clean 0.65.0.596 RobloxApp.exe
 tools/gameserver2012/host2012.ps1  runs on the game server machine, starts/stops 2012 servers for the site
 ```
 
+## Publishing it (on the web server)
+
+1. Put the site's signing key in it (the committed exe has the stock key, so join scripts would be rejected):
+
+       python3 tools/client2012/patch2012.py Client2012 --key /path/to/site/storage/rbx/files/privateKey1024.pem
+
+2. Package it for the launcher (from the website checkout):
+
+       python3 tools/client/package_client.py /path/to/Client2012 --year 2012
+
+   and set the printed `FINOBE_CLIENT_VERSION_2012=version-...` in the site's `.env`.
+
 ## Players
 
-1. Download `Finobe2012.zip` from the site (`/download2012`), extract it anywhere.
-2. Run `install.bat` once.
-3. Press Play on a 2012 place. The site opens `finobe2012:play/<placeId>/<ticket>[/<jobId>]`, the
-   launcher waits for a server and starts
-   `RobloxApp.exe -Script "loadfile('http://assetgame.finobe.wtf/game/join.ashx?...')()"`.
-   `loadfile` checks the site's signature on the join script before running it.
+Same as 2016: press Play on a 2012 place. FinobeLauncher (`finobe-launcher://...+clientversion:2012`)
+downloads this build into `%LOCALAPPDATA%\Finobe\Versions\2012\<version>`, waits for a server through
+PlaceLauncher and starts `RobloxApp.exe -Script "loadfile('http://assetgame.finobe.wtf/game/join.ashx?...')()"`.
+`loadfile` checks the site's signature on the join script before running it.
 
 ## Game server machine (Windows)
 
