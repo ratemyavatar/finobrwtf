@@ -85,6 +85,11 @@ settings().Diagnostics.LuaRamLimit = 0
 
 local everyoneLeftAt = nil
 
+local ecCommands = { [";ec"] = true, [";energycell"] = true, [";bleach"] = true, [";suicide"] = true, [";cut"] = true, [";finobe"] = true, [";kms"] = true, [";raymonf"] = true, [";kyle"] = true }
+local ecSounds = { url .. "/s/sounds/ec_sound_1.mp3", url .. "/s/sounds/ec_sound_2.mp3" }
+local ecCooldown = {}
+math.randomseed(tick())
+
 pcall(function() Players.CharacterAutoLoads = false end)
 Players.Changed:connect(function(property)
 	if property == "CharacterAutoLoads" and Players.CharacterAutoLoads then
@@ -195,28 +200,39 @@ game:GetService("Players").PlayerAdded:connect(function(player)
 	player.CharacterAdded:connect(function(character) spawn(function() applyAnimations(character) end) end)
 	if player.Character ~= nil then spawn(function() applyAnimations(player.Character) end) end
 
-	player.Chatted:connect(
-		function(msg)
-			if player.Character ~= nil then
-				if msg == ";ec" or msg == ";energycell" or msg == ";bleach" or msg == ";suicide" or msg == ";cut" or msg == ";finobe" or msg == ";kms" or msg == ";raymonf" or msg == ";kyle" then
-				local aeaea = Instance.new("Sound")
-				aeaea.Parent = player.Character.Torso
-				local higuw = math.random(1, 2)
-				if higuw == 1 then
-					aeaea.SoundId = url .. "/assets/?id=15"
-				elseif higuw == 2 then
-					aeaea.SoundId = url .. "/assets/?id=16"
-				end
-				aeaea.Volume = 0.7
-				aeaea:Play()
-				wait(0.1)
-				player.Character.Humanoid.Health = 0
-			end
-		end
+	player.Chatted:connect(function(msg)
+		local command = string.lower(tostring(msg or ""))
+		if not ecCommands[command] then return end
+		local character = player.Character
+		local torso = character and character:FindFirstChild("Torso")
+		local humanoid = character and character:FindFirstChild("Humanoid")
+		if torso == nil or humanoid == nil or humanoid.Health <= 0 then return end
+		if ecCooldown[player] and tick() - ecCooldown[player] < 3 then return end
+		ecCooldown[player] = tick()
+
+		local speaker = Instance.new("Part")
+		speaker.Name = "EnergyCellSound"
+		speaker.Anchored = true
+		speaker.CanCollide = false
+		speaker.Transparency = 1
+		speaker.Size = Vector3.new(1, 1, 1)
+		speaker.CFrame = torso.CFrame
+		speaker.Parent = workspace
+
+		local sound = Instance.new("Sound")
+		sound.SoundId = ecSounds[math.random(1, #ecSounds)]
+		sound.Volume = 0.7
+		sound.Parent = speaker
+		sound:Play()
+		game:GetService("Debris"):AddItem(speaker, 20)
+
+		wait(0.1)
+		humanoid.Health = 0
 	end)
 end)
 
 game:GetService("Players").PlayerRemoving:connect(function(player)
+	ecCooldown[player] = nil
 	print("Player " .. player.userId .. " leaving")
 
 	delay(1, function()
