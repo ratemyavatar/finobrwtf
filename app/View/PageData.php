@@ -37,6 +37,16 @@ final class PageData
         return $data;
     }
 
+    public function adminNavbar(): string
+    {
+        $data = $this->all();
+        $data['admin_panel'] = true;
+        $data['user']['branding'] = 'finobe';
+        $data['notifications']['ads'] = false;
+
+        return view('v2/Modules/nav', ['data' => $data])->render();
+    }
+
     private function build(): array
     {
         $user = $this->request->user();

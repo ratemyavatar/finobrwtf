@@ -16,11 +16,7 @@ final class WorkbenchController extends Controller
         abort_unless(array_intersect(Access::scopes($request->user()), ['Accounts','Moderation','Access restrictions','Economy','Avatar','Messages','Staff','Audit']),403,'User management access required.');
     }
     private function navbar(Request $request): string {
-        $navbar=(new \App\Http\Controllers\frontEnd($request))->getData();
-        $navbar['data']['admin_panel']=true;
-        $navbar['data']['user']['branding']='finobe';
-        $navbar['data']['notifications']['ads']=false;
-        return view('v2/Modules/nav',$navbar)->render();
+        return app(\App\View\PageData::class)->adminNavbar();
     }
     private const USER_SECTIONS = [
         'overview'=>['Overview', null], 'account'=>['Account', 'Accounts'],

@@ -117,7 +117,7 @@ class Asset extends Controller
     public static function renderHat(int $id) : string
     {
         if (self::isAssetExist($id)) {
-            $arbiter = new RobloxArbiterUtilities(DataController::arbiter_pool(), (int) config('finobe.arbiter.port'));
+            $arbiter = new RobloxArbiterUtilities(config('finobe.arbiter.host'), (int) config('finobe.arbiter.port'));
             $constructedJob = $arbiter->ConstructJob(
                 RobloxUtilities::GenerateGUID(),
                 '
@@ -433,7 +433,7 @@ class Asset extends Controller
     public static function renderPants(int $id)
     {
         if (self::isAssetExist($id)) {
-            $arbiter = new RobloxArbiterUtilities(DataController::arbiter_pool(), (int) config('finobe.arbiter.port'));
+            $arbiter = new RobloxArbiterUtilities(config('finobe.arbiter.host'), (int) config('finobe.arbiter.port'));
             $constructedJob = $arbiter->ConstructJob(
                 RobloxUtilities::GenerateGUID(),
                 '
@@ -488,7 +488,7 @@ class Asset extends Controller
     public static function renderShirt(int $id)
     {
         if (self::isAssetExist($id)) {
-            $arbiter = new RobloxArbiterUtilities(DataController::arbiter_pool(), (int) config('finobe.arbiter.port'));
+            $arbiter = new RobloxArbiterUtilities(config('finobe.arbiter.host'), (int) config('finobe.arbiter.port'));
             $constructedJob = $arbiter->ConstructJob(
                 RobloxUtilities::GenerateGUID(),
                 '
@@ -543,7 +543,7 @@ class Asset extends Controller
     public static function renderTShirt(int $id)
     {
         if (self::isAssetExist($id)) {
-            $arbiter = new RobloxArbiterUtilities(DataController::arbiter_pool(), (int) config('finobe.arbiter.port'));
+            $arbiter = new RobloxArbiterUtilities(config('finobe.arbiter.host'), (int) config('finobe.arbiter.port'));
             $constructedJob = $arbiter->ConstructJob(
                 RobloxUtilities::GenerateGUID(),
                 '
@@ -598,7 +598,7 @@ class Asset extends Controller
     public static function renderGear(int $id) : string
     {
         if (self::isAssetExist($id)) {
-            $arbiter = new RobloxArbiterUtilities(DataController::arbiter_pool(), (int) config('finobe.arbiter.port'));
+            $arbiter = new RobloxArbiterUtilities(config('finobe.arbiter.host'), (int) config('finobe.arbiter.port'));
             $constructedJob = $arbiter->ConstructJob(
                 RobloxUtilities::GenerateGUID(),
                 '
@@ -652,7 +652,7 @@ class Asset extends Controller
     public static function renderHead(int $id) : string
     {
         if (self::isAssetExist($id)) {
-            $arbiter = new RobloxArbiterUtilities(DataController::arbiter_pool(), (int) config('finobe.arbiter.port'));
+            $arbiter = new RobloxArbiterUtilities(config('finobe.arbiter.host'), (int) config('finobe.arbiter.port'));
             $constructedJob = $arbiter->ConstructJob(
                 RobloxUtilities::GenerateGUID(),
                 '
@@ -722,7 +722,7 @@ class Asset extends Controller
             return "";
         }
 
-        $arbiter = new RobloxArbiterUtilities(DataController::arbiter_pool(), (int) config('finobe.arbiter.port'));
+        $arbiter = new RobloxArbiterUtilities(config('finobe.arbiter.host'), (int) config('finobe.arbiter.port'));
         $constructedJob = $arbiter->ConstructJob(
             RobloxUtilities::GenerateGUID(),
             '

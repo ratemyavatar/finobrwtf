@@ -9,20 +9,14 @@ use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Validator;
 use App\Models\User;
 use App\Models\Video;
-use App\Http\Controllers\frontEnd;
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Auth;
 
 class VideoController extends Controller
 {
-    protected $request;
-
-    public function __construct(Request $request) {
-        $frontend = new frontEnd($request);
-        $this->request = $frontend->getData();
-    }
 
     public function index(Request $request) {
-        $this->request['data']['embeds']['title'] = 'Videos' . $this->request['data']['embeds']['title'];
+        $title = 'Videos';
         $data = $request->all();
 
         $videos = Video::count();
@@ -46,7 +40,7 @@ class VideoController extends Controller
             }
         }
         
-        $this->request['data']['videos'] = [
+        $pageData['videos'] = [
             'data' => $videos,
             'pages' => [
                 'info' => [
@@ -62,16 +56,16 @@ class VideoController extends Controller
         ];
 
         for ($page = $start_page; $page <= $end_page; $page++) {
-            $this->request['data']['videos']['pages']['data'][] = ['page' => $page];
+            $pageData['videos']['pages']['data'][] = ['page' => $page];
         }
 
         if(!$videos) {
-            $this->request['data']['videos']['pages']['data'][] = [
+            $pageData['videos']['pages']['data'][] = [
                 'page' => 1
             ];
         }
 
-        return view($this->request['data']['user']['version'] . '/Videos/Index', $this->request);
+        return $this->page('Videos/Index', $pageData ?? [], $title ?? null);
     }
 
     public function video(Request $request, $id) {
@@ -91,18 +85,18 @@ class VideoController extends Controller
         $video['rating'] = $video['rating'] - VideoRating::where('toid', $video['id'])->where('rate_type', 'd')->count();
         $video['downvotes'] = VideoRating::where('toid', $video['id'])->where('rate_type', 'd')->count();
 
-        if($this->request['data']['siteusername']) {
-            if(VideoRating::where('toid', $id)->where('sender', $this->request['data']['user']['username'])->count()) {
+        if(Auth::check()) {
+            if(VideoRating::where('toid', $id)->where('sender', Auth::user()->username)->count()) {
                 $video['userRating'] = VideoRating::where('toid', $id)
-                    ->where('sender', $this->request['data']['user']['username'])
+                    ->where('sender', Auth::user()->username)
                     ->value('rate_type');
             }
         }
 
-        $this->request['data']['embeds']['title'] = $video['title'] . $this->request['data']['embeds']['title'];
-        $this->request['data']['video'] = $video;
+        $title = $video['title'];
+        $pageData['video'] = $video;
 
-        return view($this->request['data']['user']['version'] . '/Videos/Video', $this->request);
+        return $this->page('Videos/Video', $pageData ?? [], $title ?? null);
     }
 
     public function video_thumb(Request $request, $id) {
@@ -115,7 +109,7 @@ class VideoController extends Controller
 
     public function video_data(Request $request, $id) {
         if(!Video::find($id)) {
-            return response()->view($this->request['data']['user']['version'] . '/404', $this->request, 404);
+            return $this->page('404', $pageData ?? [], $title ?? null, 404);
         }
 
         //return redirect('https://cdn.finobe.wtf/videos/data/' . $this->db->table('videos')->select('filename')->where('id', $id)->value('filename'));
@@ -177,7 +171,7 @@ class VideoController extends Controller
             'message' => 'success'
         ];
 
-        if(!$this->request['data']['siteusername']) {
+        if(!Auth::check()) {
             $response['code'] = 400;
             $response['message'] = 'Bad request';
 
@@ -199,8 +193,8 @@ class VideoController extends Controller
 
         $data['videoId'] = intval($data['videoId']);
 
-        if(VideoRating::where('sender', $this->request['data']['user']['username'])->where('toid', $data['videoId'])->exists()) {
-            $ratingData = VideoRating::where('sender', $this->request['data']['user']['username'])
+        if(VideoRating::where('sender', Auth::user()->username)->where('toid', $data['videoId'])->exists()) {
+            $ratingData = VideoRating::where('sender', Auth::user()->username)
                 //->where('rate_type', $data['rating'])
                 ->where('toid', $data['videoId'])
                 ->first()
@@ -212,13 +206,13 @@ class VideoController extends Controller
                         'rate_type' => $data['rating']
                     ]);
             } else {
-                VideoRating::where('sender', $this->request['data']['user']['username'])
+                VideoRating::where('sender', Auth::user()->username)
                     ->where('toid', $data['videoId'])
                     ->delete();
             }
         } else {
             VideoRating::create([
-                'sender' => $this->request['data']['user']['username'],
+                'sender' => Auth::user()->username,
                 'toid' => $data['videoId'],
                 'rate_type' => $data['rating']
             ]);
@@ -234,7 +228,7 @@ class VideoController extends Controller
             'message' => 'success'
         ];
 
-        if(!$this->request['data']['siteusername']) {
+        if(!Auth::check()) {
             $response['code'] = 400;
             $response['message'] = 'Bad request';
 

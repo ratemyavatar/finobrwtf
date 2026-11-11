@@ -35,9 +35,8 @@ use App\Http\Controllers\Web\InvitesController;
 use App\Http\Controllers\Web\ElectionController;
 use App\Http\Controllers\Web\CurrencyController;
 use App\Http\Controllers\Web\MessagesController;
-use App\Http\Middleware\SetClientIp;
-use App\Http\Middleware\LimitRequestPerIp;
-use App\Http\Middleware\ModerationMiddleware;
+use App\Http\Middleware\Moderation;
+use App\Http\Middleware\SerializeWrites;
 use App\Support\Paths;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -49,15 +48,16 @@ Route::domain(parse_url(config('blog.url'), PHP_URL_HOST))->group(base_path('rou
 Route::domain($siteHost)->prefix('admin/blog')
     ->middleware(\App\Http\Middleware\BlogStaff::class)->group(base_path('routes/admin-blog.php'));
 
-Route::middleware([SetClientIp::class, \App\Http\Middleware\IpBanned::class, LimitRequestPerIp::class, ModerationMiddleware::class])->group(function () use ($domain, $siteHost) {
+Route::middleware([Moderation::class, SerializeWrites::class])->group(function () use ($domain, $siteHost) {
     Route::domain($siteHost)->group(function () {
         Route::fallback(fn () => response()->view('v2/404', [
             'data' => ['embeds' => ['title' => '404 - Finobe', 'image' => config('app.url') . '/s/img/finnobe3logo.png']],
         ], 404));
 
-        Route::match(['post', 'get'], '/', [HomeController::class, 'index']);
+        Route::get('/', [HomeController::class, 'index']);
+        Route::post('/', [HomeController::class, 'reactivate'])->middleware('limit:10,1');
         Route::post('/logout', [LoginController::class, 'logout']);
-        Route::post('/moderation/acknowledge', [WorkbenchController::class, 'acknowledge'])->withoutMiddleware([SetClientIp::class, LimitRequestPerIp::class, ModerationMiddleware::class]);
+        Route::post('/moderation/acknowledge', [WorkbenchController::class, 'acknowledge'])->withoutMiddleware([Moderation::class, SerializeWrites::class]);
         Route::match(['post', 'get'], '/api/locale', [LanguageController::class, 'update'])->middleware('limit:30,1');
         Route::get('/email/verify/{id}/{token}', [EmailVerificationController::class, 'verify'])->whereNumber('id');
 
@@ -216,7 +216,7 @@ Route::middleware([SetClientIp::class, \App\Http\Middleware\IpBanned::class, Lim
             Route::get('/invite-tree', [AdminToolsController::class, 'inviteTree']);
             Route::match(['post', 'get'], '/invite-keys', [AdminToolsController::class, 'inviteKeys']);
 
-            Route::withoutMiddleware([SetClientIp::class, LimitRequestPerIp::class, ModerationMiddleware::class])->group(function () {
+            Route::withoutMiddleware([Moderation::class, SerializeWrites::class])->group(function () {
                 Route::get('/users', [WorkbenchController::class, 'users']);
                 Route::get('/users/{id}', [WorkbenchController::class, 'manageUser']);
                 Route::get('/users/{id}/{section}', [WorkbenchController::class, 'manageUser']);

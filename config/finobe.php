@@ -3,6 +3,7 @@
 return [
     'domain' => env('FINOBE_DOMAIN', 'finobe.wtf'),
     'ads' => (bool) env('FINOBE_ADS', false),
+    'trusted_proxies' => env('FINOBE_TRUSTED_PROXIES', '127.0.0.1,::1'),
     'mail' => [
         'mode' => (int) env('FINOBE_MAIL_MODE', 3),
         'from' => env('MAIL_FROM_ADDRESS', 'noreply@finobe.wtf'),

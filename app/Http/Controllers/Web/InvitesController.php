@@ -7,33 +7,27 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Session;
 use App\Models\Keys;
 use App\Models\User;
-use App\Http\Controllers\frontEnd;
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Auth;
 
 class InvitesController extends Controller
 {
-    protected $request;
-
-    public function __construct(Request $request) {
-        $frontend = new frontEnd($request);
-        $this->request = $frontend->getData();
-    }
 
     public function index(Request $request) {
-        $this->request['data']['embeds']['title'] = 'Invites' . $this->request['data']['embeds']['title'];
+        $title = 'Invites';
 
-        if(!$this->request['data']['siteusername']) {
+        if(!Auth::check()) {
             return redirect('/');
         }
 
         $keys = [
             'data' => [],
             'info' => [
-                'created' => Keys::where('author', $this->request['data']['user']['username'])->where(DB::raw('MONTH(creation)'), DB::raw('MONTH(NOW())'))->where(DB::raw('YEAR(creation)'), DB::raw('YEAR(NOW())'))->count()
+                'created' => Keys::where('author', Auth::user()->username)->where(DB::raw('MONTH(creation)'), DB::raw('MONTH(NOW())'))->where(DB::raw('YEAR(creation)'), DB::raw('YEAR(NOW())'))->count()
             ]
         ];
 
-        $inviteKeys = Keys::where('author', $this->request['data']['user']['username'])
+        $inviteKeys = Keys::where('author', Auth::user()->username)
             ->orderBy('creation', 'DESC')
             ->get()
             ->map(fn($item) => $item->toArray());
@@ -49,10 +43,10 @@ class InvitesController extends Controller
             $keys['data'][] = $key;
         }
 
-        $this->request['data']['keys'] = $keys;
-        $this->request['data']['tree'] = self::inviteTree($this->request['data']['user']['username']);
+        $pageData['keys'] = $keys;
+        $pageData['tree'] = self::inviteTree(Auth::user()->username);
 
-        return view($this->request['data']['user']['version'] . '/Invitations/Invites', $this->request);
+        return $this->page('Invitations/Invites', $pageData ?? [], $title ?? null);
     }
 
     /*
@@ -111,10 +105,10 @@ class InvitesController extends Controller
     }
 
     public function new(Request $request) {
-        $this->request['data']['embeds']['title'] = 'Invites' . $this->request['data']['embeds']['title'];
+        $title = 'Invites';
         $data = $request->all();
 
-        if(!$this->request['data']['siteusername']) {
+        if(!Auth::check()) {
             return redirect('/');
         }
 
@@ -129,12 +123,12 @@ class InvitesController extends Controller
                 return redirect('/invites');
             }
 
-            if(Keys::where('author', $this->request['data']['user']['username'])->where(DB::raw('MONTH(creation)'), DB::raw('MONTH(NOW())'))->where(DB::raw('YEAR(creation)'), DB::raw('YEAR(NOW())'))->count() - 2 >= 0) {
+            if(Keys::where('author', Auth::user()->username)->where(DB::raw('MONTH(creation)'), DB::raw('MONTH(NOW())'))->where(DB::raw('YEAR(creation)'), DB::raw('YEAR(NOW())'))->count() - 2 >= 0) {
                 Session::put('error', 'You cannot create any more invites this month');
                 return redirect('/invites');
             }
 
-            if(Keys::where('author', $this->request['data']['user']['username'])->where('used', 'n')->count() >= 2) {
+            if(Keys::where('author', Auth::user()->username)->where('used', 'n')->count() >= 2) {
                 Session::put('error', 'You have too many unused keys');
                 return redirect('/invites');
             }
@@ -155,7 +149,7 @@ class InvitesController extends Controller
             $key = inviteKey(32);
 
             Keys::create([
-                'author' => $this->request['data']['user']['username'],
+                'author' => Auth::user()->username,
                 'IID' => $key
             ]);
 
@@ -163,6 +157,6 @@ class InvitesController extends Controller
             return redirect('/invites');
         }
 
-        return view($this->request['data']['user']['version'] . '/Invitations/Confirmation', $this->request);
+        return $this->page('Invitations/Confirmation', $pageData ?? [], $title ?? null);
     }
 }

@@ -14,9 +14,7 @@ use App\Models\Configuration;
 use App\Models\Forum\Reply;
 use App\Models\Forum\Thread;
 use App\Http\Controllers\Asset as AssetHelper;
-use App\Http\Controllers\frontEnd;
 use App\Http\Controllers\Controller;
-use App\Http\Controllers\dataController as DataController;
 use Illuminate\Http\Request;
 use App\Services\ItemImport\AssetCopier;
 use App\Services\ItemImport\ImportException;
@@ -27,10 +25,10 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Auth;
 
 class AdminController extends Controller
 {
-    protected $request;
 
     /* Which scope each tool needs. Admins hold every scope, so they keep full access. */
     private const TOOL_SCOPES = [
@@ -46,10 +44,7 @@ class AdminController extends Controller
 
     public function __construct(Request $request) {
         \App\Admin\Access::authorize($request->user());
-        $frontend = new frontEnd($request);
-        $this->request = $frontend->getData();
-
-        if(!$this->request['data']['siteusername']) {
+        if(!Auth::check()) {
             abort(404);
         }
 
@@ -69,7 +64,7 @@ class AdminController extends Controller
         }
         try {
             \Illuminate\Support\Facades\DB::connection('finobe')->table('asset_approval_log')->insert([
-                'asset_id' => $assetId, 'moderator_id' => $this->request['data']['user']['id'], 'action' => $action, 'created_at' => now(),
+                'asset_id' => $assetId, 'moderator_id' => Auth::user()->id, 'action' => $action, 'created_at' => now(),
             ]);
         } catch(\Throwable $e) {
             report($e); // not migrated yet: approving still works
@@ -77,7 +72,7 @@ class AdminController extends Controller
     }
 
     public function index(Request $request) {
-        $this->request['data']['embeds']['title'] = 'Admin Panel' . $this->request['data']['embeds']['title'];
+        $title = 'Admin Panel';
 
         $scopes = \App\Admin\Access::scopes($request->user());
         $tools = [
@@ -114,14 +109,14 @@ class AdminController extends Controller
             ['url' => '/admin/invite-keys', 'label' => 'Create Invite Keys (temp)', 'scope' => 'Invites'],
         ];
         $allowed = fn(array $i) => in_array($i['scope'], $scopes, true);
-        $this->request['data']['tools'] = array_values(array_filter($tools, $allowed));
-        $this->request['data']['links'] = array_values(array_filter($links, $allowed));
+        $pageData['tools'] = array_values(array_filter($tools, $allowed));
+        $pageData['links'] = array_values(array_filter($links, $allowed));
 
-        return view($this->request['data']['user']['version'] . '/Admin/Index', $this->request);
+        return $this->page('Admin/Index', $pageData ?? [], $title ?? null);
     }
 
     public function assets(Request $request) {
-        $this->request['data']['embeds']['title'] = 'Asset Moderation' . $this->request['data']['embeds']['title'];
+        $title = 'Asset Moderation';
 
         $assets = [];
         $results = Asset::where('visibility', 'r')
@@ -138,9 +133,9 @@ class AdminController extends Controller
             $assets[] = $result;
         }
 
-        $this->request['data']['assets'] = $assets;
+        $pageData['assets'] = $assets;
 
-        return view($this->request['data']['user']['version'] . '/Admin/Assets', $this->request);
+        return $this->page('Admin/Assets', $pageData ?? [], $title ?? null);
     }
 
     public function accept(Request $request) {
@@ -363,7 +358,7 @@ class AdminController extends Controller
     }
 
     public function bans(Request $request) {
-        $this->request['data']['embeds']['title'] = 'User Moderation' . $this->request['data']['embeds']['title'];
+        $title = 'User Moderation';
         $data = $request->all();
 
         if($request->isMethod('post')) {
@@ -423,14 +418,14 @@ class AdminController extends Controller
                     'username' => $data['name'],
                     'reason' => $data['reason'],
                     'expire' => $expire,
-                    'moderator' => $this->request['data']['user']['username'],
+                    'moderator' => Auth::user()->username,
                     'perm' => 'n'
                 ]);
             } else {
                 Ban::create([
                     'username' => $data['name'],
                     'reason' => $data['reason'],
-                    'moderator' => $this->request['data']['user']['username'],
+                    'moderator' => Auth::user()->username,
                     'perm' => 'y'
                 ]);
             }
@@ -439,17 +434,17 @@ class AdminController extends Controller
             return redirect('/admin/bans');
         }
 
-        return view($this->request['data']['user']['version'] . '/Admin/Ban', $this->request);
+        return $this->page('Admin/Ban', $pageData ?? [], $title ?? null);
     }
 
     public function decider(Request $request) {
-        $this->request['data']['embeds']['title'] = 'Decider' . $this->request['data']['embeds']['title'];
+        $title = 'Decider';
 
-        return view($this->request['data']['user']['version'] . '/Admin/Decider', $this->request);
+        return $this->page('Admin/Decider', $pageData ?? [], $title ?? null);
     }
 
     public function prune_posts(Request $request) {
-        $this->request['data']['embeds']['title'] = 'Prune Forum Posts' . $this->request['data']['embeds']['title'];
+        $title = 'Prune Forum Posts';
         $data = $request->all();
 
         if($request->isMethod('post')) {
@@ -511,11 +506,11 @@ class AdminController extends Controller
             return redirect('/admin/prune-posts');
         }
 
-        return view($this->request['data']['user']['version'] . '/Admin/Prune_posts', $this->request);
+        return $this->page('Admin/Prune_posts', $pageData ?? [], $title ?? null);
     }
 
     public function announcements(Request $request) {
-        $this->request['data']['embeds']['title'] = 'Announcements' . $this->request['data']['embeds']['title'];
+        $title = 'Announcements';
         $data = $request->all();
 
         if($request->isMethod('post')) {
@@ -537,7 +532,7 @@ class AdminController extends Controller
             $expire = $dateTime->format('Y-m-d H:i:s');
 
             Announcement::create([
-                'author' => $this->request['data']['user']['username'],
+                'author' => Auth::user()->username,
                 'message' => $data['message'],
                 'expire' => $expire,
                 'color' => $data['color']
@@ -591,9 +586,9 @@ class AdminController extends Controller
             $html['data'] = "0 results";
         }
 
-        $this->request['data']['announcements'] = $html;
+        $pageData['announcements'] = $html;
 
-        return view($this->request['data']['user']['version'] . '/Admin/Announcements', $this->request);
+        return $this->page('Admin/Announcements', $pageData ?? [], $title ?? null);
     }
 
     public function lock(Request $request) {
@@ -725,7 +720,7 @@ class AdminController extends Controller
     public function createxml(Request $request) {
         AssetHelper::ensureDirectory(config('finobe.cdn_path') . '/assets');
 
-        $this->request['data']['embeds']['title'] = 'Create item' . $this->request['data']['embeds']['title'];
+        $title = 'Create item';
         $data = $request->all();
 
         if($request->isMethod('post')) {
@@ -746,7 +741,7 @@ class AdminController extends Controller
             }
 
             $type = $data['type'];
-            $author = (int) $this->request['data']['user']['id'];
+            $author = (int) Auth::user()->id;
             $title = $data['title'];
             $description = $data['description'] ?? '';
 
@@ -793,11 +788,11 @@ class AdminController extends Controller
             return redirect('/item/' . $id);
         }
 
-        return view($this->request['data']['user']['version'] . '/Admin/CreateXML', $this->request);
+        return $this->page('Admin/CreateXML', $pageData ?? [], $title ?? null);
     }
 
     public function give_dius(Request $request) {
-        $this->request['data']['embeds']['title'] = 'Reward Dius' . $this->request['data']['embeds']['title'];
+        $title = 'Reward Dius';
         $data = $request->all();
 
         if($request->isMethod('post')) {
@@ -874,11 +869,11 @@ class AdminController extends Controller
             return redirect('/admin/give_dius');
         }
 
-        return view($this->request['data']['user']['version'] . '/Admin/Dius', $this->request);
+        return $this->page('Admin/Dius', $pageData ?? [], $title ?? null);
     }
 
     public function warn(Request $request) {
-        $this->request['data']['embeds']['title'] = 'Warn Users' . $this->request['data']['embeds']['title'];
+        $title = 'Warn Users';
         $data = $request->all();
 
         if($request->isMethod('post')) {
@@ -900,18 +895,18 @@ class AdminController extends Controller
             Warning::create([
                 'username' => $data['name'],
                 'reason' => $data['reason'],
-                'moderator' => $this->request['data']['user']['username']
+                'moderator' => Auth::user()->username
             ]);
 
             Session::put('success', 'Successfully created.');
             return redirect('/admin/warn');
         }
 
-        return view($this->request['data']['user']['version'] . '/Admin/Warn', $this->request);
+        return $this->page('Admin/Warn', $pageData ?? [], $title ?? null);
     }
 
     public function give_badges(Request $request) {
-        $this->request['data']['embeds']['title'] = 'Give Badges' . $this->request['data']['embeds']['title'];
+        $title = 'Give Badges';
         $data = $request->all();
 
         if($request->isMethod('post')) {
@@ -945,11 +940,11 @@ class AdminController extends Controller
             return redirect('/admin/give_badges');
         }
 
-        return view($this->request['data']['user']['version'] . '/Admin/Badges', $this->request);
+        return $this->page('Admin/Badges', $pageData ?? [], $title ?? null);
     }
 
     public function elections(Request $request) {
-        $this->request['data']['embeds']['title'] = 'Elections' . $this->request['data']['embeds']['title'];
+        $title = 'Elections';
         $data = $request->all();
 
         if($request->isMethod('post')) {
@@ -990,7 +985,7 @@ class AdminController extends Controller
 
             Election::create([
                 'title' => $data['title'],
-                'author' => $this->request['data']['user']['username'],
+                'author' => Auth::user()->username,
                 'css' => $data['css'] ?? '',
                 'options' => $options,
                 'expire' => $expire,
@@ -1001,7 +996,7 @@ class AdminController extends Controller
             return redirect('/admin/elections');
         }
 
-        return view($this->request['data']['user']['version'] . '/Admin/Elections', $this->request);
+        return $this->page('Admin/Elections', $pageData ?? [], $title ?? null);
     }
 
     public function servers(Request $request) {
@@ -1059,15 +1054,15 @@ class AdminController extends Controller
             return redirect('/admin/servers');
         }
 
-        $this->request['data']['servers'] = Server::all()->toArray();
+        $pageData['servers'] = Server::all()->toArray();
 
-        return view($this->request['data']['user']['version'] . '/Admin/Servers', $this->request);
+        return $this->page('Admin/Servers', $pageData ?? [], $title ?? null);
     }
 
     public function rbxcreatexml(Request $request) {
         AssetHelper::ensureDirectory(config('finobe.cdn_path') . '/assets');
 
-        $this->request['data']['embeds']['title'] = 'Copy a Roblox item' . $this->request['data']['embeds']['title'];
+        $title = 'Copy a Roblox item';
         $data = $request->all();
 
         if($request->isMethod('post')) {
@@ -1085,7 +1080,7 @@ class AdminController extends Controller
             }
 
             try {
-                $copied = AssetCopier::copy($data['link'], (int) $this->request['data']['user']['id'], intval($data['price']), isset($data['onsale']),
+                $copied = AssetCopier::copy($data['link'], (int) Auth::user()->id, intval($data['price']), isset($data['onsale']),
                     ($data['title'] ?? '') !== '' ? $data['title'] : null,
                     ($data['description'] ?? '') !== '' ? $data['description'] : null);
             } catch(ImportException $e) {
@@ -1101,12 +1096,12 @@ class AdminController extends Controller
             return redirect('/item/' . $copied['id']);
         }
 
-        return view($this->request['data']['user']['version'] . '/Admin/RBXCreateXML', $this->request);
+        return $this->page('Admin/RBXCreateXML', $pageData ?? [], $title ?? null);
     }
 
     public function deployClient(Request $request)
     {
-        $this->request['data']['embeds']['title'] = 'Change client version' . $this->request['data']['embeds']['title'];
+        $title = 'Change client version';
         $data = $request->all();
 
         if($request->isMethod('post')) {
@@ -1178,14 +1173,14 @@ class AdminController extends Controller
             ];
         });
 
-        $this->request['data']['application'] = $json['application'];
-        $this->request['data']['md5'] = $json['md5'];
-        $this->request['data']['version'] = $json['version'];
+        $pageData['application'] = $json['application'];
+        $pageData['md5'] = $json['md5'];
+        $pageData['version'] = $json['version'];
 
-        return view($this->request['data']['user']['version'] . '/Admin/Changeversions', $this->request);
+        return $this->page('Admin/Changeversions', $pageData ?? [], $title ?? null);
     }
     public function changeversions(Request $request) {
-        $this->request['data']['embeds']['title'] = 'Change client version' . $this->request['data']['embeds']['title'];
+        $title = 'Change client version';
         $data = $request->all();
 
         if($request->isMethod('post')) {
@@ -1234,10 +1229,10 @@ class AdminController extends Controller
             ];
         });
 
-        $this->request['data']['application'] = $json['application'];
-        $this->request['data']['md5'] = $json['md5'];
-        $this->request['data']['version'] = $json['version'];
+        $pageData['application'] = $json['application'];
+        $pageData['md5'] = $json['md5'];
+        $pageData['version'] = $json['version'];
 
-        return view($this->request['data']['user']['version'] . '/Admin/Changeversions', $this->request);
+        return $this->page('Admin/Changeversions', $pageData ?? [], $title ?? null);
     }
 }

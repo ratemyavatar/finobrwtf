@@ -5,7 +5,6 @@ namespace App\Services;
 use App\Models\User;
 use App\Http\Controllers\RobloxUtilities;
 use App\Http\Controllers\RobloxArbiterUtilities;
-use App\Http\Controllers\dataController as DataController;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Cache;
 
@@ -217,7 +216,7 @@ class AvatarRenderer
         $domain = env('FINOBE_DOMAIN', 'finobe.wtf');
         $site = "https://www.{$domain}";
 
-        $arbiter = new RobloxArbiterUtilities(DataController::arbiter_pool(), (int) config('finobe.arbiter.port'));
+        $arbiter = new RobloxArbiterUtilities(config('finobe.arbiter.host'), (int) config('finobe.arbiter.port'));
         $job = $arbiter->ConstructJob(
             RobloxUtilities::GenerateGUID(),
             self::SCRIPT,

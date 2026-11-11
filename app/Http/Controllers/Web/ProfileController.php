@@ -8,20 +8,14 @@ use App\Models\Ban;
 use App\Models\User;
 use App\Models\Asset;
 use App\Models\Server;
-use App\Http\Controllers\frontEnd;
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Auth;
 
 class ProfileController extends Controller
 {
-    protected $request;
-
-    public function __construct(Request $request) {
-        $frontend = new frontEnd($request);
-        $this->request = $frontend->getData();
-    }
 
     public function index(Request $request, $id) {
-        if(!$this->request['data']['siteusername']) {
+        if(!Auth::check()) {
             return redirect('/');
         }
 
@@ -34,7 +28,7 @@ class ProfileController extends Controller
         // render the profile owner's avatar if they don't have one yet
         \App\Services\AvatarRenderer::renderIfMissing((int) $user['id'], $user['pfp'] ?? null);
 
-        $this->request['data']['embeds']['title'] = htmlspecialchars($user['username']) . $this->request['data']['embeds']['title'];
+        $title = htmlspecialchars($user['username']);
 
         $user['places'] = [];
         $joined = strtotime($user['created'] ?? $user['created_at'] ?? '');
@@ -102,10 +96,9 @@ class ProfileController extends Controller
             ];
         }
 
-        $this->request['data']['profile'] = $user;
-        $this->request['user_profile'] = $user; // The classic profile template uses this alias.
-        $this->request['admin_flair'] = \Illuminate\Support\Facades\Schema::connection('finobe')->hasTable('admin_flair')
+        $pageData['profile'] = $user;
+        $pageData['admin_flair'] = \Illuminate\Support\Facades\Schema::connection('finobe')->hasTable('admin_flair')
             ? (array) \Illuminate\Support\Facades\DB::connection('finobe')->table('admin_flair')->where('user_id', $user['id'])->first() : [];
-        return view($this->request['data']['user']['version'] . '/User', $this->request);
+        return $this->page('User', $pageData ?? [], $title ?? null);
     }
 }

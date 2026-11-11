@@ -8,23 +8,16 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Session;
-use App\Http\Controllers\frontEnd;
 use App\Http\Controllers\Controller;
 
 class TradesController extends Controller
 {
-    protected $request;
-
-    public function __construct(Request $request) {
-        $frontend = new frontEnd($request);
-        $this->request = $frontend->getData();
-    }
 
     /* /trades: every trade you sent or got, newest first (15 a page, like the real site) */
     public function trades(Request $request) {
-        $this->request['data']['embeds']['title'] = 'Trades' . $this->request['data']['embeds']['title'];
+        $title = 'Trades';
 
-        if(!$this->request['data']['siteusername']) {
+        if(!Auth::check()) {
             return redirect('/');
         }
 
@@ -53,14 +46,14 @@ class TradesController extends Controller
             }
         }
 
-        $this->request['data']['trades'] = $rows;
-        $this->request['data']['pagination'] = ['page' => $page, 'pages' => $pages];
-        return view('v2/Trades', $this->request);
+        $pageData['trades'] = $rows;
+        $pageData['pagination'] = ['page' => $page, 'pages' => $pages];
+        return $this->page('Trades', $pageData ?? [], $title ?? null);
     }
 
     /* /trade/info/{id}: Trade Details, with accept / decline (incoming) or revoke (outgoing) */
     public function info(Request $request, $id) {
-        if(!$this->request['data']['siteusername']) {
+        if(!Auth::check()) {
             return redirect('/');
         }
         $user = Auth::user();
@@ -82,14 +75,14 @@ class TradesController extends Controller
             return redirect('/trade/info/' . $trade->id);
         }
 
-        $this->request['data']['embeds']['title'] = 'Trade Details' . $this->request['data']['embeds']['title'];
-        $this->request['data']['trade'] = Trading::view($trade, $user);
-        return view('v2/Trade/Info', $this->request);
+        $title = 'Trade Details';
+        $pageData['trade'] = Trading::view($trade, $user);
+        return $this->page('Trade/Info', $pageData ?? [], $title ?? null);
     }
 
     /* /trade/new/{userId}: pick what to give and what you want back */
     public function create(Request $request, $userId) {
-        if(!$this->request['data']['siteusername']) {
+        if(!Auth::check()) {
             return redirect('/');
         }
         $user = Auth::user();
@@ -114,11 +107,11 @@ class TradesController extends Controller
             return redirect('/user/' . $partner->id);
         }
 
-        $this->request['data']['embeds']['title'] = 'Trade' . $this->request['data']['embeds']['title'];
-        $this->request['data']['partner'] = ['id' => $partner->id, 'username' => $partner->username, 'pfp' => $partner->pfp];
-        $this->request['data']['mine'] = Trading::tradable($user);
-        $this->request['data']['theirs'] = Trading::tradable($partner);
-        $this->request['data']['maxItems'] = Trading::MAX_ITEMS;
-        return view('v2/Trade/New', $this->request);
+        $title = 'Trade';
+        $pageData['partner'] = ['id' => $partner->id, 'username' => $partner->username, 'pfp' => $partner->pfp];
+        $pageData['mine'] = Trading::tradable($user);
+        $pageData['theirs'] = Trading::tradable($partner);
+        $pageData['maxItems'] = Trading::MAX_ITEMS;
+        return $this->page('Trade/New', $pageData ?? [], $title ?? null);
     }
 }

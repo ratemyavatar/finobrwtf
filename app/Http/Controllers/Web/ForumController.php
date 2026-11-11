@@ -18,23 +18,18 @@ use App\Models\Notification;
 use App\Models\Forum\Rating;
 use App\Models\Forum\Thread;
 use App\Models\Forum\Subscription;
-use App\Http\Controllers\frontEnd;
 use App\Http\Controllers\Controller;
-use App\Http\Controllers\dataController as DataController;
+use Illuminate\Support\Facades\Auth;
+use App\Services\WordFilter;
+use App\Support\Format;
 
 class ForumController extends Controller
 {
-    protected $request;
-
-    public function __construct(Request $request) {
-        $frontend = new frontEnd($request);
-        $this->request = $frontend->getData();
-    }
 
     public function index(Request $request) {
         $data = $request->all();
-        $this->request['data']['embeds']['title'] = 'Forum' . $this->request['data']['embeds']['title'];
-        $this->request['data']['section'] = false;
+        $title = 'Forum';
+        $pageData['section'] = false;
 
         $posts = Thread::count();
         
@@ -45,8 +40,6 @@ class ForumController extends Controller
         $offset = ($currentPage - 1) * $results_per_page;
         $start_page = max(1, min($currentPage - floor($pages_to_show / 2), $number_of_pages - $pages_to_show + 1));
         $end_page = min($number_of_pages, $start_page + $pages_to_show - 1);
-        $phrasesToReplace = $this->request['data']['string_replacements']['phrasesToReplace'];
-        $replacements = $this->request['data']['string_replacements']['replacements'];
 
         $posts = Thread::orderBy('pinned', 'DESC')
             ->orderBy('lastreplied', 'DESC')
@@ -55,7 +48,7 @@ class ForumController extends Controller
             ->get()
             ->map(fn($item) => $item->toArray());
         
-        $this->request['data']['threads'] = [
+        $pageData['threads'] = [
             'data' => [],
             'pages' => [
                 'info' => [
@@ -74,32 +67,32 @@ class ForumController extends Controller
             $post['status'] = User::where('username', $post)->value('status');
             $post['replies'] = Reply::where('toid', $post['id'])->count();
             $post['title'] = htmlspecialchars($post['title']);
-            $post['title'] = preg_replace_callback('/\b(' . implode('|', array_map('preg_quote', $phrasesToReplace)) . ')\b/i', fn() => $replacements[array_rand($replacements)], $post['title']);
+            $post['title'] = WordFilter::apply($post['title']);
             $post['author'] = htmlspecialchars($post['author']);
-            $post['ago'] = DataController::time_elapsed_string($post['date']);
+            $post['ago'] = Format::ago($post['date']);
             $post['date'] = date('F d, Y g:i a', strtotime($post['date']));
             $post['rating'] = Rating::where('type', '1')->where('toid', $post['id'])->where('rate_type', 'l')->count();
             $post['rating'] = $post['rating'] - Rating::where('type', '1')->where('toid', $post['id'])->where('rate_type', 'd')->count();
-            $this->request['data']['threads']['data'][] = $post;
+            $pageData['threads']['data'][] = $post;
         }
 
         for ($page = $start_page; $page <= $end_page; $page++) {
-            $this->request['data']['threads']['pages']['data'][] = ['page' => $page];
+            $pageData['threads']['pages']['data'][] = ['page' => $page];
         }
 
         if(!count($posts)) {
-            $this->request['data']['threads']['pages']['data'][] = [
+            $pageData['threads']['pages']['data'][] = [
                 'page' => 1
             ];
         }
 
-        return view($this->request['data']['user']['version'] . '/Forum/Index', $this->request);
+        return $this->page('Forum/Index', $pageData ?? [], $title ?? null);
     }
 
     public function section(Request $request, $section) {
         $data = $request->all();
-        $this->request['data']['embeds']['title'] = 'Forum' . $this->request['data']['embeds']['title'];
-        $this->request['data']['section'] = $section;
+        $title = 'Forum';
+        $pageData['section'] = $section;
 
         $posts = Thread::where('category', $section)->count();
         
@@ -110,8 +103,6 @@ class ForumController extends Controller
         $offset = ($currentPage - 1) * $results_per_page;
         $start_page = max(1, min($currentPage - floor($pages_to_show / 2), $number_of_pages - $pages_to_show + 1));
         $end_page = min($number_of_pages, $start_page + $pages_to_show - 1);
-        $phrasesToReplace = $this->request['data']['string_replacements']['phrasesToReplace'];
-        $replacements = $this->request['data']['string_replacements']['replacements'];
 
         $posts = Thread::where('category', $section)
             ->orderBy('pinned', 'DESC')
@@ -121,7 +112,7 @@ class ForumController extends Controller
             ->get()
             ->map(fn($item) => $item->toArray());
         
-        $this->request['data']['threads'] = [
+        $pageData['threads'] = [
             'data' => [],
             'pages' => [
                 'info' => [
@@ -140,37 +131,37 @@ class ForumController extends Controller
             $post['status'] = User::where('username', $post)->value('status');
             $post['replies'] = Reply::where('toid', $post['id'])->count();
             $post['title'] = htmlspecialchars($post['title']);
-            $post['title'] = preg_replace_callback('/\b(' . implode('|', array_map('preg_quote', $phrasesToReplace)) . ')\b/i', fn() => $replacements[array_rand($replacements)], $post['title']);
+            $post['title'] = WordFilter::apply($post['title']);
             $post['author'] = htmlspecialchars($post['author']);
-            $post['ago'] = DataController::time_elapsed_string($post['date']);
+            $post['ago'] = Format::ago($post['date']);
             $post['date'] = date('F d, Y g:i a', strtotime($post['date']));
             $post['rating'] = Rating::where('type', '1')->where('toid', $post['id'])->where('rate_type', 'l')->count();
             $post['rating'] = $post['rating'] - Rating::where('type', '1')->where('toid', $post['id'])->where('rate_type', 'd')->count();
-            $this->request['data']['threads']['data'][] = $post;
+            $pageData['threads']['data'][] = $post;
         }
 
         for ($page = $start_page; $page <= $end_page; $page++) {
-            $this->request['data']['threads']['pages']['data'][] = ['page' => $page];
+            $pageData['threads']['pages']['data'][] = ['page' => $page];
         }
 
         if(!count($posts)) {
-            $this->request['data']['threads']['pages']['data'][] = [
+            $pageData['threads']['pages']['data'][] = [
                 'page' => 1
             ];
         }
 
-        return view($this->request['data']['user']['version'] . '/Forum/Index', $this->request);
+        return $this->page('Forum/Index', $pageData ?? [], $title ?? null);
     }
 
     public function search(Request $request) {
         $data = $request->all();
-        $this->request['data']['embeds']['title'] = 'Forum' . $this->request['data']['embeds']['title'];
+        $title = 'Forum';
 
         if(!isset($data['q']) || empty($data['q'])) {
             return redirect('/forum/home');
         }
 
-        $this->request['data']['search'] = htmlspecialchars($data['q']);
+        $pageData['search'] = htmlspecialchars($data['q']);
         $search = '%' . htmlspecialchars($data['q']) . '%';
 
         $posts = Thread::whereRaw('LOWER(title) LIKE ?', [$search])->count();
@@ -182,8 +173,6 @@ class ForumController extends Controller
         $offset = ($currentPage - 1) * $results_per_page;
         $start_page = max(1, min($currentPage - floor($pages_to_show / 2), $number_of_pages - $pages_to_show + 1));
         $end_page = min($number_of_pages, $start_page + $pages_to_show - 1);
-        $phrasesToReplace = $this->request['data']['string_replacements']['phrasesToReplace'];
-        $replacements = $this->request['data']['string_replacements']['replacements'];
 
         $posts = Thread::whereRaw('LOWER(title) LIKE ?', [$search])
             ->orderBy('pinned', 'DESC')
@@ -193,7 +182,7 @@ class ForumController extends Controller
             ->get()
             ->map(fn($item) => $item->toArray());
         
-        $this->request['data']['threads'] = [
+        $pageData['threads'] = [
             'data' => [],
             'pages' => [
                 'info' => [
@@ -212,33 +201,33 @@ class ForumController extends Controller
             $post['status'] = User::where('username', $post)->value('status');
             $post['replies'] = Reply::where('toid', $post['id'])->count();
             $post['title'] = htmlspecialchars($post['title']);
-            $post['title'] = preg_replace_callback('/\b(' . implode('|', array_map('preg_quote', $phrasesToReplace)) . ')\b/i', fn() => $replacements[array_rand($replacements)], $post['title']);
+            $post['title'] = WordFilter::apply($post['title']);
             $post['author'] = htmlspecialchars($post['author']);
-            $post['ago'] = DataController::time_elapsed_string($post['date']);
+            $post['ago'] = Format::ago($post['date']);
             $post['date'] = date('F d, Y g:i a', strtotime($post['date']));
             $post['rating'] = Rating::where('type', '1')->where('toid', $post['id'])->where('rate_type', 'l')->count();
             $post['rating'] = $post['rating'] - Rating::where('type', '1')->where('toid', $post['id'])->where('rate_type', 'd')->count();
-            $this->request['data']['threads']['data'][] = $post;
+            $pageData['threads']['data'][] = $post;
         }
 
         for ($page = $start_page; $page <= $end_page; $page++) {
-            $this->request['data']['threads']['pages']['data'][] = ['page' => $page];
+            $pageData['threads']['pages']['data'][] = ['page' => $page];
         }
 
         if(!count($posts)) {
-            $this->request['data']['threads']['pages']['data'][] = [
+            $pageData['threads']['pages']['data'][] = [
                 'page' => 1
             ];
         }
 
-        return view($this->request['data']['user']['version'] . '/Forum/Index', $this->request);
+        return $this->page('Forum/Index', $pageData ?? [], $title ?? null);
     }
 
     public function post(Request $request) {
         $data = $request->all();
 
         if($request->isMethod('post')) {
-            if(!$this->request['data']['siteusername']) {
+            if(!Auth::check()) {
                 return redirect('/');
             }
 
@@ -259,7 +248,7 @@ class ForumController extends Controller
 
             $post = Thread::find($data['id']);
             
-            if($post->author != $this->request['data']['user']['username']) {
+            if($post->author != Auth::user()->username) {
                 Session::put('error', 'You do not own this post');
                 return redirect('/forum/post?id=' . $data['id']);
             }
@@ -274,13 +263,13 @@ class ForumController extends Controller
             
             /*
             $this->db->table('users')
-                ->where('username', $this->request['data']['user']['username'])
+                ->where('username', Auth::user()->username)
                 ->update([
                     'post_cooldown' => DB::raw('CURRENT_TIMESTAMP()')
                 ]);
 
             */
-            $user = User::find($this->request['data']['user']['id']);
+            $user = User::find(Auth::user()->id);
             $user->post_cooldown = now();
             $user->save();
             
@@ -299,12 +288,12 @@ class ForumController extends Controller
 
         $post = Thread::find($data['id'])->toArray();
 
-        if(isset($data['edit']) && (!$this->request['data']['siteusername'] || $post['author'] != $this->request['data']['user']['username'])) {
+        if(isset($data['edit']) && (!Auth::check() || $post['author'] != Auth::user()->username)) {
             return redirect('/forum/post?id=' . $data['id']);
         }
         
-        $this->request['data']['embeds']['title'] = htmlspecialchars($post['title']) . $this->request['data']['embeds']['title'];
-        $this->request['data']['editing'] = isset($data['edit']);
+        $title = htmlspecialchars($post['title']);
+        $pageData['editing'] = isset($data['edit']);
         $post['title'] = htmlspecialchars($post['title']);
         $post['author'] = htmlspecialchars($post['author']);
         $post['format_date'] = date('M d Y h:i:s A', strtotime($post['date']));
@@ -318,8 +307,6 @@ class ForumController extends Controller
         $post['pfp'] = $user['pfp'];
         $post['posts'] = Thread::where('author', $post['author'])->count() + Thread::where('author', $post['author'])->count();
         $post['badges'] = $user['badges']['data']['custom_badges'] ?? [];
-        $phrasesToReplace = $this->request['data']['string_replacements']['phrasesToReplace'];
-        $replacements = $this->request['data']['string_replacements']['replacements'];
 
         if(!isset($data['edit'])) {
             $environment = new Environment([
@@ -330,9 +317,9 @@ class ForumController extends Controller
             $environment->addExtension(new CommonMarkCoreExtension());
             $converter = new MarkdownConverter($environment);
 
-            $post['title'] = preg_replace_callback('/\b(' . implode('|', array_map('preg_quote', $phrasesToReplace)) . ')\b/i', fn() => $replacements[array_rand($replacements)], $post['title']);
+            $post['title'] = WordFilter::apply($post['title']);
             $post['comment'] = \App\Services\CurseFilter::forViewer($post['comment']);
-            $post['comment'] = preg_replace_callback('/\b(' . implode('|', array_map('preg_quote', $phrasesToReplace)) . ')\b/i', fn() => $replacements[array_rand($replacements)], $post['comment']);
+            $post['comment'] = WordFilter::apply($post['comment']);
 
             if($post['status'] != "admin") {
                 $post['comment'] = strip_tags(htmlspecialchars($post['comment']));
@@ -351,11 +338,11 @@ class ForumController extends Controller
                 }
             }, $post['comment']);
         } else {
-            $post['title'] = preg_replace_callback('/\b(' . implode('|', array_map('preg_quote', $phrasesToReplace)) . ')\b/i', fn() => $replacements[array_rand($replacements)], $post['title']);
+            $post['title'] = WordFilter::apply($post['title']);
 
             $post['comment'] = \App\Services\CurseFilter::forViewer($post['comment']);
 
-            $post['comment'] = preg_replace_callback('/\b(' . implode('|', array_map('preg_quote', $phrasesToReplace)) . ')\b/i', fn() => $replacements[array_rand($replacements)], $post['comment']);
+            $post['comment'] = WordFilter::apply($post['comment']);
 
             if($post['status'] != "admin") {
                 $post['comment'] = strip_tags(htmlspecialchars($post['comment'],));
@@ -367,16 +354,16 @@ class ForumController extends Controller
         $post['rating'] -= Rating::where('type', '1')->where('toid', $post['id'])->where('rate_type', 'd')->count();
         $post['downvotes'] = Rating::where('type', '1')->where('toid', $post['id'])->where('rate_type', 'd')->count();
 
-        if($this->request['data']['siteusername']) {
-            if(Rating::where('type', '1')->where('toid', $post['id'])->where('sender', $this->request['data']['user']['username'])->exists()) {
-                $post['userRating'] = Rating::select('rate_type')->where('type', '1')->where('toid', $post['id'])->where('sender', $this->request['data']['user']['username'])->value('rate_type');
+        if(Auth::check()) {
+            if(Rating::where('type', '1')->where('toid', $post['id'])->where('sender', Auth::user()->username)->exists()) {
+                $post['userRating'] = Rating::select('rate_type')->where('type', '1')->where('toid', $post['id'])->where('sender', Auth::user()->username)->value('rate_type');
             }
 
-            $post['subscription'] = Subscription::where('username', $this->request['data']['user']['username'])->where('forumId', $post['id'])->exists();
+            $post['subscription'] = Subscription::where('username', Auth::user()->username)->where('forumId', $post['id'])->exists();
         }
 
         $post['online'] = Carbon::parse($user['lastlogin'])->gt(Carbon::now()->subMinutes(2));
-        $this->request['data']['post'] = $post;
+        $pageData['post'] = $post;
 
         if(Reply::where('toid', $post['id'])->where('sticked', 'y')->exists()) {
             $sticked = Reply::where('toid', $post['id'])
@@ -396,7 +383,7 @@ class ForumController extends Controller
             $sticked['posts'] = Thread::where('author', $sticked['author'])->count() + Reply::where('author', $sticked['author'])->count();
             $sticked['badges'] = $user['badges']['data']['custom_badges'] ?? [];
             $sticked['comment'] = \App\Services\CurseFilter::forViewer($sticked['comment']);
-            $sticked['comment'] = preg_replace_callback('/\b(' . implode('|', array_map('preg_quote', $phrasesToReplace)) . ')\b/i', fn() => $replacements[array_rand($replacements)], $sticked['comment']);
+            $sticked['comment'] = WordFilter::apply($sticked['comment']);
 
             $environment = new Environment([
                 'html_input' => ($sticked['status'] == 'admin' ? 'allow' : 'strip'),
@@ -430,19 +417,19 @@ class ForumController extends Controller
 
             if($sticked['replyTo']) {
                 $sticked['replyComment'] = Rating::select('comment')->where('id', $sticked['replyTo'])->value('comment');
-                $sticked['replyComment'] = preg_replace_callback('/\b(' . implode('|', array_map('preg_quote', $phrasesToReplace)) . ')\b/i', fn() => $replacements[array_rand($replacements)], $sticked['replyComment']);
+                $sticked['replyComment'] = WordFilter::apply($sticked['replyComment']);
             }
 
-            if($this->request['data']['siteusername']) {
-                if(Rating::where('type', '2')->where('toid', $sticked['id'])->where('sender', $this->request['data']['user']['username'])->exists()) {
-                    $sticked['userRating'] = Rating::select('rate_type')->where('type', '2')->where('toid', $sticked['id'])->where('sender', $this->request['data']['user']['username'])->value('rate_type');
+            if(Auth::check()) {
+                if(Rating::where('type', '2')->where('toid', $sticked['id'])->where('sender', Auth::user()->username)->exists()) {
+                    $sticked['userRating'] = Rating::select('rate_type')->where('type', '2')->where('toid', $sticked['id'])->where('sender', Auth::user()->username)->value('rate_type');
                 }
 
-                $sticked['subscription'] = Subscription::where('username', $this->request['data']['user']['username'])->where('forumId', $sticked['id'])->exists();
+                $sticked['subscription'] = Subscription::where('username', Auth::user()->username)->where('forumId', $sticked['id'])->exists();
             }
 
             $sticked['online'] = Carbon::parse($user['lastlogin'])->gt(Carbon::now()->subMinutes(2));
-            $this->request['data']['sticked'] = $sticked;
+            $pageData['sticked'] = $sticked;
         }
 
         $replies = Reply::where('toid', $post['id'])->count();
@@ -461,7 +448,7 @@ class ForumController extends Controller
             ->get()
             ->map(fn($item) => $item->toArray());
         
-        $this->request['data']['replies'] = [
+        $pageData['replies'] = [
             'data' => [],
             'pages' => [
                 'info' => [
@@ -490,7 +477,7 @@ class ForumController extends Controller
             $reply['posts'] = Thread::where('author', $reply['author'])->count() + Reply::where('author', $reply['author'])->count();
             $reply['badges'] = $user['badges']['data']['custom_badges'] ?? [];
             $reply['comment'] = \App\Services\CurseFilter::forViewer($reply['comment']);
-            $reply['comment'] = preg_replace_callback('/\b(' . implode('|', array_map('preg_quote', $phrasesToReplace)) . ')\b/i', fn() => $replacements[array_rand($replacements)], $reply['comment']);
+            $reply['comment'] = WordFilter::apply($reply['comment']);
 
             $environment = new Environment([
                 'html_input' => ($reply['status'] == 'admin' ? 'allow' : 'strip'),
@@ -524,38 +511,38 @@ class ForumController extends Controller
 
             if($reply['replyTo']) {
                 $reply['replyComment'] = Reply::select('comment')->where('id', $reply['replyTo'])->value('comment');
-                $reply['replyComment'] = preg_replace_callback('/\b(' . implode('|', array_map('preg_quote', $phrasesToReplace)) . ')\b/i', fn() => $replacements[array_rand($replacements)], $reply['replyComment']);
+                $reply['replyComment'] = WordFilter::apply($reply['replyComment']);
             }
 
-            if($this->request['data']['siteusername']) {
-                if(Rating::where('type', '2')->where('toid', $reply['id'])->where('sender', $this->request['data']['user']['username'])->exists()) {
-                    $reply['userRating'] = Rating::select('rate_type')->where('type', '2')->where('toid', $reply['id'])->where('sender', $this->request['data']['user']['username'])->value('rate_type');
+            if(Auth::check()) {
+                if(Rating::where('type', '2')->where('toid', $reply['id'])->where('sender', Auth::user()->username)->exists()) {
+                    $reply['userRating'] = Rating::select('rate_type')->where('type', '2')->where('toid', $reply['id'])->where('sender', Auth::user()->username)->value('rate_type');
                 }
 
-                $reply['subscription'] = Subscription::where('username', $this->request['data']['user']['username'])->where('forumId', $reply['id'])->exists();
+                $reply['subscription'] = Subscription::where('username', Auth::user()->username)->where('forumId', $reply['id'])->exists();
             }
 
             $reply['online'] = Carbon::parse($user['lastlogin'])->gt(Carbon::now()->subMinutes(2));
-            $this->request['data']['replies']['data'][] = $reply;
+            $pageData['replies']['data'][] = $reply;
         }
 
         for ($page = $start_page; $page <= $end_page; $page++) {
-            $this->request['data']['replies']['pages']['data'][] = ['page' => $page];
+            $pageData['replies']['pages']['data'][] = ['page' => $page];
         }
 
         if(!count($replies)) {
-            $this->request['data']['replies']['pages']['data'][] = [
+            $pageData['replies']['pages']['data'][] = [
                 'page' => 1
             ];
         }
 
-        return view($this->request['data']['user']['version'] . '/Forum/Post', $this->request);
+        return $this->page('Forum/Post', $pageData ?? [], $title ?? null);
     }
 
     public function reply(Request $request) {
         $data = $request->all();
 
-        if(!$this->request['data']['siteusername']) {
+        if(!Auth::check()) {
             return redirect('/');
         }
 
@@ -563,7 +550,7 @@ class ForumController extends Controller
             return redirect('/forum/home');
         }
 
-        if($restricted = \App\Services\Restrictions::message((int) $this->request['data']['user']['id'], 'forum')) {
+        if($restricted = \App\Services\Restrictions::message((int) Auth::user()->id, 'forum')) {
             Session::put('error', $restricted);
             return redirect('/forum/home');
         }
@@ -588,7 +575,7 @@ class ForumController extends Controller
                 return redirect('/forum/home');
             }
 
-            if(($cooldown = $this->request['data']['user']['post_cooldown'] ?? null) && Carbon::parse($cooldown)->gt(Carbon::now()->subMinutes(5))) {
+            if(($cooldown = Auth::user()->post_cooldown ?? null) && Carbon::parse($cooldown)->gt(Carbon::now()->subMinutes(5))) {
                 Session::put('error', 'You are posting too often');
                 return redirect('/forum/post?id=' . $data['id']);
             }
@@ -600,17 +587,17 @@ class ForumController extends Controller
                 return redirect('/forum/home');
             }
             
-            if(Carbon::parse($post->lastreplied)->lt(now()->subWeeks(3)) && $this->request['data']['user']['status'] == 'normal') {
-                if(Warning::where('username', $this->request['data']['user']['username'])->where('date', '>=', DB::raw('DATE_SUB(NOW(), INTERVAL 1 MONTH)'))->count() >= 2) {
+            if(Carbon::parse($post->lastreplied)->lt(now()->subWeeks(3)) && Auth::user()->status == 'normal') {
+                if(Warning::where('username', Auth::user()->username)->where('date', '>=', DB::raw('DATE_SUB(NOW(), INTERVAL 1 MONTH)'))->count() >= 2) {
                     Ban::create([
-                        'username' => $this->request['data']['user']['username'],
+                        'username' => Auth::user()->username,
                         'reason' => 'You are not allowed to necrobump threads that have been inactive for 3 weeks.',
                         'expire' => date('Y-m-d H:i:s', strtotime('+1 week')),
                         'moderator' => 'Auto'
                     ]);
                 } else {
                     Warning::create([
-                        'username' => $this->request['data']['user']['username'],
+                        'username' => Auth::user()->username,
                         'reason' => 'You are not allowed to necrobump threads that have been inactive for 3 weeks.',
                         'moderator' => 'Auto'
                     ]);
@@ -621,15 +608,15 @@ class ForumController extends Controller
 
             $reply = Reply::create([
                 'toid' => $data['id'],
-                'author' => $this->request['data']['user']['username'],
+                'author' => Auth::user()->username,
                 'comment' => $data['content']
             ]);
 
-            if($post->author != $this->request['data']['user']['username']) {
+            if($post->author != Auth::user()->username) {
                 Notification::create([
-                    'owner' => $this->request['data']['user']['id'],
+                    'owner' => Auth::user()->id,
                     'touser' => User::where('username', $post->author)->value('id'),
-                    'message' => $this->request['data']['user']['username'] . ' replied to ' . $post->title,
+                    'message' => Auth::user()->username . ' replied to ' . $post->title,
                     'forum_id' => $data['id'],
                     'reply_id' => $reply->id
                 ]);
@@ -639,9 +626,9 @@ class ForumController extends Controller
             
             foreach($subscriptions as $subscription) {
                 Notification::create([
-                    'owner' => $this->request['data']['user']['id'],
+                    'owner' => Auth::user()->id,
                     'touser' => User::where('username', $subscription['username'])->value('id'),
-                    'message' => $this->request['data']['user']['username'] . ' replied to ' . $post->title,
+                    'message' => Auth::user()->username . ' replied to ' . $post->title,
                     'forum_id' => $data['id'],
                     'reply_id' => $reply->id
                 ]);
@@ -649,9 +636,9 @@ class ForumController extends Controller
 
             if(isset($data['reply']) && Reply::where('id', $data['reply'])->exists()) {
                 Notification::create([
-                    'owner' => $this->request['data']['user']['id'],
+                    'owner' => Auth::user()->id,
                     'touser' => User::where('username', Reply::select('author')->where('id', $data['reply'])->value('author'))->value('id'), // place with inner query grabs id of user instead of this when forum userid rewrite
-                    'message' => $this->request['data']['user']['username'] . ' replied to your reply on ' . $post->title,
+                    'message' => Auth::user()->username . ' replied to your reply on ' . $post->title,
                     'forum_id' => $data['id']
                 ]);
 
@@ -659,7 +646,7 @@ class ForumController extends Controller
                 $reply->save();
             }
             
-            $user = User::find($this->request['data']['user']['id']);
+            $user = User::find(Auth::user()->id);
             $user->post_cooldown = now();
             $user->save();
             
@@ -682,19 +669,19 @@ class ForumController extends Controller
             return redirect('/forum/post?id=' . $data['id']);
         }
 
-        $this->request['data']['embeds']['title'] = htmlspecialchars($post['title']) . $this->request['data']['embeds']['title'];
-        $this->request['data']['replying'] = isset($data['reply']) ? $data['reply'] : false;
+        $title = htmlspecialchars($post['title']);
+        $pageData['replying'] = isset($data['reply']) ? $data['reply'] : false;
         $post['title'] = htmlspecialchars($post['title']);
-        $this->request['data']['post'] = $post;
+        $pageData['post'] = $post;
 
-        return view($this->request['data']['user']['version'] . '/Forum/Reply', $this->request);
+        return $this->page('Forum/Reply', $pageData ?? [], $title ?? null);
     }
 
     public function new_reply(Request $request) {
-        $this->request['data']['embeds']['title'] = 'Edit Reply' . $this->request['data']['embeds']['title'];
+        $title = 'Edit Reply';
         $data = $request->all();
 
-        if(!$this->request['data']['siteusername']) {
+        if(!Auth::check()) {
             return redirect('/');
         }
 
@@ -712,7 +699,7 @@ class ForumController extends Controller
 
             $reply = Reply::find($data['id']);
         
-            if($reply->author != $this->request['data']['user']['username']) {
+            if($reply->author != Auth::user()->username) {
                 Session::put('error', 'You do not own this reply');
                 return redirect('/forum/home');
             }
@@ -748,7 +735,7 @@ class ForumController extends Controller
 
         $reply = Reply::find($data['id']);
         
-        if($reply['author'] != $this->request['data']['user']['username']) {
+        if($reply['author'] != Auth::user()->username) {
             Session::put('error', 'You do not own this reply');
             return redirect('/forum/home');
         }
@@ -756,17 +743,17 @@ class ForumController extends Controller
         $post = Thread::find($reply['toid']);
 
         $post['title'] = htmlspecialchars($post['title']);
-        $this->request['data']['post'] = $post;
-        $this->request['data']['reply'] = $reply;
+        $pageData['post'] = $post;
+        $pageData['reply'] = $reply;
 
-        return view($this->request['data']['user']['version'] . '/Forum/Edit', $this->request);
+        return $this->page('Forum/Edit', $pageData ?? [], $title ?? null);
     }
 
     public function edit_reply(Request $request) {
-        $this->request['data']['embeds']['title'] = 'Edit Reply' . $this->request['data']['embeds']['title'];
+        $title = 'Edit Reply';
         $data = $request->all();
 
-        if(!$this->request['data']['siteusername']) {
+        if(!Auth::check()) {
             return redirect('/');
         }
 
@@ -784,7 +771,7 @@ class ForumController extends Controller
 
             $reply = Reply::find($data['id']);
         
-            if($reply->author != $this->request['data']['user']['username']) {
+            if($reply->author != Auth::user()->username) {
                 Session::put('error', 'You do not own this reply');
                 return redirect('/forum/home');
             }
@@ -822,7 +809,7 @@ class ForumController extends Controller
 
         $reply = Reply::find($data['id'])->toArray();
         
-        if($reply['author'] != $this->request['data']['user']['username']) {
+        if($reply['author'] != Auth::user()->username) {
             Session::put('error', 'You do not own this reply');
             return redirect('/forum/home');
         }
@@ -830,28 +817,28 @@ class ForumController extends Controller
         $post = Thread::find($reply['toid'])->toArray();
 
         $post['title'] = htmlspecialchars($post['title']);
-        $this->request['data']['post'] = $post;
-        $this->request['data']['reply'] = $reply;
+        $pageData['post'] = $post;
+        $pageData['reply'] = $reply;
 
-        return view($this->request['data']['user']['version'] . '/Forum/Edit', $this->request);
+        return $this->page('Forum/Edit', $pageData ?? [], $title ?? null);
     }
 
     public function new_post(Request $request) {
-        $this->request['data']['embeds']['title'] = 'New Post' . $this->request['data']['embeds']['title'];
+        $title = 'New Post';
         $data = $request->all();
 
-        if(!$this->request['data']['siteusername']) {
+        if(!Auth::check()) {
             return redirect('/');
         }
 
         if($request->isMethod('post')) {
-            if($restricted = \App\Services\Restrictions::message((int) $this->request['data']['user']['id'], 'forum')) {
+            if($restricted = \App\Services\Restrictions::message((int) Auth::user()->id, 'forum')) {
                 Session::put('error', $restricted);
                 return redirect('/forum/home');
             }
 
             if($request->hasFile('file')) {
-                if($this->request['data']['user']['status'] != 'admin') {
+                if(Auth::user()->status != 'admin') {
                     return redirect('/app/forum/new/post');
                 }
 
@@ -892,24 +879,24 @@ class ForumController extends Controller
                     return redirect('/app/forum/new/post');
                 }
 
-                if(($cooldown = $this->request['data']['user']['post_cooldown'] ?? null) && Carbon::parse($cooldown)->gt(Carbon::now()->subMinutes(5))) {
+                if(($cooldown = Auth::user()->post_cooldown ?? null) && Carbon::parse($cooldown)->gt(Carbon::now()->subMinutes(5))) {
                     Session::put('error', 'You are posting too often');
                     return redirect('/app/forum/new/post');
                 }
 
-                if($data['section'] == '1' && $this->request['data']['user']['status'] != 'admin') {
+                if($data['section'] == '1' && Auth::user()->status != 'admin') {
                     Session::put('error', 'Not enough permissions');
                     return redirect('/app/forum/new/post');
                 }
 
                 $post = Thread::create([
                     'category' => $data['section'],
-                    'author' => $this->request['data']['user']['username'],
+                    'author' => Auth::user()->username,
                     'title' => $data['title'],
                     'comment' => $data['content']
                 ]);
 
-                $user = User::find($this->request['data']['user']['id']);
+                $user = User::find(Auth::user()->id);
                 $user->post_cooldown = now();
                 $user->save();
 
@@ -918,12 +905,12 @@ class ForumController extends Controller
             }
         }
 
-        if($this->request['data']['user']['status'] == 'admin') {
+        if(Auth::user()->status == 'admin') {
             $mediaDir = config('finobe.cdn_path') . '/forum/media';
-            $this->request['data']['list'] = (@is_dir($mediaDir) && @is_readable($mediaDir)) ? self::displayDirectory($mediaDir, '') : '';
+            $pageData['list'] = (@is_dir($mediaDir) && @is_readable($mediaDir)) ? self::displayDirectory($mediaDir, '') : '';
         }
 
-        return view($this->request['data']['user']['version'] . '/Forum/New/Post', $this->request);
+        return $this->page('Forum/New/Post', $pageData ?? [], $title ?? null);
     }
 
     private static function displayDirectory($dir, $prefix) {
@@ -954,7 +941,7 @@ class ForumController extends Controller
     public function subscribe(Request $request) {
         $data = $request->all();
 
-        if(!$this->request['data']['siteusername']) {
+        if(!Auth::check()) {
             return redirect('/');
         }
 
@@ -967,15 +954,15 @@ class ForumController extends Controller
             return redirect('/forum/home');
         }
 
-        if(Subscription::where('username', $this->request['data']['user']['username'])->where('forumId', $data['id'])->exists()) {
-            Subscription::where('username', $this->request['data']['user']['username'])
+        if(Subscription::where('username', Auth::user()->username)->where('forumId', $data['id'])->exists()) {
+            Subscription::where('username', Auth::user()->username)
                 ->where('forumId', $data['id'])
                 ->delete();
             
             Session::put('success', 'Successfully removed subscription.');
         } else {
             Subscription::create([
-                'username' => $this->request['data']['user']['username'],
+                'username' => Auth::user()->username,
                 'forumId' => $data['id']
             ]);
 

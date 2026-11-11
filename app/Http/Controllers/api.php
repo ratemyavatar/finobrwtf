@@ -69,7 +69,7 @@ class api extends Controller
         $currentPage = isset($data['page']) ? max(1, intval($data['page'])) : 1;
         $offset = ($currentPage - 1) * $itemsPerPage;
 
-        $this->request['data'] = [
+        $pageData = [
             'items' => [
                 'data' => [] // WHY UNDEFINED WHEN NO ITEMS??
             ]

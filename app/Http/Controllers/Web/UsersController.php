@@ -7,23 +7,17 @@ use Illuminate\Http\Request;
 use App\Models\User;
 use App\Models\Asset;
 use App\Models\Server;
-use App\Http\Controllers\frontEnd;
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Auth;
 
 class UsersController extends Controller
 {
-    protected $request;
-
-    public function __construct(Request $request) {
-        $frontend = new frontEnd($request);
-        $this->request = $frontend->getData();
-    }
 
     public function index(Request $request) {
-        $this->request['data']['embeds']['title'] = 'Users' . $this->request['data']['embeds']['title'];
+        $title = 'Users';
         $data = $request->all();
 
-        if(!$this->request['data']['siteusername']) {
+        if(!Auth::check()) {
             return redirect('/');
         }
 
@@ -124,7 +118,7 @@ class UsersController extends Controller
             }
         }
 
-        $this->request['data']['pagination'] = [
+        $pageData['pagination'] = [
             'data' => [],
             'pages' => [
                 'info' => [
@@ -140,19 +134,19 @@ class UsersController extends Controller
         ];
 
         for ($page = $start_page; $page <= $end_page; $page++) {
-            $this->request['data']['pagination']['pages']['data'][] = ['page' => $page];
+            $pageData['pagination']['pages']['data'][] = ['page' => $page];
         }
 
         if(!count($users)) {
-            $this->request['data']['pagination']['pages']['data'][] = [
+            $pageData['pagination']['pages']['data'][] = [
                 'page' => 1
             ];
         }
 
-        $this->request['data']['users'] = $users;
-        $this->request['data']['search'] = isset($data['search']) ? $data['search'] : false;
+        $pageData['users'] = $users;
+        $pageData['search'] = isset($data['search']) ? $data['search'] : false;
 
-        return view($this->request['data']['user']['version'] . '/Users', $this->request);
+        return $this->page('Users', $pageData ?? [], $title ?? null);
     }
 
     public function gettoken(Request $request) {

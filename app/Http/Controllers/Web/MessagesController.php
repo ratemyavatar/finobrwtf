@@ -8,34 +8,28 @@ use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Validator;
 use App\Models\User;
 use App\Models\Message;
-use App\Http\Controllers\frontEnd;
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Auth;
 
 class MessagesController extends Controller
 {
-    protected $request;
-
-    public function __construct(Request $request) {
-        $frontend = new frontEnd($request);
-        $this->request = $frontend->getData();
-    }
 
     public function inbox(Request $request) {
-        $this->request['data']['embeds']['title'] = 'Inbox' . $this->request['data']['embeds']['title'];
-        $this->request['data']['section'] = 'inbox';
+        $title = 'Inbox';
+        $pageData['section'] = 'inbox';
         $data = $request->all();
 
-        if(!$this->request['data']['siteusername']) {
+        if(!Auth::check()) {
             return redirect('/');
         }
 
-        $this->request['data']['messages'] = [
+        $pageData['messages'] = [
             'data' => [],
             'page' => 1,
             'number_of_pages' => 1
         ];
 
-        $messages = Message::where('touser', $this->request['data']['user']['id'])
+        $messages = Message::where('touser', Auth::user()->id)
             ->where('archived', false)
             ->count();
 
@@ -44,7 +38,7 @@ class MessagesController extends Controller
         $currentPage = isset($data['page']) ? max(1, intval($data['page'])) : 1;
         $offset = ($currentPage - 1) * $results_per_page;
 
-        $messages = Message::where('touser', $this->request['data']['user']['id'])
+        $messages = Message::where('touser', Auth::user()->id)
             ->where('archived', false)
             ->orderBy('date', 'DESC')
             ->offset($offset)
@@ -57,31 +51,31 @@ class MessagesController extends Controller
             $message['subject'] = strip_tags(htmlspecialchars($message['subject']));
             $message['author'] = htmlspecialchars(User::where('id', $message['author'])->value('username'));
             $message['date'] = date('M j, Y | g:i A', strtotime($message['date']));
-            $this->request['data']['messages']['data'][] = $message;
+            $pageData['messages']['data'][] = $message;
         }
 
-        $this->request['data']['messages']['page'] = $currentPage;
-        $this->request['data']['messages']['number_of_pages'] = $number_of_pages;
+        $pageData['messages']['page'] = $currentPage;
+        $pageData['messages']['number_of_pages'] = $number_of_pages;
 
-        return view($this->request['data']['user']['version'] . '/Inbox/Index', $this->request);
+        return $this->page('Inbox/Index', $pageData ?? [], $title ?? null);
     }
 
     public function sent(Request $request) {
-        $this->request['data']['embeds']['title'] = 'Sent Messages' . $this->request['data']['embeds']['title'];
-        $this->request['data']['section'] = 'sent';
+        $title = 'Sent Messages';
+        $pageData['section'] = 'sent';
         $data = $request->all();
 
-        if(!$this->request['data']['siteusername']) {
+        if(!Auth::check()) {
             return redirect('/');
         }
 
-        $this->request['data']['messages'] = [
+        $pageData['messages'] = [
             'data' => [],
             'page' => 1,
             'number_of_pages' => 1
         ];
 
-        $messages = Message::where('author', $this->request['data']['user']['id'])
+        $messages = Message::where('author', Auth::user()->id)
             ->where('archived', false)
             ->count();
 
@@ -90,7 +84,7 @@ class MessagesController extends Controller
         $currentPage = isset($data['page']) ? max(1, intval($data['page'])) : 1;
         $offset = ($currentPage - 1) * $results_per_page;
 
-        $messages = Message::where('author', $this->request['data']['user']['id'])
+        $messages = Message::where('author', Auth::user()->id)
             ->where('archived', false)
             ->orderBy('date', 'DESC')
             ->offset($offset)
@@ -103,31 +97,31 @@ class MessagesController extends Controller
             $message['subject'] = strip_tags(htmlspecialchars($message['subject']));
             $message['author'] = htmlspecialchars(User::where('id', $message['author'])->value('username'));
             $message['date'] = date('M j, Y | g:i A', strtotime($message['date']));
-            $this->request['data']['messages']['data'][] = $message;
+            $pageData['messages']['data'][] = $message;
         }
         
-        $this->request['data']['messages']['page'] = $currentPage;
-        $this->request['data']['messages']['number_of_pages'] = $number_of_pages;
+        $pageData['messages']['page'] = $currentPage;
+        $pageData['messages']['number_of_pages'] = $number_of_pages;
 
-        return view($this->request['data']['user']['version'] . '/Inbox/Index', $this->request);
+        return $this->page('Inbox/Index', $pageData ?? [], $title ?? null);
     }
 
     public function archive(Request $request) {
-        $this->request['data']['embeds']['title'] = 'Archived Messages' . $this->request['data']['embeds']['title'];
-        $this->request['data']['section'] = 'archive';
+        $title = 'Archived Messages';
+        $pageData['section'] = 'archive';
         $data = $request->all();
 
-        if(!$this->request['data']['siteusername']) {
+        if(!Auth::check()) {
             return redirect('/');
         }
 
-        $this->request['data']['messages'] = [
+        $pageData['messages'] = [
             'data' => [],
             'page' => 1,
             'number_of_pages' => 1
         ];
 
-        $messages = Message::where('touser', $this->request['data']['user']['id'])
+        $messages = Message::where('touser', Auth::user()->id)
             ->where('archived', true)
             ->count();
 
@@ -136,7 +130,7 @@ class MessagesController extends Controller
         $currentPage = isset($data['page']) ? max(1, intval($data['page'])) : 1;
         $offset = ($currentPage - 1) * $results_per_page;
 
-        $messages = Message::where('touser', $this->request['data']['user']['id'])
+        $messages = Message::where('touser', Auth::user()->id)
             ->where('archived', true)
             ->orderBy('date', 'DESC')
             ->offset($offset)
@@ -149,19 +143,19 @@ class MessagesController extends Controller
             $message['subject'] = strip_tags(htmlspecialchars($message['subject']));
             $message['author'] = htmlspecialchars(User::where('id', $message['author'])->value('username'));
             $message['date'] = date('M j, Y | g:i A', strtotime($message['date']));
-            $this->request['data']['messages']['data'][] = $message;
+            $pageData['messages']['data'][] = $message;
         }
         
-        $this->request['data']['messages']['page'] = $currentPage;
-        $this->request['data']['messages']['number_of_pages'] = $number_of_pages;
+        $pageData['messages']['page'] = $currentPage;
+        $pageData['messages']['number_of_pages'] = $number_of_pages;
 
-        return view($this->request['data']['user']['version'] . '/Inbox/Index', $this->request);
+        return $this->page('Inbox/Index', $pageData ?? [], $title ?? null);
     }
 
     public function message(Request $request) {
         $data = $request->all();
 
-        if(!$this->request['data']['siteusername']) {
+        if(!Auth::check()) {
             return redirect('/');
         }
 
@@ -176,13 +170,13 @@ class MessagesController extends Controller
 
         $message = Message::find($data['id'])->toArray();
 
-        if($this->request['data']['user']['id'] != $message['author'] && $this->request['data']['user']['id'] != $message['touser']) {
+        if(Auth::user()->id != $message['author'] && Auth::user()->id != $message['touser']) {
             Session::put('error', 'You are not mentioned in this message');
             return redirect('/app/inbox');
         }
 
         if($request->isMethod('post')) {
-            if($this->request['data']['user']['id'] != $message['touser']) {
+            if(Auth::user()->id != $message['touser']) {
                 return redirect('/app/inbox/message?id=' . $message['id']);
             }
 
@@ -209,27 +203,23 @@ class MessagesController extends Controller
         $message['author'] = htmlspecialchars(User::where('id', $message['author'])->value('username'));
         $message['date'] = date('M j, g:ia', strtotime($message['date']));
 
-        if(!$message['readed'] && $this->request['data']['user']['id'] != $message['uid']) {
+        if(!$message['readed'] && Auth::user()->id != $message['uid']) {
             $message2 = Message::find($message['id']);
             $message2->readed = true;
             $message2->save();
-            // the count was worked out before this, so the badge on this page goes down too
-            if(isset($this->request['data']['notifications']['info']['inbox'])) {
-                $this->request['data']['notifications']['info']['inbox'] = max(0, $this->request['data']['notifications']['info']['inbox'] - 1);
-            }
         }
 
-        $this->request['data']['embeds']['title'] = $message['subject'] . $this->request['data']['embeds']['title'];
-        $this->request['data']['message'] = $message;
+        $title = $message['subject'];
+        $pageData['message'] = $message;
 
-        return view($this->request['data']['user']['version'] . '/Inbox/Message', $this->request);
+        return $this->page('Inbox/Message', $pageData ?? [], $title ?? null);
     }
 
     public function compose(Request $request) {
-        $this->request['data']['embeds']['title'] = 'Compose Messages' . $this->request['data']['embeds']['title'];
+        $title = 'Compose Messages';
         $data = $request->all();
 
-        if(!$this->request['data']['siteusername']) {
+        if(!Auth::check()) {
             return redirect('/');
         }
 
@@ -245,17 +235,17 @@ class MessagesController extends Controller
                 return redirect('/app/inbox/compose');
             }
 
-            if(Message::where('author', $this->request['data']['user']['id'])->where('date', '>=', DB::raw('NOW() - INTERVAL 5 MINUTE'))->exists()) {
+            if(Message::where('author', Auth::user()->id)->where('date', '>=', DB::raw('NOW() - INTERVAL 5 MINUTE'))->exists()) {
                 Session::put('error', 'Wait 5 minutes before sending another message');
                 return redirect('/app/inbox/compose');
             }
 
-            if($this->request['data']['user']['username'] == $data['username']) {
+            if(Auth::user()->username == $data['username']) {
                 Session::put('error', 'You cannot send a message to yourself');
                 return redirect('/app/inbox/compose');
             }
 
-            if($restricted = \App\Services\Restrictions::message((int) $this->request['data']['user']['id'], 'chat')) {
+            if($restricted = \App\Services\Restrictions::message((int) Auth::user()->id, 'chat')) {
                 Session::put('error', $restricted);
                 return redirect('/app/inbox/compose');
             }
@@ -267,7 +257,7 @@ class MessagesController extends Controller
             }
 
             Message::create([
-                'author' => $this->request['data']['user']['id'],
+                'author' => Auth::user()->id,
                 'touser' => User::where('username', $data['username'])->value('id'),
                 'subject' => $data['subject'],
                 'message' => $data['message']
@@ -283,16 +273,16 @@ class MessagesController extends Controller
                 return redirect('/app/inbox/compose');
             }
 
-            $this->request['data']['sendto'] = [
+            $pageData['sendto'] = [
                 'id' => User::where('username', $data['user'])->value('id'),
                 'username' => $data['user']
             ];
         }
 
         if(isset($data['subject'])) {
-            $this->request['data']['subject'] = $data['subject'];
+            $pageData['subject'] = $data['subject'];
         }
 
-        return view($this->request['data']['user']['version'] . '/Inbox/Compose', $this->request);
+        return $this->page('Inbox/Compose', $pageData ?? [], $title ?? null);
     }
 }

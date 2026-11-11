@@ -9,8 +9,7 @@ use Illuminate\Validation\Rule;
 
 final class AdminController extends Controller {
     private function blogPage(Request $request,string $view,array $data=[]){
-        $nav=(new \App\Http\Controllers\frontEnd($request))->getData();$nav['data']['admin_panel']=true;$nav['data']['notifications']['ads']=false;
-        return view('admin.blog.'.$view,$data+['actor'=>$request->user(),'navbarHtml'=>view('v2/Modules/nav',$nav)->render()]);
+        return view('admin.blog.'.$view,$data+['actor'=>$request->user(),'navbarHtml'=>app(\App\View\PageData::class)->adminNavbar()]);
     }
     public function index(Request $request){
         $status=$request->query('status','all');abort_unless(in_array($status,['all','draft','published','scheduled','archived']),422);

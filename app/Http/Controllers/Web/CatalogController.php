@@ -18,24 +18,20 @@ use App\Models\Video;
 use App\Models\Purchases;
 use App\Jobs\ProcessVideo;
 use App\Http\Controllers\Asset as AssetHelper;
-use App\Http\Controllers\frontEnd;
 use App\Http\Controllers\Controller;
-use App\Http\Controllers\dataController as DataController;
+use Illuminate\Support\Facades\Auth;
+use App\Services\WordFilter;
+use App\Support\Format;
+use App\Services\Discord;
 
 class CatalogController extends Controller
 {
-    protected $request;
-
-    public function __construct(Request $request) {
-        $frontend = new frontEnd($request);
-        $this->request = $frontend->getData();
-    }
 
     public function index(Request $request, $section) {
-        $this->request['data']['embeds']['title'] = 'Catalog' . $this->request['data']['embeds']['title'];
+        $title = 'Catalog';
         $data = $request->all();
 
-        if(!$this->request['data']['siteusername']) {
+        if(!Auth::check()) {
             return redirect('/');
         }
 
@@ -104,8 +100,6 @@ class CatalogController extends Controller
         $offset = ($currentPage - 1) * $results_per_page;
         $start_page = max(1, min($currentPage - floor($pages_to_show / 2), $number_of_pages - $pages_to_show + 1));
         $end_page = min($number_of_pages, $start_page + $pages_to_show - 1);
-        $phrasesToReplace = $this->request['data']['string_replacements']['phrasesToReplace'];
-        $replacements = $this->request['data']['string_replacements']['replacements'];
 
         $results = $listed()
             ->offset($offset)
@@ -114,10 +108,10 @@ class CatalogController extends Controller
             ->map(fn($item) => $item->toArray());
 
         foreach($results as $result) {
-            $result['title'] = htmlspecialchars(preg_replace_callback('/\b(' . implode('|', array_map('preg_quote', $phrasesToReplace)) . ')\b/i', fn() => $replacements[array_rand($replacements)], $result['title']));
+            $result['title'] = htmlspecialchars(WordFilter::apply($result['title']));
 
             if($result['asset_type'] == 3) {
-                $result['duration'] = DataController::timestamp($result['additional']['duration']);
+                $result['duration'] = Format::duration($result['additional']['duration']);
             }
 
             $user = User::find($result['author']);
@@ -134,7 +128,7 @@ class CatalogController extends Controller
             }
         }
 
-        $this->request['data']['items'] = [
+        $pageData['items'] = [
             'data' => [],
             'pages' => [
                 'info' => [
@@ -150,19 +144,19 @@ class CatalogController extends Controller
         ];
 
         for ($page = $start_page; $page <= $end_page; $page++) {
-            $this->request['data']['items']['pages']['data'][] = ['page' => $page];
+            $pageData['items']['pages']['data'][] = ['page' => $page];
         }
 
         if(!count($items)) {
-            $this->request['data']['items']['pages']['data'][] = [
+            $pageData['items']['pages']['data'][] = [
                 'page' => 1
             ];
         }
 
-        $this->request['data']['items']['data'] = $items;
-        $this->request['data']['section'] = $section;
-        $this->request['data']['search'] = isset($data['q']) ? $data['q'] : false;
-        $this->request['data']['filters'] = $filters;
+        $pageData['items']['data'] = $items;
+        $pageData['section'] = $section;
+        $pageData['search'] = isset($data['q']) ? $data['q'] : false;
+        $pageData['filters'] = $filters;
         // search + filters carried over by the page links
         $keep = array_filter([
             'q' => $data['q'] ?? null,
@@ -170,17 +164,15 @@ class CatalogController extends Controller
             'min' => $filters['min'], 'max' => $filters['max'],
             'tradables' => $filters['tradables'] !== 'all' ? $filters['tradables'] : null,
         ], fn($v) => $v !== null && $v !== '');
-        $this->request['data']['qs'] = $keep ? '&' . http_build_query($keep) : '';
+        $pageData['qs'] = $keep ? '&' . http_build_query($keep) : '';
 
-        return view($this->request['data']['user']['version'] . '/Catalog/Index', $this->request);
+        return $this->page('Catalog/Index', $pageData ?? [], $title ?? null);
     }
 
     public function item(Request $request, $id) {
         $data = $request->all();
-        $phrasesToReplace = $this->request['data']['string_replacements']['phrasesToReplace'];
-        $replacements = $this->request['data']['string_replacements']['replacements'];
 
-        if(!$this->request['data']['siteusername']) {
+        if(!Auth::check()) {
             return redirect('/');
         }
 
@@ -198,7 +190,7 @@ class CatalogController extends Controller
             abort(404);
         }
 
-        $item['title'] = htmlspecialchars(preg_replace_callback('/\b(' . implode('|', array_map('preg_quote', $phrasesToReplace)) . ')\b/i', fn() => $replacements[array_rand($replacements)], $item['title']));
+        $item['title'] = htmlspecialchars(WordFilter::apply($item['title']));
         
         if(User::find($item['author'])) {
             $item['uuid'] = $item['author'];
@@ -213,7 +205,7 @@ class CatalogController extends Controller
             $item['thumbnail'] = Cache::remember('thumbnail_' . $item['additional']['media']['imageAssetId'], 60 * 60, fn() => Asset::where('id', $item['additional']['media']['imageAssetId'])->value('file'));
         }
 
-        $item['isOwned'] = Purchases::where('username', $this->request['data']['user']['username'])->where('assetid', $id)->where('type', 1)->exists();
+        $item['isOwned'] = Purchases::where('username', Auth::user()->username)->where('assetid', $id)->where('type', 1)->exists();
         $item['sales'] = number_format(Purchases::where('assetid', $id)->count());
 
         // a package has no thumbnail of its own; show what it contains on the item page
@@ -234,10 +226,10 @@ class CatalogController extends Controller
             $item['description'] = "[Not Approved]";
         }
 
-        $this->request['data']['embeds']['title'] = $item['title'] . $this->request['data']['embeds']['title'];
-        $this->request['data']['item'] = $item;
+        $title = $item['title'];
+        $pageData['item'] = $item;
 
-        return view($this->request['data']['user']['version'] . '/Catalog/Item', $this->request);
+        return $this->page('Catalog/Item', $pageData ?? [], $title ?? null);
     }
 
     /*
@@ -246,7 +238,7 @@ class CatalogController extends Controller
          - removes the item, the mesh/texture assets made for it, everyone's copy of it and it from outfits
     */
     public function delete(Request $request, $id) {
-        if(!$this->request['data']['siteusername']) {
+        if(!Auth::check()) {
             return redirect('/');
         }
 
@@ -255,7 +247,7 @@ class CatalogController extends Controller
             abort(404);
         }
 
-        $user = $this->request['data']['user'];
+        $user = Auth::user()->toArray();
         $isAdmin = ($user['status'] ?? '') === 'admin';
         if(!$isAdmin && (int) $asset->author !== (int) $user['id']) {
             Session::put('error', 'You can only delete items you uploaded.');
@@ -319,7 +311,7 @@ class CatalogController extends Controller
     public function settings(Request $request, $id) {
         $data = $request->all();
 
-        if(!$this->request['data']['siteusername']) {
+        if(!Auth::check()) {
             return redirect('/');
         }
 
@@ -329,8 +321,8 @@ class CatalogController extends Controller
 
         $item = Asset::find($id)->toArray();
         
-        $isAdmin = ($this->request['data']['user']['status'] ?? '') === 'admin';
-        if($item['author'] != $this->request['data']['user']['id'] && !$isAdmin) {
+        $isAdmin = (Auth::user()->status ?? '') === 'admin';
+        if($item['author'] != Auth::user()->id && !$isAdmin) {
             Session::put('error', 'You do not own this item');
             return redirect('/item/' . $id);
         }
@@ -381,18 +373,18 @@ class CatalogController extends Controller
             return redirect('/item/' . $id . '/settings');
         }
 
-        $this->request['data']['embeds']['title'] = $item['title'] . $this->request['data']['embeds']['title'];
-        $this->request['data']['item'] = $item;
-        $this->request['data']['isAdmin'] = $isAdmin;
+        $title = $item['title'];
+        $pageData['item'] = $item;
+        $pageData['isAdmin'] = $isAdmin;
 
-        return view($this->request['data']['user']['version'] . '/Catalog/Item_settings', $this->request);
+        return $this->page('Catalog/Item_settings', $pageData ?? [], $title ?? null);
     }
 
     public function new(Request $request) {
-        $this->request['data']['embeds']['title'] = 'New Asset' . $this->request['data']['embeds']['title'];
+        $title = 'New Asset';
         $data = $request->all();
 
-        if(!$this->request['data']['siteusername']) {
+        if(!Auth::check()) {
             return redirect('/');
         }
         
@@ -427,13 +419,13 @@ class CatalogController extends Controller
                 return redirect('/catalog/new');
             }
 
-            if($this->request['data']['user']['Dius'] - 5 < 0) {
+            if(Auth::user()->Dius - 5 < 0) {
                 Session::put('error', 'Not enough dius');
                 return redirect('/catalog/new');
             }
 
             if($data['media-type'] == 'video') {
-                if($this->request['data']['user']['status'] != 'admin') {
+                if(Auth::user()->status != 'admin') {
                     return redirect('/catalog/new');
                 }
 
@@ -473,13 +465,13 @@ class CatalogController extends Controller
                 
                 Video::create([
                     'title' => $data['title'],
-                    'author' => $this->request['data']['user']['username'],
+                    'author' => Auth::user()->username,
                     'filename' => $filename,
                     'thumbnail' => $thumbnail,
                     'description' => $data['description'] ?? ''
                 ]);
 
-                $user = User::find($this->request['data']['user']['id']);
+                $user = User::find(Auth::user()->id);
                 $user->Dius -= 5;
                 $user->save();
 
@@ -504,7 +496,7 @@ class CatalogController extends Controller
                     return redirect('/catalog/new');
                 }
 
-                if($this->request['data']['user']['Dius'] - 5 < 0) {
+                if(Auth::user()->Dius - 5 < 0) {
                     Session::put('error', 'Not enough dius');
                     return redirect('/catalog/new');
                 }
@@ -541,7 +533,7 @@ class CatalogController extends Controller
                 $audio = Asset::create([
                     'asset_type' => $assetTypes[$data['media-type']],
                     'title' => $data['title'],
-                    'author' => $this->request['data']['user']['id'],
+                    'author' => Auth::user()->id,
                     'file' => $filename,
                     'description' => $data['description'] ?? '',
                     'visibility' => 'r',
@@ -556,7 +548,7 @@ class CatalogController extends Controller
                     ]
                 ]);
 
-                $user = User::find($this->request['data']['user']['id']);
+                $user = User::find(Auth::user()->id);
                 $user->Dius -= 5;
                 $user->save();
 
@@ -569,7 +561,7 @@ class CatalogController extends Controller
                     'type' => 5
                 ]);
 
-                DataController::send_discord_message('<@541523977475194880>, ' . $this->request['data']['user']['username'] . ' uploaded an item, moderate it! [ https://finobe.wtf/admin/assets ]');
+                Discord::send('<@541523977475194880>, ' . Auth::user()->username . ' uploaded an item, moderate it! [ https://finobe.wtf/admin/assets ]');
 
                 return redirect('/item/' . $audio->id);
             } elseif($data['media-type'] == 'shirt') {
@@ -583,7 +575,7 @@ class CatalogController extends Controller
                 }
 
 
-                if($this->request['data']['user']['Dius'] - 5 < 0) {
+                if(Auth::user()->Dius - 5 < 0) {
                     Session::put('error', 'Not enough dius');
                     return redirect('/catalog/new');
                 }
@@ -595,7 +587,7 @@ class CatalogController extends Controller
                     return redirect('/catalog/new');
                 }
 
-                $user = User::find($this->request['data']['user']['id']);
+                $user = User::find(Auth::user()->id);
 
                 try {
                     $id = AssetHelper::createAccessory(
@@ -625,7 +617,7 @@ class CatalogController extends Controller
                     'type' => 5
                 ]);
 
-                DataController::send_discord_message('<@541523977475194880>, ' . $this->request['data']['user']['username'] . ' uploaded an item, moderate it! [ https://finobe.wtf/admin/assets ]');
+                Discord::send('<@541523977475194880>, ' . Auth::user()->username . ' uploaded an item, moderate it! [ https://finobe.wtf/admin/assets ]');
 
                 Session::put('success', 'Success');
                 return redirect('/item/' . $id);
@@ -640,7 +632,7 @@ class CatalogController extends Controller
                 }
 
 
-                if($this->request['data']['user']['Dius'] - 5 < 0) {
+                if(Auth::user()->Dius - 5 < 0) {
                     Session::put('error', 'Not enough dius');
                     return redirect('/catalog/new');
                 }
@@ -652,7 +644,7 @@ class CatalogController extends Controller
                     return redirect('/catalog/new');
                 }
 
-                $user = User::find($this->request['data']['user']['id']);
+                $user = User::find(Auth::user()->id);
 
                 try {
                     $id = AssetHelper::createAccessory(
@@ -682,12 +674,12 @@ class CatalogController extends Controller
                     'type' => 5
                 ]);
 
-                DataController::send_discord_message('<@541523977475194880>, ' . $this->request['data']['user']['username'] . ' uploaded an item, moderate it! [ https://finobe.wtf/admin/assets ]');
+                Discord::send('<@541523977475194880>, ' . Auth::user()->username . ' uploaded an item, moderate it! [ https://finobe.wtf/admin/assets ]');
 
                 Session::put('success', 'Success');
                 return redirect('/item/' . $id);
             } elseif($data['media-type'] == 'faces') {
-                if($this->request['data']['user']['status'] != 'admin') {
+                if(Auth::user()->status != 'admin') {
                     Session::put('error', 'Admin required');
                     return redirect('/catalog/new');
                 }
@@ -701,7 +693,7 @@ class CatalogController extends Controller
                     return redirect('/catalog/new');
                 }
 
-                if($this->request['data']['user']['Dius'] - 5 < 0) {
+                if(Auth::user()->Dius - 5 < 0) {
                     Session::put('error', 'Not enough dius');
                     return redirect('/catalog/new');
                 }
@@ -713,7 +705,7 @@ class CatalogController extends Controller
                     return redirect('/catalog/new');
                 }
 
-                $user = User::find($this->request['data']['user']['id']);
+                $user = User::find(Auth::user()->id);
 
                 try {
                     $id = AssetHelper::createAccessory(
@@ -743,7 +735,7 @@ class CatalogController extends Controller
                     'type' => 5
                 ]);
 
-                DataController::send_discord_message('<@541523977475194880>, ' . $this->request['data']['user']['username'] . ' uploaded an item, moderate it! [ https://finobe.wtf/admin/assets ]');
+                Discord::send('<@541523977475194880>, ' . Auth::user()->username . ' uploaded an item, moderate it! [ https://finobe.wtf/admin/assets ]');
 
                 Session::put('success', 'Success');
                 return redirect('/item/' . $id);
@@ -758,12 +750,12 @@ class CatalogController extends Controller
                 }
 
 
-                if($this->request['data']['user']['Dius'] - 5 < 0) {
+                if(Auth::user()->Dius - 5 < 0) {
                     Session::put('error', 'Not enough dius');
                     return redirect('/catalog/new');
                 }
 
-                $user = User::find($this->request['data']['user']['id']);
+                $user = User::find(Auth::user()->id);
 
                 try {
                     $id = AssetHelper::createAccessory(
@@ -793,7 +785,7 @@ class CatalogController extends Controller
                     'type' => 5
                 ]);
 
-                DataController::send_discord_message('<@541523977475194880>, ' . $this->request['data']['user']['username'] . ' uploaded an item, moderate it! [ https://finobe.wtf/admin/assets ]');
+                Discord::send('<@541523977475194880>, ' . Auth::user()->username . ' uploaded an item, moderate it! [ https://finobe.wtf/admin/assets ]');
 
                 Session::put('success', 'Success');
                 return redirect('/item/' . $id);
@@ -802,6 +794,6 @@ class CatalogController extends Controller
             return redirect('/catalog/new');
         }
 
-        return view($this->request['data']['user']['version'] . '/Catalog/New', $this->request);
+        return $this->page('Catalog/New', $pageData ?? [], $title ?? null);
     }
 }

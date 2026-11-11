@@ -6,7 +6,7 @@ use App\Admin\Access;
 use App\Admin\Catalog;
 use App\Admin\Workbench;
 use App\Http\Controllers\Controller;
-use App\Http\Controllers\frontEnd;
+use App\View\PageData;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -21,14 +21,9 @@ final class AssetApprovalController extends Controller
 
     private function pageData(Request $request): array
     {
-        $navbar = (new frontEnd($request))->getData();
-        $navbar['data']['admin_panel'] = true;
-        $navbar['data']['user']['branding'] = 'finobe';
-        $navbar['data']['notifications']['ads'] = false;
-
         return [
             'actor' => $request->user(),
-            'navbarHtml' => view('v2/Modules/nav', $navbar)->render(),
+            'navbarHtml' => app(PageData::class)->adminNavbar(),
         ];
     }
 

@@ -6,56 +6,50 @@ use Illuminate\Http\Request;
 use App\Models\Ban;
 use App\Models\User;
 use App\Models\Warning;
-use App\Http\Controllers\frontEnd;
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Auth;
 
 class LegalController extends Controller
 {
-    protected $request;
-
-    public function __construct(Request $request) {
-        $frontend = new frontEnd($request);
-        $this->request = $frontend->getData();
-    }
 
     public function about_us(Request $request) {
-        $this->request['data']['embeds']['title'] = 'About us' . $this->request['data']['embeds']['title'];
-        $this->request['data']['about'] = ['team' => config('finobe.about_team', [])];
-        $this->request['data']['invitekeys'] = \App\Admin\Settings::invitesRequired();
+        $title = 'About us';
+        $pageData['about'] = ['team' => config('finobe.about_team', [])];
+        $pageData['invitekeys'] = \App\Admin\Settings::invitesRequired();
 
-        return view($this->request['data']['user']['version'] . '/About-us', $this->request);
+        return $this->page('About-us', $pageData ?? [], $title ?? null);
     }
 
     public function welcome(Request $request) {
-        $this->request['data']['embeds']['title'] = 'Welcome' . $this->request['data']['embeds']['title'];
+        $title = 'Welcome';
 
-        if(!$this->request['data']['siteusername']) {
+        if(!Auth::check()) {
             return redirect('/');
         }
 
-        return view($this->request['data']['user']['version'] . '/Welcome', $this->request);
+        return $this->page('Welcome', $pageData ?? [], $title ?? null);
     }
 
     public function rules(Request $request) {
-        $this->request['data']['embeds']['title'] = 'Rules' . $this->request['data']['embeds']['title'];
+        $title = 'Rules';
 
-        return view($this->request['data']['user']['version'] . '/Rules', $this->request);
+        return $this->page('Rules', $pageData ?? [], $title ?? null);
     }
 
     public function terms(Request $request) {
-        $this->request['data']['embeds']['title'] = 'Terms of Service' . $this->request['data']['embeds']['title'];
+        $title = 'Terms of Service';
 
-        return view($this->request['data']['user']['version'] . '/Terms', $this->request);
+        return $this->page('Terms', $pageData ?? [], $title ?? null);
     }
 
     public function privacy(Request $request) {
-        $this->request['data']['embeds']['title'] = 'Privacy Policy' . $this->request['data']['embeds']['title'];
+        $title = 'Privacy Policy';
 
-        return view('v2/PrivacyPolicy', $this->request);
+        return $this->page('PrivacyPolicy', $pageData ?? [], $title ?? null);
     }
 
     public function transparency_bans(Request $request) {
-        $this->request['data']['embeds']['title'] = 'Public Ban List' . $this->request['data']['embeds']['title'];
+        $title = 'Public Ban List';
         $data = $request->all();
 
         $bans = [];
@@ -109,8 +103,8 @@ class LegalController extends Controller
         }
 
         usort($bans, fn($a, $b) => strtotime($b['date']) - strtotime($a['date']));
-        $this->request['data']['bans'] = $bans;
+        $pageData['bans'] = $bans;
 
-        return view($this->request['data']['user']['version'] . '/Bans', $this->request);
+        return $this->page('Bans', $pageData ?? [], $title ?? null);
     }
 }

@@ -6,20 +6,14 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Session;
 use App\Models\User;
-use App\Http\Controllers\frontEnd;
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Auth;
 
 class FriendsController extends Controller
 {
-    protected $request;
-
-    public function __construct(Request $request) {
-        $frontend = new frontEnd($request);
-        $this->request = $frontend->getData();
-    }
 
     public function add($id) {
-        if(!$this->request['data']['siteusername']) {
+        if(!Auth::check()) {
             return redirect('/');
         }
 
@@ -30,12 +24,12 @@ class FriendsController extends Controller
 
         $user = User::find($id);
         
-        if($user->id == $this->request['data']['user']['id']) {
+        if($user->id == Auth::user()->id) {
             return redirect('/user/' . $id);
         }
 
         foreach($user->friends as $friend) {
-            if($friend['userid'] == $this->request['data']['user']['id']) {
+            if($friend['userid'] == Auth::user()->id) {
                 return redirect('/user/' . $id);
             }
         }
@@ -47,7 +41,7 @@ class FriendsController extends Controller
 
         $friends = $user->friends;
         $friends[] = [
-            'userid' => $this->request['data']['user']['id'],
+            'userid' => Auth::user()->id,
             'status' => 'pending'
         ];
 
@@ -60,7 +54,7 @@ class FriendsController extends Controller
     public function accept(Request $request, $id) {
         $data = $request->all();
 
-        if(!$this->request['data']['siteusername']) {
+        if(!Auth::check()) {
             return redirect('/');
         }
 
@@ -69,7 +63,7 @@ class FriendsController extends Controller
             return redirect('/');
         }
 
-        if(empty(array_filter($this->request['data']['user']['friends'], fn($entry) => $entry['userid'] == $id))) {
+        if(empty(array_filter(Auth::user()->friends, fn($entry) => $entry['userid'] == $id))) {
             if(isset($data['feature'])) {
                 return redirect('/friends/incoming');
             }
@@ -79,7 +73,7 @@ class FriendsController extends Controller
 
         $user = User::find($id);
         
-        if($user->id == $this->request['data']['user']['id']) {
+        if($user->id == Auth::user()->id) {
             if(isset($data['feature'])) {
                 return redirect('/friends/incoming');
             }
@@ -88,7 +82,7 @@ class FriendsController extends Controller
         }
 
         foreach($user->friends as $friend) {
-            if($friend['userid'] == $this->request['data']['user']['id']) {
+            if($friend['userid'] == Auth::user()->id) {
                 Session::put('error', 'You already added this user');
                 if(isset($data['feature'])) {
                     return redirect('/friends/incoming');
@@ -100,22 +94,24 @@ class FriendsController extends Controller
 
         $friends = $user->friends;
         $friends[] = [
-            'userid' => $this->request['data']['user']['id'],
+            'userid' => Auth::user()->id,
             'status' => 'friends'
         ];
 
         $user->friends = $friends;
         $user->save();
 
-        foreach($this->request['data']['user']['friends'] as $key => $friend) {
+        $mine = Auth::user()->friends ?? [];
+
+        foreach($mine as $key => $friend) {
             if($friend['userid'] == $user->id) {
-                $this->request['data']['user']['friends'][$key]['status'] = 'friends';
+                $mine[$key]['status'] = 'friends';
                 break;
             }
         }
 
-        User::where('id', $this->request['data']['user']['id'])->update([
-            'friends' => json_encode($this->request['data']['user']['friends'])
+        User::where('id', Auth::user()->id)->update([
+            'friends' => json_encode($mine)
         ]);
 
         if(isset($data['feature'])) {
@@ -128,7 +124,7 @@ class FriendsController extends Controller
     public function remove(Request $request, $id) {
         $data = $request->all();
 
-        if(!$this->request['data']['siteusername']) {
+        if(!Auth::check()) {
             return redirect('/');
         }
 
@@ -137,7 +133,7 @@ class FriendsController extends Controller
             return redirect('/');
         }
 
-        if(empty(array_filter($this->request['data']['user']['friends'], fn($entry) => $entry['userid'] == $id))) {
+        if(empty(array_filter(Auth::user()->friends, fn($entry) => $entry['userid'] == $id))) {
             if(isset($data['feature'])) {
                 return redirect('/friends/incoming');
             }
@@ -147,7 +143,7 @@ class FriendsController extends Controller
 
         $user = User::find($id);
         
-        if($user->id == $this->request['data']['user']['id']) {
+        if($user->id == Auth::user()->id) {
             if(isset($data['feature'])) {
                 return redirect('/friends/incoming');
             }
@@ -158,7 +154,7 @@ class FriendsController extends Controller
         $friends = $user->friends;
 
         foreach($friends as $key => $friend) {
-            if($friend['userid'] == $this->request['data']['user']['id']) {
+            if($friend['userid'] == Auth::user()->id) {
                 unset($friends[$key]);
                 break;
             }
@@ -167,15 +163,17 @@ class FriendsController extends Controller
         $user->friends = $friends;
         $user->save();
 
-        foreach($this->request['data']['user']['friends'] as $key => $friend) {
+        $mine = Auth::user()->friends ?? [];
+
+        foreach($mine as $key => $friend) {
             if($friend['userid'] == $user->id) {
-                unset($this->request['data']['user']['friends'][$key]);
+                unset($mine[$key]);
                 break;
             }
         }
 
-        User::where('id', $this->request['data']['user']['id'])->update([
-            'friends' => json_encode($this->request['data']['user']['friends'])
+        User::where('id', Auth::user()->id)->update([
+            'friends' => json_encode($mine)
         ]);
 
         if(isset($data['feature'])) {
@@ -188,7 +186,7 @@ class FriendsController extends Controller
     public function list(Request $request, $id) {
         $data = $request->all();
 
-        if(!$this->request['data']['siteusername']) {
+        if(!Auth::check()) {
             return redirect('/');
         }
 
@@ -213,7 +211,7 @@ class FriendsController extends Controller
         $end_page = min($number_of_pages, $start_page + $pages_to_show - 1);
         $user['friends'] = array_slice($user['friends'], $offset, $results_per_page);
         
-        $this->request['data']['pagination'] = [
+        $pageData['pagination'] = [
             'data' => [],
             'pages' => [
                 'info' => [
@@ -229,35 +227,37 @@ class FriendsController extends Controller
         ];
 
         for ($page = $start_page; $page <= $end_page; $page++) {
-            $this->request['data']['pagination']['pages']['data'][] = ['page' => $page];
+            $pageData['pagination']['pages']['data'][] = ['page' => $page];
         }
 
         if(!count($user['friends'])) {
-            $this->request['data']['pagination']['pages']['data'][] = [
+            $pageData['pagination']['pages']['data'][] = [
                 'page' => 1
             ];
         }
 
-        $this->request['data']['profile'] = $user;
-        $this->request['data']['embeds']['title'] = htmlspecialchars($user['username']) . '\'s Friends' . $this->request['data']['embeds']['title'];
+        $pageData['profile'] = $user;
+        $title = htmlspecialchars($user['username']) . '\'s Friends';
 
-        return view($this->request['data']['user']['version'] . '/User_friends', $this->request);
+        return $this->page('User_friends', $pageData ?? [], $title ?? null);
     }
 
     public function incoming() {
-        $this->request['data']['embeds']['title'] = 'Friends Incoming' . $this->request['data']['embeds']['title'];
+        $title = 'Friends Incoming';
 
-        if(!$this->request['data']['siteusername']) {
+        if(!Auth::check()) {
             return redirect('/');
         }
 
-        $this->request['data']['user']['friends'] = array_reverse(array_filter($this->request['data']['user']['friends'], fn($friend) => $friend['status'] == 'pending'));
+        $incoming = array_reverse(array_filter(Auth::user()->friends ?? [], fn($friend) => $friend['status'] == 'pending'));
 
-        foreach($this->request['data']['user']['friends'] as $key => $friend) {
-            $this->request['data']['user']['friends'][$key]['username'] = Cache::remember('username_' . $friend['userid'], 60 * 60, fn() => User::where('id', $friend['userid'])->value('username'));
-            $this->request['data']['user']['friends'][$key]['pfp'] = Cache::remember('pfp_' . $friend['userid'], 60 * 60, fn() => User::where('id', $friend['userid'])->value('pfp'));
+        foreach($incoming as $key => $friend) {
+            $incoming[$key]['username'] = Cache::remember('username_' . $friend['userid'], 60 * 60, fn() => User::where('id', $friend['userid'])->value('username'));
+            $incoming[$key]['pfp'] = Cache::remember('pfp_' . $friend['userid'], 60 * 60, fn() => User::where('id', $friend['userid'])->value('pfp'));
         }
 
-        return view($this->request['data']['user']['version'] . '/User_friends_incoming', $this->request);
+        $pageData['incoming'] = $incoming;
+
+        return $this->page('User_friends_incoming', $pageData ?? [], $title ?? null);
     }
 }

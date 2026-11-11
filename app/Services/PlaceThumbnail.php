@@ -5,7 +5,6 @@ namespace App\Services;
 use App\Models\Asset;
 use App\Http\Controllers\RobloxUtilities;
 use App\Http\Controllers\RobloxArbiterUtilities;
-use App\Http\Controllers\dataController as DataController;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\File;
 
@@ -79,7 +78,7 @@ class PlaceThumbnail
         $token = \Illuminate\Support\Str::random(48);
         Cache::put("place_render_token_{$token}", $placeId, 300);
 
-        $arbiter = new RobloxArbiterUtilities(DataController::arbiter_pool(), (int) config('finobe.arbiter.port'));
+        $arbiter = new RobloxArbiterUtilities(config('finobe.arbiter.host'), (int) config('finobe.arbiter.port'));
         $job = $arbiter->ConstructJob(
             RobloxUtilities::GenerateGUID(),
             self::SCRIPT,

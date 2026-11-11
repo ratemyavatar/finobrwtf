@@ -10,30 +10,24 @@ use App\Models\User;
 use App\Models\Asset;
 use App\Models\Server;
 use App\Http\Controllers\Asset as AssetHelper;
-use App\Http\Controllers\frontEnd;
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Auth;
 
 class GamesController extends Controller
 {
-    protected $request;
-
-    public function __construct(Request $request) {
-        $frontend = new frontEnd($request);
-        $this->request = $frontend->getData();
-    }
 
     public function index() {
-        $this->request['data']['embeds']['title'] = 'Places' . $this->request['data']['embeds']['title'];
+        $title = 'Places';
 
-        if(!$this->request['data']['siteusername']) {
+        if(!Auth::check()) {
             return redirect('/');
         }
 
-        return view($this->request['data']['user']['version'] . '/Places/Index', $this->request);
+        return $this->page('Places/Index', $pageData ?? [], $title ?? null);
     }
 
     public function place(Request $request, $id) {
-        if(!$this->request['data']['siteusername']) {
+        if(!Auth::check()) {
             return redirect('/');
         }
 
@@ -46,7 +40,7 @@ class GamesController extends Controller
         // no thumbnail yet: have the arbiter render one
         \App\Services\PlaceThumbnail::renderIfMissing((int) $place['id'], $place['additional']);
 
-        $this->request['data']['embeds']['title'] = strip_tags(htmlspecialchars($place['title'])) . $this->request['data']['embeds']['title'];
+        $title = strip_tags(htmlspecialchars($place['title']));
 
         $place = [
             'id' => $place['id'],
@@ -81,15 +75,15 @@ class GamesController extends Controller
             $place['servers'][] = $result;
         }
 
-        $this->request['data']['place'] = $place;
+        $pageData['place'] = $place;
 
-        return view($this->request['data']['user']['version'] . '/Places/Place', $this->request);
+        return $this->page('Places/Place', $pageData ?? [], $title ?? null);
     }
 
     public function place_settings(Request $request, $id) {
         $data = $request->all();
 
-        if(!$this->request['data']['siteusername']) {
+        if(!Auth::check()) {
             return redirect('/');
         }
 
@@ -100,15 +94,14 @@ class GamesController extends Controller
         $place = Asset::find($id)->toArray();
         $place['username'] = User::where('id', $place['author'])->value('username');
 
-        if($place['username'] != $this->request['data']['user']['username']) {
+        if($place['username'] != Auth::user()->username) {
             // the real site answered with its 403 "Error" page here
-            $this->request['data']['embeds']['title'] = '403 Forbidden' . $this->request['data']['embeds']['title'];
-            return response()->view('v2/Forbidden', $this->request, 403);
+            return $this->forbidden();
         }
 
         // place file, custom thumbnail, badges and user restrictions
         if($request->isMethod('post') && isset($data['action'])) {
-            return (new PlaceSettingsActions(Asset::find($id), $this->request['data']['user']))->handle($request);
+            return (new PlaceSettingsActions(Asset::find($id), Auth::user()->toArray()))->handle($request);
         }
 
         if($request->isMethod('post') && isset($data['regen_thumbnail'])) {
@@ -196,17 +189,17 @@ class GamesController extends Controller
         $place['restrictions'] = $restrictions;
         //$place['description'] = nl2br(preg_replace('/\b((?:https?|ftp):\/\/\S+)/i', '<a href="$1" target="_blank">$1</a>', strip_tags(htmlspecialchars($place['description']))));
 
-        $this->request['data']['place'] = $place;
-        $this->request['data']['embeds']['title'] = $place['title'] . $this->request['data']['embeds']['title'];
+        $pageData['place'] = $place;
+        $title = $place['title'];
 
-        return view($this->request['data']['user']['version'] . '/Places/Place_settings', $this->request);
+        return $this->page('Places/Place_settings', $pageData ?? [], $title ?? null);
     }
 
     public function place_new(Request $request) {
-        $this->request['data']['embeds']['title'] = 'New Place' . $this->request['data']['embeds']['title'];
+        $title = 'New Place';
         $data = $request->all();
 
-        if(!$this->request['data']['siteusername']) {
+        if(!Auth::check()) {
             return redirect('/');
         }
 
@@ -224,7 +217,7 @@ class GamesController extends Controller
 
             $version = $data['game-version'] ?? \App\Services\ClientVersions::DEFAULT;
 
-            $games = Asset::where('author', $this->request['data']['user']['id'])
+            $games = Asset::where('author', Auth::user()->id)
                 ->where('asset_type', 9)
                 ->count();
             
@@ -233,7 +226,7 @@ class GamesController extends Controller
                 return redirect('/games/new');
             }
 
-            if($games >= $this->request['data']['user']['slots']) {
+            if($games >= Auth::user()->slots) {
                 Session::put('error', 'You have used all of your place slots');
                 return redirect('/games/new');
             }
@@ -278,7 +271,7 @@ class GamesController extends Controller
                 return redirect('/games/new');
             }
 
-            $id = AssetHelper::createAsset(trim($data['title']), 9, $this->request['data']['user']['id'], $defaultPlace, trim($data['description'] ?? ''), "n", [
+            $id = AssetHelper::createAsset(trim($data['title']), 9, Auth::user()->id, $defaultPlace, trim($data['description'] ?? ''), "n", [
                 'visits' => 0,
                 'version' => $version,
                 'maxplayers' => 15,
@@ -305,6 +298,6 @@ class GamesController extends Controller
             return redirect('/place/' . $id);
         }
 
-        return view($this->request['data']['user']['version'] . '/Places/New', $this->request);
+        return $this->page('Places/New', $pageData ?? [], $title ?? null);
     }
 }

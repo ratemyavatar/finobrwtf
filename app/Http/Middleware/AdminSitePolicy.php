@@ -14,22 +14,6 @@ final class AdminSitePolicy
         if ($request->routeIs('blog.*') || $request->is('admin','admin/*') || !Schema::connection('finobe')->hasTable('admin_settings')) return $next($request);
         $user=$request->user();
         $db=DB::connection('finobe');
-        if ($user && !$request->is('logout','moderation/acknowledge')) {
-            $banned=$db->table('bans')->where('username',$user->username)
-                ->where('reactivated',\App\Admin\Workbench::flag('bans','reactivated',false))
-                ->where('undone',\App\Admin\Workbench::flag('bans','undone',false))
-                ->where(fn($q)=>$q->where('perm',\App\Admin\Workbench::flag('bans','perm',true))->orWhere('expire','>',now()))->orderByDesc('id')->first();
-            $warning=$db->table('warning')->where('username',$user->username)
-                ->where('reactivated',\App\Admin\Workbench::flag('warning','reactivated',false))
-                ->where('undone',\App\Admin\Workbench::flag('warning','undone',false))->orderByDesc('id')->first();
-            if ($banned || $warning) {
-                if ($request->expectsJson()) return response()->json(['message'=>$banned?'This account is suspended.':'Please acknowledge the account warning.'],403);
-                return response()->view('admin.account-notice',['record'=>$banned??$warning,'isWarning'=>!$banned],403);
-            }
-            // Expired bans must no longer trip the old frontend's unreactivated-ban guard.
-            $db->table('bans')->where('username',$user->username)->where('perm',\App\Admin\Workbench::flag('bans','perm',false))->where('expire','<=',now())
-                ->update(['reactivated'=>\App\Admin\Workbench::flag('bans','reactivated',true)]);
-        }
         if ($user && $user->status === 'admin') return $next($request);
         $rateKeys=[];
         $features=json_decode(file_get_contents(config_path('admin_features.json')),true);

@@ -39,7 +39,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // (keep every middleware setting in this one block: a second withMiddleware() resets the global list)
 
         // Roblox clients use mixed-case paths (/Game/..., /Asset/...); normalise before routing
-        $middleware->prepend(\App\Http\Middleware\NormalizeClientPaths::class);
+        $middleware->prepend([\App\Http\Middleware\ClientIp::class, \App\Http\Middleware\NormalizeClientPaths::class]);
 
         $middleware->web(append: [\App\Http\Middleware\AdminSitePolicy::class, \App\Http\Middleware\GrantDailyDius::class]);
         $middleware->redirectGuestsTo('/login');

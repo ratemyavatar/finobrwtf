@@ -6,28 +6,22 @@ use Illuminate\Http\Request;
 use App\Models\User;
 use App\Models\Asset;
 use App\Models\Purchases;
-use App\Http\Controllers\frontEnd;
 use App\Http\Controllers\Controller;
-use App\Http\Controllers\dataController as DataController;
+use Illuminate\Support\Facades\Auth;
+use App\Support\Format;
 
 class CurrencyController extends Controller
 {
-    protected $request;
-
-    public function __construct(Request $request) {
-        $frontend = new frontEnd($request);
-        $this->request = $frontend->getData();
-    }
 
     public function transactions(Request $request) {
-        $this->request['data']['embeds']['title'] = 'Transaction log' . $this->request['data']['embeds']['title'];
+        $title = 'Transaction log';
 
-        if(!$this->request['data']['siteusername']) {
+        if(!Auth::check()) {
             return redirect('/');
         }
 
         $purchases = [];
-        $results = Purchases::where('username', $this->request['data']['user']['username'])
+        $results = Purchases::where('username', Auth::user()->username)
             ->orderBy('date', 'DESC')
             ->limit(100)
             ->get()
@@ -70,12 +64,12 @@ class CurrencyController extends Controller
 
             $result['uuid'] = User::where('id', $result['author'])->exists() ? User::where('id', $result['author'])->value('id') : false;
             $result['author'] = $result['uuid'] ? User::where('id', $result['author'])->value('username') : htmlspecialchars($result['author']);
-            $result['amount'] = DataController::formatNumber($result['amount']);
+            $result['amount'] = Format::number($result['amount']);
             $purchases[] = $result;
         }
 
-        $this->request['data']['purchases'] = $purchases;
+        $pageData['purchases'] = $purchases;
 
-        return view($this->request['data']['user']['version'] . '/Transactions', $this->request);
+        return $this->page('Transactions', $pageData ?? [], $title ?? null);
     }
 }

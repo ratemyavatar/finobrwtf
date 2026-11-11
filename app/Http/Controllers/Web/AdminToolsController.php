@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
-use App\Http\Controllers\frontEnd;
 use App\Models\Asset;
 use App\Models\Purchases;
 use App\Models\User;
@@ -23,13 +22,9 @@ use Illuminate\Support\Facades\Session;
 */
 class AdminToolsController extends Controller
 {
-    protected $request;
 
     public function __construct(Request $request) {
-        $frontend = new frontEnd($request);
-        $this->request = $frontend->getData();
-
-        if(!$this->request['data']['siteusername'] || $this->request['data']['user']['status'] != 'admin') {
+        if(!Auth::check() || Auth::user()->status != 'admin') {
             abort(404);
         }
     }
@@ -39,12 +34,11 @@ class AdminToolsController extends Controller
     }
 
     private function toolPage(string $view, string $title, array $extra = []) {
-        $this->request['data']['embeds']['title'] = $title . $this->request['data']['embeds']['title'];
-        $this->request['data']['tool'] = ['title' => $title, 'url' => '/' . request()->path()];
+        $pageData['tool'] = ['title' => $title, 'url' => '/' . request()->path()];
         foreach($extra as $k => $v) {
-            $this->request['data'][$k] = $v;
+            $pageData[$k] = $v;
         }
-        return view('v2/Admin/' . $view, $this->request);
+        return $this->page('Admin/' . $view, $pageData, $title);
     }
 
     private function back(string $message, bool $ok = true) {
@@ -338,7 +332,7 @@ class AdminToolsController extends Controller
             for($i = 0; $i < $quantity; $i++) {
                 $key = strtoupper(\Illuminate\Support\Str::random(32));
                 $db->table('invitekeys')->insert([
-                    'author' => $this->request['data']['user']['username'],
+                    'author' => Auth::user()->username,
                     'IID' => $key,
                     'creation' => now(),
                     'used' => 'n',

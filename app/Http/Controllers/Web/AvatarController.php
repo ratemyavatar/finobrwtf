@@ -6,27 +6,21 @@ use App\Models\Purchases;
 use Illuminate\Http\Request;
 use App\Models\User;
 use App\Models\Asset;
-use App\Http\Controllers\frontEnd;
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Auth;
 
 class AvatarController extends Controller
 {
-    protected $request;
-
-    public function __construct(Request $request) {
-        $frontend = new frontEnd($request);
-        $this->request = $frontend->getData();
-    }
 
     public function index() {
-        $this->request['data']['embeds']['title'] = 'Character' . $this->request['data']['embeds']['title'];
+        $title = 'Character';
 
-        if(!$this->request['data']['siteusername']) {
+        if(!Auth::check()) {
             return redirect('/');
         }
 
         $purchases = [];
-        $results = Purchases::where('username', $this->request['data']['user']['username'])
+        $results = Purchases::where('username', Auth::user()->username)
             ->where('type', 1)
             ->orderBy('id', 'DESC')
             ->get()
@@ -53,7 +47,7 @@ class AvatarController extends Controller
             $result['title'] = htmlspecialchars($item['title']);
             $result['uuid'] = $item['author'];
             $result['author'] = User::where('id', $item['author'])->value('username');
-            $result['equipped'] = in_array($result['assetid'], $this->request['data']['user']['avatar'][0]['equippedGearVersionIds']);
+            $result['equipped'] = in_array($result['assetid'], Auth::user()->avatar[0]['equippedGearVersionIds']);
 
             if(in_array($item['asset_type'], [2, 8, 11, 12, 17, 18, 19, 32])) {
                 $result['thumbnail'] = $item['additional']['media']['thumbnail'];
@@ -62,10 +56,10 @@ class AvatarController extends Controller
             $purchases[] = $result;
         }
 
-        $this->request['data']['purchases'] = $purchases;
-        $this->request['data']['outfits'] = \Illuminate\Support\Facades\DB::connection('finobe')->table('outfits')
-            ->where('user_id', $this->request['data']['user']['id'])->orderByDesc('id')->get(['id', 'name']);
+        $pageData['purchases'] = $purchases;
+        $pageData['outfits'] = \Illuminate\Support\Facades\DB::connection('finobe')->table('outfits')
+            ->where('user_id', Auth::user()->id)->orderByDesc('id')->get(['id', 'name']);
         
-        return view($this->request['data']['user']['version'] . '/Character', $this->request);
+        return $this->page('Character', $pageData ?? [], $title ?? null);
     }
 }

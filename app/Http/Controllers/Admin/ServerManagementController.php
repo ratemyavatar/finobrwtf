@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Admin;
 
 use App\Admin\Access;
 use App\Http\Controllers\Controller;
-use App\Http\Controllers\frontEnd;
 use App\Models\Server;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -22,11 +21,7 @@ final class ServerManagementController extends Controller
 
     private function navbar(Request $request): string
     {
-        $navbar = (new frontEnd($request))->getData();
-        $navbar['data']['admin_panel'] = true;
-        $navbar['data']['user']['branding'] = 'finobe';
-        $navbar['data']['notifications']['ads'] = false;
-        return view('v2/Modules/nav', $navbar)->render();
+        return app(\App\View\PageData::class)->adminNavbar();
     }
 
     private function audit(Request $request, string $action, string $label, ?string $id, string $reason, ?array $before = null): void

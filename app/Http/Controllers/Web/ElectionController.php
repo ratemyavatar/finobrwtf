@@ -8,23 +8,17 @@ use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Validator;
 use App\Models\User;
 use App\Models\Election;
-use App\Http\Controllers\frontEnd;
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Auth;
 
 class ElectionController extends Controller
 {
-    protected $request;
-
-    public function __construct(Request $request) {
-        $frontend = new frontEnd($request);
-        $this->request = $frontend->getData();
-    }
 
     public function election(Request $request) {
-        $this->request['data']['embeds']['title'] = 'Invites' . $this->request['data']['embeds']['title'];
+        $title = 'Invites';
         $data = $request->all();
 
-        if(!$this->request['data']['siteusername']) {
+        if(!Auth::check()) {
             return redirect('/');
         }
 
@@ -49,14 +43,14 @@ class ElectionController extends Controller
             $data['index'] = (int)$data['index'];
 
             foreach($election['votes'] as $key => $vote) {
-                if($vote['id'] != $data['index'] && $vote['username'] == $this->request['data']['user']['username']) {
+                if($vote['id'] != $data['index'] && $vote['username'] == Auth::user()->username) {
                     Session::put('error', 'You can only vote on one option');
                     return redirect('/election');
                 }
             }
 
             foreach($election['votes'] as $key => $vote) {
-                if($vote['id'] == $data['index'] && $vote['username'] == $this->request['data']['user']['username']) {
+                if($vote['id'] == $data['index'] && $vote['username'] == Auth::user()->username) {
                     unset($election['votes'][$key]);
 
                     $election2 = Election::find($election['id']);
@@ -69,7 +63,7 @@ class ElectionController extends Controller
 
             $election['votes'][] = [
                 'id' => $data['index'],
-                'username' => $this->request['data']['user']['username']
+                'username' => Auth::user()->username
             ];
 
             $election2 = Election::find($election['id']);
@@ -79,8 +73,8 @@ class ElectionController extends Controller
             return redirect('/election');
         }
 
-        $this->request['data']['election'] = $election;
+        $pageData['election'] = $election;
 
-        return view($this->request['data']['user']['version'] . '/Election', $this->request);
+        return $this->page('Election', $pageData ?? [], $title ?? null);
     }
 }
