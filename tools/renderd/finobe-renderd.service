@@ -1,0 +1,19 @@
+[Unit]
+Description=finobe render service
+After=network.target
+
+[Service]
+User=finobe
+Group=finobe
+Environment=WINEPREFIX=/srv/finobe/wine
+ExecStart=/usr/local/bin/finobe-renderd --rcc /srv/finobe/rcc --wine-prefix /srv/finobe/wine --workers 4 --port 64989
+Restart=always
+RestartSec=3
+KillMode=control-group
+NoNewPrivileges=true
+PrivateTmp=false
+ProtectSystem=full
+ProtectHome=true
+
+[Install]
+WantedBy=multi-user.target
