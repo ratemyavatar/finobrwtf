@@ -126,7 +126,7 @@ class AdminController extends Controller
             $result['title'] = strip_tags(htmlspecialchars($result['title']));
             $result['author'] = htmlspecialchars(User::where('id', $result['author'])->value('username'));
             $result['publish'] = date('m/d/Y', strtotime($result['created']));
-            $result['kind'] = $result['asset_type'] == 21 ? 'badge' : (!empty($result['additional']['placeThumbnailFor']) ? 'game_thumbnail' : null);
+            $result['kind'] = $result['asset_type'] == 21 ? 'badge' : ($result['asset_type'] == 34 ? 'game_pass' : (!empty($result['additional']['placeThumbnailFor']) ? 'game_thumbnail' : null));
             $assets[] = $result;
         }
 
@@ -149,7 +149,7 @@ class AdminController extends Controller
 
         $asset = Asset::find($data['id']);
 
-        if($asset->visibility == 'r' && ($asset->asset_type == 21 || ($asset->asset_type == 1 && !empty($asset->additional['placeThumbnailFor'])))) {
+        if($asset->visibility == 'r' && (in_array((int) $asset->asset_type, [21, 34], true) || ($asset->asset_type == 1 && !empty($asset->additional['placeThumbnailFor'])))) {
             return $this->moderatePlaceImage($asset, true);
         }
 
@@ -215,7 +215,7 @@ class AdminController extends Controller
 
         $asset = Asset::find($data['id']);
 
-        if($asset->visibility == 'r' && ($asset->asset_type == 21 || ($asset->asset_type == 1 && !empty($asset->additional['placeThumbnailFor'])))) {
+        if($asset->visibility == 'r' && (in_array((int) $asset->asset_type, [21, 34], true) || ($asset->asset_type == 1 && !empty($asset->additional['placeThumbnailFor'])))) {
             return $this->moderatePlaceImage($asset, false);
         }
 
@@ -302,14 +302,14 @@ class AdminController extends Controller
 
         $asset->visibility = 'n';
 
-        if($asset->asset_type == 21) {
+        if(in_array((int) $asset->asset_type, [21, 34], true)) {
             $additional = $asset->additional;
             $additional['media']['thumbnail'] = 'https://cdn.' . config('finobe.domain') . '/thumbnails/' . basename($asset->file);
             $asset->additional = $additional;
             $asset->save();
 
             $this->logApproval($asset->id ?? null, 'approved');
-            Session::put('success', 'Badge accepted.');
+            Session::put('success', $asset->asset_type == 34 ? 'Game pass accepted.' : 'Badge accepted.');
             return redirect('/admin/assets');
         }
 

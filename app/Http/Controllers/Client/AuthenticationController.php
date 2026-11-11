@@ -35,7 +35,19 @@ class AuthenticationController extends Controller
         Cache::put("client_session_{$clientSession}", $authToken->id, self::CLIENT_COOKIE_MINUTES * 60);
 
         return response()->json(['code' => 1, 'message' => 'Successfully authenticated client'], 200)
-            ->withCookie(cookie(self::CLIENT_COOKIE, $clientSession, self::CLIENT_COOKIE_MINUTES, '/', config('session.domain'), false, true, false, 'lax'));
+            ->withCookie(cookie(self::CLIENT_COOKIE, $clientSession, self::CLIENT_COOKIE_MINUTES, '/', config('session.domain') ?: '.' . config('finobe.domain'), false, true, false, 'lax'));
+    }
+
+    public static function clientUserId(Request $request): ?int
+    {
+        $clientSession = $request->cookie(self::CLIENT_COOKIE);
+        if (!is_string($clientSession) || $clientSession === '') {
+            return null;
+        }
+
+        $id = Cache::get("client_session_{$clientSession}");
+
+        return $id ? (int) $id : null;
     }
 
     public function requestAuth(Request $request)
@@ -53,14 +65,7 @@ class AuthenticationController extends Controller
 
     public function getCurrentUser(Request $request)
     {
-        $id = Auth::id();
-
-        if (!$id) {
-            $clientSession = $request->cookie(self::CLIENT_COOKIE);
-            if (is_string($clientSession) && $clientSession !== '') {
-                $id = Cache::get("client_session_{$clientSession}");
-            }
-        }
+        $id = Auth::id() ?? self::clientUserId($request);
 
         return response($id ?? -1, 200);
     }

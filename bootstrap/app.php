@@ -51,6 +51,7 @@ return Application::configure(basePath: dirname(__DIR__))
             '/game/machineconfiguration.ashx',
             '/game/report-stats',
             '/persistence/*',
+            '/marketplace/purchase',
         ]);
     })
     ->create();

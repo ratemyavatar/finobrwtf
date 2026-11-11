@@ -73,6 +73,29 @@ class GamesController extends Controller
             $place['servers'][] = $result;
         }
 
+        $viewerId = (int) (Auth::id() ?? 0);
+        $place['passes'] = PlaceSettingsActions::passesFor((int) $place['id'])
+            ->filter(fn($p) => $p->visibility === 'n')
+            ->map(fn($p) => [
+                'id' => $p->id,
+                'name' => strip_tags(htmlspecialchars($p->title)),
+                'description' => strip_tags(htmlspecialchars((string) $p->description)),
+                'price' => \App\Services\Purchasing::price($p),
+                'on_sale' => \App\Services\Purchasing::forSale($p),
+                'icon' => $p->additional['media']['thumbnail'] ?? '',
+                'owned' => \App\Services\Purchasing::owns($viewerId, (int) $p->id),
+            ])->values()->all();
+        $place['badges'] = PlaceSettingsActions::badgesFor((int) $place['id'])
+            ->filter(fn($b) => $b->visibility === 'n')
+            ->map(fn($b) => [
+                'id' => $b->id,
+                'name' => strip_tags(htmlspecialchars($b->title)),
+                'description' => strip_tags(htmlspecialchars((string) $b->description)),
+                'icon' => $b->additional['media']['thumbnail'] ?? '',
+                'awarded' => \App\Models\PlaceBadgeAward::where('badge_id', $b->id)->count(),
+                'owned' => $viewerId > 0 && \App\Models\PlaceBadgeAward::where('badge_id', $b->id)->where('user_id', $viewerId)->exists(),
+            ])->values()->all();
+
         $pageData['place'] = $place;
 
         return $this->page('Places/Place', $pageData ?? [], $title ?? null);
@@ -176,6 +199,17 @@ class GamesController extends Controller
             'status' => ['n' => 'approved', 'r' => 'waiting for review', 'd' => 'denied'][$b->visibility] ?? $b->visibility,
             'icon' => $b->visibility === 'n' ? ($b->additional['media']['thumbnail'] ?? '') : '/dynamic/reviewing/' . $b->file,
             'awarded' => \App\Models\PlaceBadgeAward::where('badge_id', $b->id)->count(),
+        ])->all();
+
+        $place['passes'] = PlaceSettingsActions::passesFor((int) $place['id'])->map(fn($p) => [
+            'id' => $p->id,
+            'name' => $p->title,
+            'description' => $p->description,
+            'price' => \App\Services\Purchasing::price($p),
+            'on_sale' => (bool) ($p->additional['onSale'] ?? false),
+            'status' => ['n' => 'approved', 'r' => 'waiting for review', 'd' => 'denied'][$p->visibility] ?? $p->visibility,
+            'icon' => $p->visibility === 'n' ? ($p->additional['media']['thumbnail'] ?? '') : '/dynamic/reviewing/' . $p->file,
+            'sold' => \App\Models\Purchases::where('assetid', $p->id)->where('type', 1)->count(),
         ])->all();
 
         $restrictions = \App\Services\PlaceAccess::restrictions($place['additional']);

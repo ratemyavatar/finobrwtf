@@ -148,6 +148,7 @@
                                 <div class="finobe-tabs-card">
                                     <div class="nav nav-fill finobe-tabs">
                                         <a data-toggle="tab" href="#stats" class="nav-item nav-link tab active">Statistics</a>
+                                        <a data-toggle="tab" href="#store" class="nav-item nav-link tab">Store</a>
                                         <a data-toggle="tab" href="#badges" class="nav-item nav-link tab">Badges</a>
                                     </div>
                                 </div>
@@ -172,9 +173,69 @@
                                             </div>
                                         </div>
                                     </div>
-                                    <div class="tab-pane" id="badges">
-                                        <p class="text-center">There are currently no badges for this place.</p>
+                                    <div class="tab-pane" id="store">
+                                        {% if data.place.passes|length %}
+                                            {% for pass in data.place.passes %}
+                                                <div class="d-flex align-items-center mb-3">
+                                                    <img src="{{ pass.icon }}" alt="" style="width: 64px; height: 64px; object-fit: cover; border-radius: 50%; margin-right: 12px;">
+                                                    <div class="flex-grow-1">
+                                                        <p class="mb-0"><strong>{{ pass.name }}</strong></p>
+                                                        {% if pass.description %}<p class="mb-0 text-muted">{{ pass.description }}</p>{% endif %}
+                                                        <small class="text-muted">{{ pass.price == 0 ? 'Free' : pass.price|number_format ~ ' Dius' }}</small>
+                                                    </div>
+                                                    {% if pass.owned %}
+                                                        <button class="btn btn-sm btn-secondary" disabled>Owned</button>
+                                                    {% elseif not pass.on_sale %}
+                                                        <button class="btn btn-sm btn-secondary" disabled>Off sale</button>
+                                                    {% elseif data.user.id is defined and data.user.id %}
+                                                        <button class="btn btn-sm btn-success buy-pass" data-id="{{ pass.id }}" data-name="{{ pass.name }}" data-price="{{ pass.price }}">Buy</button>
+                                                    {% endif %}
+                                                </div>
+                                            {% endfor %}
+                                            <p class="text-danger mb-0" id="pass-error" style="display: none;"></p>
+                                        {% else %}
+                                            <p class="text-center">There are currently no game passes for this place.</p>
+                                        {% endif %}
                                     </div>
+                                    <div class="tab-pane" id="badges">
+                                        {% if data.place.badges|length %}
+                                            {% for badge in data.place.badges %}
+                                                <div class="d-flex align-items-center mb-3">
+                                                    <img src="{{ badge.icon }}" alt="" style="width: 64px; height: 64px; object-fit: cover; border-radius: 50%; margin-right: 12px;{{ badge.owned ? '' : ' opacity: 0.5;' }}">
+                                                    <div class="flex-grow-1">
+                                                        <p class="mb-0"><strong>{{ badge.name }}</strong>{% if badge.owned %} <small class="text-success">you have this</small>{% endif %}</p>
+                                                        {% if badge.description %}<p class="mb-0 text-muted">{{ badge.description }}</p>{% endif %}
+                                                        <small class="text-muted">won by {{ badge.awarded|number_format }} {{ badge.awarded == 1 ? 'player' : 'players' }}</small>
+                                                    </div>
+                                                </div>
+                                            {% endfor %}
+                                        {% else %}
+                                            <p class="text-center">There are currently no badges for this place.</p>
+                                        {% endif %}
+                                    </div>
+                                    <script>
+                                        document.querySelectorAll('.buy-pass').forEach(function (button) {
+                                            button.addEventListener('click', function () {
+                                                var price = parseInt(button.dataset.price, 10);
+                                                if (!confirm('Buy ' + button.dataset.name + ' for ' + (price === 0 ? 'free' : price + ' Dius') + '?')) return;
+                                                button.disabled = true;
+                                                var body = new URLSearchParams({ assetid: button.dataset.id, _token: '{{ data.csrf_token }}' });
+                                                fetch('/api/purchase', { method: 'POST', headers: { 'Content-type': 'application/x-www-form-urlencoded' }, body: body, credentials: 'same-origin' })
+                                                    .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, body: j }; }); })
+                                                    .then(function (r) {
+                                                        if (r.ok) {
+                                                            button.textContent = 'Owned';
+                                                            button.className = 'btn btn-sm btn-secondary';
+                                                            return;
+                                                        }
+                                                        button.disabled = false;
+                                                        var error = document.getElementById('pass-error');
+                                                        error.textContent = r.body.message || 'Something went wrong.';
+                                                        error.style.display = '';
+                                                    });
+                                            });
+                                        });
+                                    </script>
                                 </div>
                             </div>
                         </div>

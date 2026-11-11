@@ -16,6 +16,8 @@ use App\Services\Discord;
 class PlaceSettingsActions
 {
     const MAX_BADGES = 50;
+    const MAX_PASSES = 50;
+    const MAX_PASS_PRICE = 100000;
 
     public function __construct(private Asset $place, private array $user)
     {
@@ -73,6 +75,9 @@ class PlaceSettingsActions
             'upload_thumbnail' => $this->uploadThumbnail($request),
             'create_badge' => $this->createBadge($request),
             'delete_badge' => $this->deleteBadge($request),
+            'create_pass' => $this->createPass($request),
+            'update_pass' => $this->updatePass($request),
+            'delete_pass' => $this->deletePass($request),
             'save_restrictions' => $this->saveRestrictions($request),
             default => $this->back('general'),
         };
@@ -237,6 +242,115 @@ class PlaceSettingsActions
             ->orderBy('id')
             ->get()
             ->filter(fn($b) => (int) ($b->additional['placeId'] ?? 0) === $placeId)
+            ->values();
+    }
+
+    private function createPass(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'pass_name' => 'required|string|min:3|max:50',
+            'pass_description' => 'nullable|string|max:1000',
+            'pass_price' => 'required|integer|min:0|max:' . self::MAX_PASS_PRICE,
+            'pass_icon' => 'required|file|mimes:png,jpg,jpeg|max:2048|dimensions:min_width=64,min_height=64',
+        ], [
+            'pass_name.required' => 'Give your game pass a name.',
+            'pass_price.required' => 'Give your game pass a price.',
+            'pass_price.max' => 'Game passes can cost up to ' . number_format(self::MAX_PASS_PRICE) . ' Dius.',
+            'pass_icon.required' => 'Your game pass needs an icon.',
+            'pass_icon.mimes' => 'Game pass icons have to be PNG or JPG.',
+            'pass_icon.max' => 'Game pass icons can be up to 2 MB.',
+            'pass_icon.dimensions' => 'Game pass icons need to be at least 64x64.',
+        ]);
+
+        if ($validator->fails()) {
+            return $this->fail('passes', $validator);
+        }
+
+        if (self::passesFor((int) $this->place->id)->count() >= self::MAX_PASSES) {
+            return $this->back('passes', null, 'You already have ' . self::MAX_PASSES . ' game passes for this game.');
+        }
+
+        $filename = uniqid() . '.' . strtolower($request->file('pass_icon')->extension());
+        $request->file('pass_icon')->move($this->reviewing(), $filename);
+
+        Asset::create([
+            'asset_type' => \App\Services\Purchasing::GAME_PASS,
+            'title' => trim($request->input('pass_name')),
+            'author' => $this->user['id'],
+            'file' => $filename,
+            'description' => trim((string) $request->input('pass_description', '')),
+            'visibility' => 'r',
+            'additional' => [
+                'placeId' => (int) $this->place->id,
+                'price' => (int) $request->input('pass_price'),
+                'onSale' => true,
+                'media' => ['thumbnail' => null],
+            ],
+        ]);
+
+        Discord::send($this->user['username'] . ' made a game pass, moderate it! [ ' . config('app.url') . '/admin/assets ]');
+
+        return $this->back('passes', "Game pass made! It'll go on sale once a moderator approves the icon.");
+    }
+
+    private function updatePass(Request $request)
+    {
+        $pass = self::passesFor((int) $this->place->id)->firstWhere('id', (int) $request->input('pass_id'));
+
+        if (!$pass) {
+            return $this->back('passes', null, "That game pass doesn't exist.");
+        }
+
+        $validator = Validator::make($request->all(), [
+            'pass_price' => 'required|integer|min:0|max:' . self::MAX_PASS_PRICE,
+        ], [
+            'pass_price.max' => 'Game passes can cost up to ' . number_format(self::MAX_PASS_PRICE) . ' Dius.',
+        ]);
+
+        if ($validator->fails()) {
+            return $this->fail('passes', $validator);
+        }
+
+        $additional = $pass->additional;
+        $additional['price'] = (int) $request->input('pass_price');
+        $additional['onSale'] = $request->boolean('pass_on_sale');
+        $pass->additional = $additional;
+        $pass->save();
+
+        return $this->back('passes', 'Game pass saved.');
+    }
+
+    private function deletePass(Request $request)
+    {
+        $pass = self::passesFor((int) $this->place->id)->firstWhere('id', (int) $request->input('pass_id'));
+
+        if (!$pass) {
+            return $this->back('passes', null, "That game pass doesn't exist.");
+        }
+
+        if (\App\Models\Purchases::where('assetid', $pass->id)->where('type', 1)->exists()) {
+            $additional = $pass->additional;
+            $additional['onSale'] = false;
+            $pass->additional = $additional;
+            $pass->save();
+
+            return $this->back('passes', "People already bought this game pass, so it was taken off sale instead. They keep it.");
+        }
+
+        File::delete(public_path('dynamic/reviewing/' . basename($pass->file)));
+        File::delete(config('finobe.cdn_path') . '/thumbnails/' . basename($pass->file));
+        $pass->delete();
+
+        return $this->back('passes', 'Game pass deleted.');
+    }
+
+    public static function passesFor(int $placeId)
+    {
+        return Asset::where('asset_type', \App\Services\Purchasing::GAME_PASS)
+            ->where('additional', 'like', '%"placeId":' . $placeId . '%')
+            ->orderBy('id')
+            ->get()
+            ->filter(fn($p) => (int) ($p->additional['placeId'] ?? 0) === $placeId)
             ->values();
     }
 

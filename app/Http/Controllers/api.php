@@ -278,107 +278,23 @@ class api extends Controller
     public function purchase(Request $request) {
         $data = $request->all();
 
-        if(!Auth::check()) {
+        if(!Auth::check() || !isset($data['assetid'])) {
             $this->response['code'] = 400;
             $this->response['message'] = 'Bad request';
-
-            return response()->json($this->response, 400);
-        }
-
-        if(!isset($data['assetid'])) {
-            $this->response['code'] = 400;
-            $this->response['message'] = 'Bad request';
-
-            return response()->json($this->response, 400);
-        }
-
-        if(!Asset::find($data['assetid'])) {
-            $this->response['code'] = 400;
-            $this->response['message'] = 'Asset does not exist';
 
             return response()->json($this->response, 400);
         }
 
         $item = Asset::find($data['assetid']);
 
-        if(!in_array($item->asset_type, [2, 3, 8, 11, 12, 17, 18, 19, 32]) || $item->visibility != 'n') {
+        if(!$item) {
             $this->response['code'] = 400;
-            $this->response['message'] = 'Invalid item type';
+            $this->response['message'] = 'Asset does not exist';
 
             return response()->json($this->response, 400);
         }
 
-        if(!($item->additional['onSale'] ?? false)) {
-            $this->response['code'] = 400;
-            $this->response['message'] = 'This item not on sale';
-
-            return response()->json($this->response, 400);
-        }
-
-        if((int) $item->author === (int) Auth::id()) {
-            $this->response['code'] = 400;
-            $this->response['message'] = 'You made this item, so you already own it';
-
-            return response()->json($this->response, 400);
-        }
-
-        $price = max(0, (int)($item->additional['price'] ?? 0));
-        $error = null;
-
-        DB::connection('finobe')->transaction(function() use ($item, $price, $data, &$error) {
-            $user = User::where('id', Auth::id())->lockForUpdate()->first();
-
-            if($user->Dius < $price) {
-                $error = 'Not enough Dius';
-                return;
-            }
-
-            if(Purchases::where('username', $user->username)->where('assetid', $item->id)->where('type', 1)->exists()) {
-                $error = 'This item has already been purchased';
-                return;
-            }
-
-            $serial = 0;
-            if(\App\Services\Trading::kind($item->additional) === 'unique') {
-                Asset::where('id', $item->id)->lockForUpdate()->first();
-                $serial = (int) Purchases::where('assetid', $item->id)->max('serial') + 1;
-                $stock = (int) ($item->additional['stock'] ?? 0);
-                if($stock > 0 && $serial > $stock) {
-                    $error = 'This item is sold out';
-                    return;
-                }
-            }
-
-            Purchases::create([
-                'username' => $user->username,
-                'assetid' => $item->id,
-                'serial' => $serial,
-                'author' => $item->author,
-                'amount' => -1 * $price,
-                'type' => 1
-            ]);
-
-            $user->Dius -= $price;
-            $user->save();
-
-            if($user->id != $item->author) {
-                $seller = User::where('id', $item->author)->lockForUpdate()->first();
-
-                if($seller) {
-                    $seller->Dius += $price;
-                    $seller->save();
-
-                    Purchases::create([
-                        'username' => $seller->username,
-                        'assetid' => $item->id,
-                        'serial' => 0,
-                        'author' => $item->author,
-                        'amount' => $price,
-                        'type' => 2
-                    ]);
-                }
-            }
-        });
+        $error = \App\Services\Purchasing::buy((int) Auth::id(), $item);
 
         if($error) {
             $this->response['code'] = 400;
@@ -387,43 +303,7 @@ class api extends Controller
             return response()->json($this->response, 400);
         }
 
-        if((int) $item->asset_type === 32) {
-            $this->grantPackageContents($item, Auth::id());
-        }
-
         return response()->json($this->response, 200);
-    }
-
-    private function grantPackageContents(Asset $package, int $buyerId): void
-    {
-        $buyer = User::find($buyerId);
-        if(!$buyer) {
-            return;
-        }
-
-        foreach(AssetHelper::getPackageAssets((int) $package->id) as $assetId) {
-            $contained = Asset::find($assetId);
-            if(!$contained || (int) $contained->author === $buyerId) {
-                continue;
-            }
-
-            $already = Purchases::where('username', $buyer->username)
-                ->where('assetid', $assetId)
-                ->where('type', 1)
-                ->exists();
-            if($already) {
-                continue;
-            }
-
-            Purchases::create([
-                'username' => $buyer->username,
-                'assetid' => $assetId,
-                'serial' => 0,
-                'author' => $contained->author,
-                'amount' => 0,
-                'type' => 1,
-            ]);
-        }
     }
 
     private function outfit(array $data) {

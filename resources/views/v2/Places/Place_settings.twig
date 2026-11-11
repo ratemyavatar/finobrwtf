@@ -694,6 +694,7 @@ input[type='number'][data-v-e236382e]:hover::-webkit-outer-spin-button {
                             </strong>
                             <p class="mb-1"><a href="#general" class="settings-tab" data-pane="general">General</a></p>
                             <p class="mb-1"><a href="#badges" class="settings-tab" data-pane="badges">Badges</a></p>
+                            <p class="mb-1"><a href="#passes" class="settings-tab" data-pane="passes">Game Passes</a></p>
                             <p class="mb-1"><a href="#restrictions" class="settings-tab" data-pane="restrictions">User Restrictions</a></p>
                             <p class="mb-1"><a href="#thumbnail" class="settings-tab" data-pane="thumbnail">Thumbnail</a></p>
                         </div>
@@ -860,6 +861,50 @@ input[type='number'][data-v-e236382e]:hover::-webkit-outer-spin-button {
                                 <input type="file" name="badge_icon" accept=".png,.jpg,.jpeg" class="form-control" required>
                                 <small class="form-text text-muted">Icon: PNG or JPG, square, at least 64x64, up to 2 MB. It shows up as a circle. A moderator approves it before the badge works.</small>
                                 <button type="submit" class="btn btn-primary mt-2">Make badge</button>
+                            </form>
+                        </div>
+                        <div class="settings-pane" id="pane-passes" style="display:none">
+                            <h4 style="font-weight: 300;"><strong>Game Passes</strong></h4>
+                            <p class="text-muted">Sell perks in your game for Dius. You get all of the Dius. In a script, check with <code>game:GetService("GamePassService"):PlayerHasPass(player, PASS_ID)</code> or open the buy prompt with <code>game:GetService("MarketplaceService"):PromptPurchase(player, PASS_ID)</code>.</p>
+                            {% if data.place.passes|length %}
+                                {% for pass in data.place.passes %}
+                                    <div class="d-flex align-items-center mb-3">
+                                        <img src="{{ pass.icon }}" alt="" style="width: 64px; height: 64px; object-fit: cover; border-radius: 50%; margin-right: 12px;">
+                                        <div class="flex-grow-1">
+                                            <p class="mb-0"><strong>{{ pass.name }}</strong> <small class="text-muted">ID {{ pass.id }}</small></p>
+                                            {% if pass.description %}<p class="mb-0 text-muted">{{ pass.description }}</p>{% endif %}
+                                            <small class="{{ pass.status == 'approved' ? 'text-success' : (pass.status == 'denied' ? 'text-danger' : 'text-muted') }}">{{ pass.status }}</small>
+                                            <small class="text-muted"> &middot; sold {{ pass.sold }}</small>
+                                            <form role="form" method="POST" action="" class="form-inline mt-1">
+                                                <input type="hidden" name="_token" value="{{ data.csrf_token }}">
+                                                <input type="hidden" name="action" value="update_pass">
+                                                <input type="hidden" name="pass_id" value="{{ pass.id }}">
+                                                <input type="number" name="pass_price" min="0" max="100000" value="{{ pass.price }}" class="form-control form-control-sm mr-2" style="width: 110px;" aria-label="Price in Dius">
+                                                <label class="mr-2"><input type="checkbox" name="pass_on_sale" value="1" class="mr-1"{{ pass.on_sale ? ' checked' : '' }}>On sale</label>
+                                                <button type="submit" class="btn btn-sm btn-primary">Save</button>
+                                            </form>
+                                        </div>
+                                        <form role="form" method="POST" action="" onsubmit="return confirm('Delete this game pass?');">
+                                            <input type="hidden" name="_token" value="{{ data.csrf_token }}">
+                                            <input type="hidden" name="action" value="delete_pass">
+                                            <input type="hidden" name="pass_id" value="{{ pass.id }}">
+                                            <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                                        </form>
+                                    </div>
+                                {% endfor %}
+                            {% else %}
+                                <p class="text-muted">No game passes yet.</p>
+                            {% endif %}
+                            <p class="col-form-label mt-2"><strong>Make a game pass</strong></p>
+                            <form role="form" method="POST" action="" enctype="multipart/form-data">
+                                <input type="hidden" name="_token" value="{{ data.csrf_token }}">
+                                <input type="hidden" name="action" value="create_pass">
+                                <input type="text" name="pass_name" maxlength="50" placeholder="Game pass name" class="form-control mb-2" required>
+                                <textarea name="pass_description" maxlength="1000" placeholder="What does it give you? (optional)" class="form-control mb-2"></textarea>
+                                <input type="number" name="pass_price" min="0" max="100000" placeholder="Price in Dius" class="form-control mb-2" required>
+                                <input type="file" name="pass_icon" accept=".png,.jpg,.jpeg" class="form-control" required>
+                                <small class="form-text text-muted">Icon: PNG or JPG, square, at least 64x64, up to 2 MB. A moderator approves it before the game pass goes on sale.</small>
+                                <button type="submit" class="btn btn-primary mt-2">Make game pass</button>
                             </form>
                         </div>
                         <div class="settings-pane" id="pane-restrictions" style="display:none">

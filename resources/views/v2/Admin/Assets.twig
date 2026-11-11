@@ -22,9 +22,9 @@
                                         <audio controls="controls" controlslist="nodownload"><source src="/dynamic/reviewing/{{ asset.file }}" type="audio/mpeg">Your browser does not support the audio element.</audio>
 										<p>Original</p>
                                         <audio controls="controls" controlslist="nodownload"><source src="/dynamic/temp/{{ asset.file }}" type="audio/mpeg">Your browser does not support the audio element.</audio>
-                                        {% elseif asset.kind == 'badge' or asset.kind == 'game_thumbnail' %}
-                                        <p class="text-muted mb-1">{{ asset.kind == 'badge' ? 'Game badge' : 'Game thumbnail' }}{% if asset.kind == 'badge' and asset.description %}: {{ asset.description }}{% endif %}</p>
-                                        <img src="/dynamic/reviewing/{{ asset.file }}" style="{{ asset.kind == 'badge' ? 'width: 150px; height: 150px; object-fit: cover; border-radius: 50%;' : 'width: 100%; height: auto;' }}">
+                                        {% elseif asset.kind == 'badge' or asset.kind == 'game_pass' or asset.kind == 'game_thumbnail' %}
+                                        <p class="text-muted mb-1">{{ asset.kind == 'badge' ? 'Game badge' : (asset.kind == 'game_pass' ? 'Game pass' : 'Game thumbnail') }}{% if asset.kind != 'game_thumbnail' and asset.description %}: {{ asset.description }}{% endif %}</p>
+                                        <img src="/dynamic/reviewing/{{ asset.file }}" style="{{ asset.kind == 'badge' or asset.kind == 'game_pass' ? 'width: 150px; height: 150px; object-fit: cover; border-radius: 50%;' : 'width: 100%; height: auto;' }}">
                                         {% elseif asset.asset_type == 2 or asset.asset_type == 11 or asset.asset_type == 12 or asset.asset_type == 18 %}
                                         <div class="d-flex flex-row{{ (asset.asset_type == 18) ? ' justify-content-center' : '' }}">
                                             <img src="{{ asset.additional.media.thumbnail }}" style="width: 50%; height: auto;">

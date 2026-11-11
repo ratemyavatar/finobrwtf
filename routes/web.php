@@ -252,6 +252,10 @@ Route::middleware([Moderation::class, SerializeWrites::class])->group(function (
     Route::domain('api.' . $domain)->group(function () {
         Route::get('/universes/validate-place-join', [rbxAPIs::class, 'validatePlaceJoin']);
         Route::any('/marketplace/productinfo', [rbxAPIs::class, 'productInfo']);
+        Route::get('/ownership/hasasset', [\App\Http\Controllers\Client\MarketplaceController::class, 'ownsAsset']);
+        Route::get('/currency/balance', [\App\Http\Controllers\Client\MarketplaceController::class, 'balance']);
+        Route::get('/my/economy-status', [\App\Http\Controllers\Client\MarketplaceController::class, 'economyStatus']);
+        Route::post('/marketplace/purchase', [\App\Http\Controllers\Client\MarketplaceController::class, 'purchase'])->middleware('limit:30,1');
         Route::post('/login/v1', [\App\Http\Controllers\Client\LoginApiController::class, 'login'])->middleware('limit:10,1');
         Route::post('/mobileapi/login', [\App\Http\Controllers\Client\LoginApiController::class, 'mobile'])->middleware('limit:10,1');
     });

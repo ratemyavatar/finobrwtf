@@ -6,6 +6,7 @@ use App\Http\Controllers\Client\CharacterAppearanceController;
 use App\Http\Controllers\Client\GameJoinControlller;
 use App\Http\Controllers\Client\GameServer2012Controller;
 use App\Http\Controllers\Client\LuaWebServiceController;
+use App\Http\Controllers\Client\MarketplaceController;
 use App\Http\Controllers\Client\StudioJoinController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\rbxAPIs;
@@ -65,6 +66,8 @@ Route::group(['as' => 'client-routes.'], function(){
         Route::get('isbadgelegal.ashx', [BadgeController::class, 'isLegal']);
         Route::match(['get', 'post'], 'awardbadge.ashx', [BadgeController::class, 'award']);
     });
+
+    Route::get('game/gamepass/gamepasshandler.ashx', [MarketplaceController::class, 'hasPass']);
 
     Route::get('/penelope/login/negotiate', [AuthenticationController::class,'authenticateClient'])->name('negotiate');
 
