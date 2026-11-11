@@ -162,8 +162,8 @@
             </center>
             <div class="mt-2" style="display: flex; justify-content: center;">
                 <ul class="pagination shadow-sm">
-    <li class="page-item">
-      <a class="page-link" id="previous-page" href="/catalog/{{ data.section }}?page={{ data.items.pages.info.current_page - 1 }}{{ data.qs }}" rel="previous" aria-label="Previous <<" {{ (data.items.pages.info.current_page <= 1) ? "style='pointer-events: none;'" : "" }}>«</a>
+    <li class="page-item{{ (data.items.pages.info.current_page <= 1) ? " disabled" : "" }}">
+      <a class="page-link" id="previous-page" href="/catalog/{{ data.section }}?page={{ data.items.pages.info.current_page - 1 }}{{ data.qs }}" rel="previous" aria-label="Previous <<">«</a>
     </li>
     {% if data.items.pages.info.start_page > 1 %}
       <li class="page-item">
@@ -175,7 +175,7 @@
         </li>
       {% endif %}
       {% if data.items.pages.info.start_page - 1 > 2 %}
-        <li class="page-item"><span class="page-link">...</span></li>
+        <li class="page-item disabled"><span class="page-link">...</span></li>
       {% endif %}
     {% endif %}
     {% for page in data.items.pages.data %}
@@ -187,7 +187,7 @@
     {% endfor %}
     {% if data.items.pages.info.end_page < data.items.pages.info.number_of_pages %}
       {% if data.items.pages.info.end_page + 1 < data.items.pages.info.number_of_pages - 1 %}
-        <li class="page-item"><span class="page-link">...</span></li>
+        <li class="page-item disabled"><span class="page-link">...</span></li>
       {% endif %}
       {% for page in [data.items.pages.info.number_of_pages - 1, data.items.pages.info.number_of_pages] %}
         {% if page > data.items.pages.info.end_page %}
@@ -197,8 +197,8 @@
         {% endif %}
       {% endfor %}
     {% endif %}
-    <li class="page-item">
-      <a class="page-link" id="next-page" href="/catalog/{{ data.section }}?page={{ data.items.pages.info.next_page }}{{ data.qs }}" rel="next" aria-label="Next >>" {{ (data.items.pages.info.current_page >= data.items.pages.info.number_of_pages) ? "style='pointer-events: none;'" : "" }}>»</a>
+    <li class="page-item{{ (data.items.pages.info.current_page >= data.items.pages.info.number_of_pages) ? " disabled" : "" }}">
+      <a class="page-link" id="next-page" href="/catalog/{{ data.section }}?page={{ data.items.pages.info.next_page }}{{ data.qs }}" rel="next" aria-label="Next >>">»</a>
     </li>
   </ul>
             </div>

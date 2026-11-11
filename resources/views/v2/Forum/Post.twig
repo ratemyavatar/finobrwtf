@@ -44,7 +44,7 @@
                 {% endif %}
                 <div class="mt-2">
                     <ul class="pagination shadow-sm">
-                        <li class="page-item{{ (data.replies.pages.info.previous_page == data.replies.pages.info.start_page and data.replies.pages.info.previous_page != (data.replies.pages.info.start_page + 1)) ? " disabled" : "" }}"><a class="page-link" id="previous-page" href="/forum/post?id={{ data.post.id }}&page={{ data.replies.pages.info.previous_page }}" onclick="" rel="previous" aria-label="Previous <<">«</a></li>
+                        <li class="page-item{{ (data.replies.pages.info.current_page <= 1) ? " disabled" : "" }}"><a class="page-link" id="previous-page" href="/forum/post?id={{ data.post.id }}&page={{ data.replies.pages.info.previous_page }}" onclick="" rel="previous" aria-label="Previous <<">«</a></li>
                         {% if data.replies.pages.info.start_page > 1 %}
                             <li class="page-item">
                                 <a class="page-link" href="/forum/post?id={{ data.post.id }}&page=1">1</a>
@@ -55,7 +55,7 @@
                                 </li>
                             {% endif %}
                             {% if data.replies.pages.info.start_page - 1 > 2 %}
-                                <li class="page-item"><span class="page-link">...</span></li>
+                                <li class="page-item disabled"><span class="page-link">...</span></li>
                             {% endif %}
                         {% endif %}
                         {% for page in data.replies.pages.data %}
@@ -63,7 +63,7 @@
                         {% endfor %}
                         {% if data.replies.pages.info.end_page < data.replies.pages.info.number_of_pages %}
                             {% if data.replies.pages.info.end_page + 1 < data.replies.pages.info.number_of_pages - 1 %}
-                                <li class="page-item"><span class="page-link">...</span></li>
+                                <li class="page-item disabled"><span class="page-link">...</span></li>
                             {% endif %}
                             {% for page in [data.replies.pages.info.number_of_pages - 1, data.replies.pages.info.number_of_pages] %}
                                 {% if page > data.replies.pages.info.end_page %}
@@ -73,7 +73,7 @@
                                 {% endif %}
                             {% endfor %}
                         {% endif %}
-                        <li class="page-item{{ (data.replies.pages.info.next_page == data.replies.pages.info.end_page) ? " disabled" : "" }}"><a class="page-link" id="next-page" href="/forum/post?id={{ data.post.id }}&page={{ data.replies.pages.info.next_page + 1 }}" onclick="" rel="next" aria-label="Next >>">»</a></li>
+                        <li class="page-item{{ (data.replies.pages.info.current_page >= data.replies.pages.info.number_of_pages) ? " disabled" : "" }}"><a class="page-link" id="next-page" href="/forum/post?id={{ data.post.id }}&page={{ data.replies.pages.info.next_page }}" onclick="" rel="next" aria-label="Next >>">»</a></li>
                     </ul>
                 </div>
                 <div id="forum-posts">
@@ -543,7 +543,7 @@
                     </center>
                     <div class="mt-2">
                         <ul class="pagination shadow-sm">
-                            <li class="page-item{{ (data.replies.pages.info.previous_page == data.replies.pages.info.start_page and data.replies.pages.info.previous_page != (data.replies.pages.info.start_page + 1)) ? " disabled" : "" }}"><a class="page-link" id="previous-page" href="/forum/post?id={{ data.post.id }}&page={{ data.replies.pages.info.previous_page }}" onclick="" rel="previous" aria-label="Previous <<">«</a></li>
+                            <li class="page-item{{ (data.replies.pages.info.current_page <= 1) ? " disabled" : "" }}"><a class="page-link" id="previous-page" href="/forum/post?id={{ data.post.id }}&page={{ data.replies.pages.info.previous_page }}" onclick="" rel="previous" aria-label="Previous <<">«</a></li>
                             {% if data.replies.pages.info.start_page > 1 %}
                                 <li class="page-item">
                                     <a class="page-link" href="/forum/post?id={{ data.post.id }}&page=1">1</a>
@@ -554,7 +554,7 @@
                                     </li>
                                 {% endif %}
                                 {% if data.replies.pages.info.start_page - 1 > 2 %}
-                                    <li class="page-item"><span class="page-link">...</span></li>
+                                    <li class="page-item disabled"><span class="page-link">...</span></li>
                                 {% endif %}
                             {% endif %}
                             {% for page in data.replies.pages.data %}
@@ -562,7 +562,7 @@
                             {% endfor %}
                             {% if data.replies.pages.info.end_page < data.replies.pages.info.number_of_pages %}
                                 {% if data.replies.pages.info.end_page + 1 < data.replies.pages.info.number_of_pages - 1 %}
-                                    <li class="page-item"><span class="page-link">...</span></li>
+                                    <li class="page-item disabled"><span class="page-link">...</span></li>
                                 {% endif %}
                                 {% for page in [data.replies.pages.info.number_of_pages - 1, data.replies.pages.info.number_of_pages] %}
                                     {% if page > data.replies.pages.info.end_page %}
@@ -572,7 +572,7 @@
                                     {% endif %}
                                 {% endfor %}
                             {% endif %}
-                            <li class="page-item{{ (data.replies.pages.info.next_page == data.replies.pages.info.end_page) ? " disabled" : "" }}"><a class="page-link" id="next-page" href="/forum/post?id={{ data.post.id }}&page={{ data.replies.pages.info.next_page + 1 }}" onclick="" rel="next" aria-label="Next >>">»</a></li>
+                            <li class="page-item{{ (data.replies.pages.info.current_page >= data.replies.pages.info.number_of_pages) ? " disabled" : "" }}"><a class="page-link" id="next-page" href="/forum/post?id={{ data.post.id }}&page={{ data.replies.pages.info.next_page }}" onclick="" rel="next" aria-label="Next >>">»</a></li>
                         </ul>
                     </div>
                 </div>

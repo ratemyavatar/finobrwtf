@@ -49,8 +49,8 @@
                 </div>
                 <div class="mt-2" style="display: flex; justify-content: center;">
           <ul class="pagination shadow-sm">
-            <li class="page-item">
-              <a class="page-link" id="previous-page" href="/users?page={{ data.pagination.pages.info.current_page - 1 }}" rel="previous" aria-label="Previous <<" {{ (data.pagination.pages.info.current_page <= 1) ? "style='pointer-events: none;'" : "" }}>«</a>
+            <li class="page-item{{ (data.pagination.pages.info.current_page <= 1) ? " disabled" : "" }}">
+              <a class="page-link" id="previous-page" href="/users?{{ data.search ? "search=" ~ data.search ~ "&" : "" }}page={{ data.pagination.pages.info.previous_page }}" rel="previous" aria-label="Previous <<">«</a>
             </li>
             {% if data.pagination.pages.info.start_page > 1 %}
               <li class="page-item">
@@ -62,7 +62,7 @@
                 </li>
               {% endif %}
               {% if data.pagination.pages.info.start_page - 1 > 2 %}
-                <li class="page-item"><span class="page-link">...</span></li>
+                <li class="page-item disabled"><span class="page-link">...</span></li>
               {% endif %}
             {% endif %}
             {% for page in data.pagination.pages.data %}
@@ -74,7 +74,7 @@
             {% endfor %}
             {% if data.pagination.pages.info.end_page < data.pagination.pages.info.number_of_pages %}
               {% if data.pagination.pages.info.end_page + 1 < data.pagination.pages.info.number_of_pages - 1 %}
-                <li class="page-item"><span class="page-link">...</span></li>
+                <li class="page-item disabled"><span class="page-link">...</span></li>
               {% endif %}
               {% for page in [data.pagination.pages.info.number_of_pages - 1, data.pagination.pages.info.number_of_pages] %}
                 {% if page > data.pagination.pages.info.end_page %}
@@ -84,8 +84,8 @@
                 {% endif %}
               {% endfor %}
             {% endif %}
-            <li class="page-item">
-              <a class="page-link" id="next-page" href="/users?{{ data.search ? "search=" ~ data.search ~ "&" : "" }}page={{ data.pagination.pages.info.next_page }}" rel="next" aria-label="Next >>" {{ (data.pagination.pages.info.current_page >= data.pagination.pages.info.number_of_pages) ? "style='pointer-events: none;'" : "" }}>»</a>
+            <li class="page-item{{ (data.pagination.pages.info.current_page >= data.pagination.pages.info.number_of_pages) ? " disabled" : "" }}">
+              <a class="page-link" id="next-page" href="/users?{{ data.search ? "search=" ~ data.search ~ "&" : "" }}page={{ data.pagination.pages.info.next_page }}" rel="next" aria-label="Next >>">»</a>
             </li>
           </ul>
         </div>
