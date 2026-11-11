@@ -57,11 +57,11 @@
                 <div class="row justify-content-center">
                     <div class="card col-md-7 mt-5" style="padding: 0;">
                         <div class="card-body text-center">
-                            <h2>Purchase item</h2>
+                            <h2>Purchase Item</h2>
                             <br>
-                            <div class="d-flex align-items-center justify-content-center"><div class="d-flex flex-row"><p>Are you sure you want to buy <strong>{{ data.item.title|raw }}</strong> for <div class="nav-item nav-link n-money-text" data-placement="bottom" style="padding:0px;margin-left: 5px;"><a><img src="/s/img/diu_16.png" alt="Diu" title="Diu" class="img-responsive align-middle "> {{ data.item.additional.price }}</a></div>?</p></div></div><br>
-                            <button class="btn text-danger" id="btn-cancel">cancel</button>
-                            <button class="btn btn-outline-primary" id="purchase-confirm">purchase</button>
+                            <div class="d-flex align-items-center justify-content-center"><div class="d-flex flex-row"><p>Are you sure you want to buy <strong>{{ data.item.title|raw }}</strong> for <div class="nav-item nav-link n-money-text" data-placement="bottom" style="padding:0px;margin-left: 5px;"><a><img src="/s/img/diu_16.png" alt="Diu" title="Diu" class="img-responsive align-middle "> {{ data.item.additional.price|number_format }}</a></div>?</p></div></div><br>
+                            <button class="btn text-danger" id="btn-cancel">Cancel</button>
+                            <button class="btn btn-outline-primary" id="purchase-confirm">Purchase</button>
                         </div>
                     </div>
                 </div>
@@ -121,33 +121,27 @@
                                             <div class="card">
                                                 <div class="card-body mt-2">
                                                     <div class="row justify-content-center">
-                                                        <div class="col-auto">
-                                                            <p>Price: </p>
-                                                        </div>
-                                                        <div class="col-auto">
-                                                            <li class="nav-item nav-link n-money-text" style="padding-top:0px;" data-placement="bottom" style="padding-left:0px;">
-                                                                <a><img src="/s/img/diu_16.png" alt="Diu" title="Diu" class="img-responsive align-middle"> {{ data.item.additional.price }}</a>
-                                                            </li>
-                                                        </div>
+                                                        <p><b>Genre:</b>&nbsp;&nbsp;&nbsp;{{ data.item.additional.genre ?? 'None' }}</p>
                                                     </div>
                                                     <div class="row justify-content-center">
-                                                        <div class="col-auto">
-                                                            <p>Sold: {{ data.item.sales }}</p>
-                                                        </div>
+                                                        <p><b>Price:</b>&nbsp;&nbsp;&nbsp;<img src="/s/img/diu_16.png" alt="Diu" title="Diu" class="img-responsive align-middle" style="margin-top:-3px;"> {{ data.item.additional.price|number_format }}</p>
+                                                    </div>
+                                                    <div class="row justify-content-center">
+                                                        <p><b>Sold:</b>&nbsp;&nbsp;&nbsp;{{ data.item.sales|number_format }}</p>
                                                     </div>
                                                     {% if data.item.visibility != "d" and data.item.visibility != "r" %}
                                                         {% if not data.item.additional.onSale %}
                                                         <div class="row justify-content-center mt-2">
                                                             <div class="col-auto text-muted">
-                                                                <p><b>This item is off-sale.</b></p>
+                                                                <p class="text-dark"><b>This item is off-sale.</b></p>
                                                             </div>
                                                         </div>
                                                         {% elseif not data.item.isOwned %}
-                                                            <button id="btn-purchase" class="btn btn-success btn-lg col-md-12 mb-1">purchase</button>
+                                                            <button id="btn-purchase" class="btn btn-success btn-lg col-md-12 mb-1">Purchase</button>
                                                         {% else %}
                                                         <div class="row justify-content-center mt-2">
                                                             <div class="col-auto text-muted">
-                                                                <p>Item Owned.</p>
+                                                                <p>Item Owned</p>
                                                             </div>
                                                         </div>
                                                         {% endif %}
@@ -228,7 +222,7 @@
                                                         .then(response => response.json())
                                                         .then(data => {
                                                             if(data.code != 200) {
-                                                                purchaseError.querySelector('p').innerHTML = data.message;
+                                                                purchaseError.querySelector('p').textContent = data.message;
                                                                 purchaseError.style.display = "";
 
                                                                 setTimeout(function () {

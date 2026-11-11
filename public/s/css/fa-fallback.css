@@ -1,0 +1,9 @@
+@font-face{font-family:"FA Regular Any";font-style:normal;font-weight:100 900;font-display:block;src:url(../webfonts/fa-regular-400.woff2) format("woff2"),url(../webfonts/fa-regular-400.woff) format("woff")}
+@font-face{font-family:"FA Solid Any";font-style:normal;font-weight:100 900;font-display:block;src:url(../webfonts/fa-solid-900.woff2) format("woff2"),url(../webfonts/fa-solid-900.woff) format("woff")}
+@font-face{font-family:"FA Brands Any";font-style:normal;font-weight:100 900;font-display:block;src:url(../webfonts/fa-brands-400.woff2) format("woff2"),url(../webfonts/fa-brands-400.woff) format("woff")}
+.far,.fal{font-family:"Font Awesome 5 Pro","FA Regular Any","FA Solid Any"}
+.far{font-weight:400}
+.fal{font-weight:300}
+.fa,.fas{font-family:"Font Awesome 5 Pro","FA Solid Any","FA Regular Any";font-weight:900}
+.fad{font-family:"Font Awesome 5 Duotone","FA Solid Any","FA Regular Any";font-weight:900}
+.fab{font-family:"Font Awesome 5 Brands","FA Brands Any"}

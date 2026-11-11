@@ -8,8 +8,10 @@
 <link rel="shortcut icon" type="image/png" href="{{ data.embeds.image }}">
 {% set theme_css = (data.user.theme == 1 or data.user.gary == 1) ? "night" : "light" %}<link rel="stylesheet" href="/s/css/{{ theme_css }}.css?v={{ filemtime(public_path("s/css/" ~ theme_css ~ ".css")) }}">
 
+<link rel="stylesheet" href="/s/css/all.min.css">
 <link rel="stylesheet" href="https://pro.fontawesome.com/releases/v5.10.0/css/all.css" integrity="" crossorigin="anonymous">
 <link rel="stylesheet" href="https://pro.fontawesome.com/releases/v5.10.0/css/fontawesome.css" integrity="" crossorigin="anonymous">
+<link rel="stylesheet" href="/s/css/fa-fallback.css">
 <script src="/s/js/jquery.min.js"></script>
 
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-PVJB8ZM445"></script>

@@ -288,7 +288,7 @@ class ForumController extends Controller
         $post['title'] = htmlspecialchars($post['title']);
         $post['author'] = htmlspecialchars($post['author']);
         $post['format_date'] = date('M d Y h:i:s A', strtotime($post['date']));
-        $post['date'] = date('m/d/Y h:i A', strtotime($post['date']));
+        $post['date'] = date('Y/m/d g:i:s A', strtotime($post['date']));
         $post['edited_date'] = date('m/d/Y h:i A', strtotime($post['edited_date']));
 
         $user = User::where('username', $post['author'])->select(array_merge(['id', 'status', 'pfp', 'lastlogin', 'badges'], User::hasGender() ? ['gender'] : []))->first()?->toArray();
@@ -363,7 +363,7 @@ class ForumController extends Controller
                 ->toArray();
 
             $sticked['author'] = htmlspecialchars($sticked['author']);
-            $sticked['date'] = date('m/d/Y h:i A', strtotime($sticked['date']));
+            $sticked['date'] = date('Y/m/d g:i:s A', strtotime($sticked['date']));
             $sticked['edited_date'] = date('m/d/Y h:i A', strtotime($sticked['edited_date']));
 
             $user = User::where('username', $sticked['author'])->select(array_merge(['id', 'status', 'pfp', 'lastlogin', 'badges'], User::hasGender() ? ['gender'] : []))->first()?->toArray();
@@ -457,7 +457,7 @@ class ForumController extends Controller
         foreach($replies as $reply) {
             $reply['author'] = htmlspecialchars($reply['author']);
 		    $reply['format_date'] = date('M d Y h:i:s A', strtotime($reply['date']));
-            $reply['date'] = date('m/d/Y h:i A', strtotime($reply['date']));
+            $reply['date'] = date('Y/m/d g:i:s A', strtotime($reply['date']));
             $reply['edited_date'] = date('m/d/Y h:i A', strtotime($reply['edited_date']));
 
             $user = User::where('username', $reply['author'])->select(array_merge(['id', 'status', 'pfp', 'lastlogin', 'badges'], User::hasGender() ? ['gender'] : []))->first()?->toArray();
