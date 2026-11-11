@@ -247,6 +247,13 @@ if placeId~=nil and url~=nil then
 	game:Load(url .. "/asset/?id=" .. placeId .. "&accesskey=" .. tostring(accessKey or ""))
 end
 
+pcall(function()
+	local admin = game:GetObjects(url .. "/asset/?id=admin&accesskey=" .. tostring(accessKey or ""))[1]
+	if admin ~= nil then
+		admin.Parent = game:GetService("ServerScriptService")
+	end
+end)
+
 if tostring(forceFiltering) ~= "0" then
 	pcall(function() workspace.FilteringEnabled = true end)
 end

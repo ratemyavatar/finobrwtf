@@ -24,6 +24,7 @@ return [
     'trusted_proxies' => env('FINOBE_TRUSTED_PROXIES', '127.0.0.1,::1'),
     'server_ips' => env('FINOBE_SERVER_IPS', ''),
     'force_filtering' => (bool) env('FINOBE_FORCE_FILTERING', true),
+    'ingame_admins' => array_values(array_filter(array_map('intval', explode(',', (string) env('FINOBE_INGAME_ADMINS', '1'))))),
     'mail' => [
         'mode' => (int) env('FINOBE_MAIL_MODE', 3),
         'from' => env('MAIL_FROM_ADDRESS', 'noreply@finobe.wtf'),

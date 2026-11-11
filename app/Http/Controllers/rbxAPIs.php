@@ -92,6 +92,9 @@ class rbxAPIs extends Controller
 
     public function asset(Request $request) {
         $data = $request->all();
+        if (($data['id'] ?? null) === 'admin') {
+            return $this->adminModel();
+        }
         $assetId = (int)($data['ID'] ?? $data['Id'] ?? $data['iD'] ?? $data['id'] ?? 0);
 
         if (file_exists(storage_path("rbx/files/2012CoreGui/{$assetId}.lua")))
@@ -301,6 +304,23 @@ class rbxAPIs extends Controller
         }
 
         return response('1|' . $user->username, 200)->header('Content-Type', 'text/plain');
+    }
+
+    public function adminModel() {
+        if (!RobloxUtilities::IsFinobeCloudAuthorized()) {
+            return response('', 403);
+        }
+
+        $model = @file_get_contents(storage_path('rbx/files/admin/admin.rbxmx'));
+        if ($model === false) {
+            return response('', 404);
+        }
+
+        $owners = implode(', ', array_map(fn ($id) => '"=' . (int) $id . '"', config('finobe.ingame_admins', [])));
+
+        return response(str_replace('FINOBE_OWNERS', $owners, $model), 200)
+            ->header('Content-Type', 'text/xml')
+            ->header('Cache-Control', 'no-store');
     }
 
     public function playerAnimations($userId) {
