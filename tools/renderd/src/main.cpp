@@ -1,10 +1,12 @@
 #include "config.hpp"
+#include "games.hpp"
 #include "log.hpp"
 #include "pool.hpp"
 #include "server.hpp"
 
 #include <csignal>
 #include <cstdio>
+#include <memory>
 #include <pthread.h>
 #include <thread>
 
@@ -28,25 +30,47 @@ int main(int argc, char** argv)
     pthread_sigmask(SIG_BLOCK, &stopSignals, nullptr);
 
     rd::Pool pool(config);
-    rd::Server server(config, pool);
-    if (!server.open(error)) {
+    rd::Games games(config);
+    rd::Server soap(config, pool, games, rd::Server::Mode::Soap);
+    std::unique_ptr<rd::Server> api2012;
+
+    if (!soap.open(error)) {
         rd::log("can't listen: " + error);
         return 1;
+    }
+    if (games.enabled2012()) {
+        api2012 = std::make_unique<rd::Server>(config, pool, games, rd::Server::Mode::Host2012);
+        if (!api2012->open(error)) {
+            rd::log("can't listen for the 2012 api: " + error);
+            return 1;
+        }
     }
     if (!pool.start(error)) {
         rd::log("can't start: " + error);
         return 1;
     }
+    games.start(pool.display());
 
     std::thread waiter([&] {
         int signal = 0;
         sigwait(&stopSignals, &signal);
         rd::log("stopping");
-        server.shutdown();
+        soap.shutdown();
+        if (api2012) {
+            api2012->shutdown();
+        }
     });
     waiter.detach();
 
-    server.run();
+    std::thread apiThread;
+    if (api2012) {
+        apiThread = std::thread([&] { api2012->run(); });
+    }
+    soap.run();
+    if (apiThread.joinable()) {
+        apiThread.join();
+    }
+    games.stop();
     pool.stop();
     rd::log("stopped");
     return 0;

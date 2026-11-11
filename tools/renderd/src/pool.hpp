@@ -26,6 +26,7 @@ public:
     int port(int index) const;
 
     std::string version();
+    std::string display() const { return display_; }
     int readyCount();
     std::string statusJson();
 
@@ -47,7 +48,6 @@ private:
 
     void monitor();
     void spawn(Worker& worker);
-    void terminate(pid_t pid);
     bool hello(int port, int timeoutSeconds);
     bool startDisplay(std::string& error);
     bool launchXvfb(std::string& error);

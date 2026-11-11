@@ -22,6 +22,15 @@ struct Config {
     int healthEvery = 15;
     size_t maxBody = 8 * 1024 * 1024;
     int maxConnections = 128;
+    int gameMax = 8;
+    int gameSpares = 1;
+    int gameBasePort = 65200;
+    int gameLifetime = 21600;
+    std::string client2012;
+    int port2012 = 64990;
+    int max2012 = 8;
+    std::string accessKey;
+    std::string domain = "finobe.wtf";
 };
 
 bool parseArgs(int argc, char** argv, Config& config, std::string& error);

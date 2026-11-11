@@ -2,16 +2,14 @@
 
 #include "log.hpp"
 #include "net.hpp"
+#include "procs.hpp"
 #include "soap.hpp"
 
 #include <cerrno>
-#include <csignal>
 #include <cstdlib>
 #include <cstring>
-#include <fcntl.h>
 #include <sstream>
 #include <sys/stat.h>
-#include <sys/wait.h>
 #include <unistd.h>
 
 namespace rd {
@@ -19,27 +17,6 @@ namespace rd {
 namespace {
 
 using Clock = std::chrono::steady_clock;
-
-void redirectToNull()
-{
-    int null = ::open("/dev/null", O_RDWR);
-    if (null >= 0) {
-        ::dup2(null, 0);
-        ::dup2(null, 1);
-        ::dup2(null, 2);
-        if (null > 2) {
-            ::close(null);
-        }
-    }
-}
-
-void resetChildSignals()
-{
-    sigset_t none;
-    sigemptyset(&none);
-    ::sigprocmask(SIG_SETMASK, &none, nullptr);
-    std::signal(SIGPIPE, SIG_DFL);
-}
 
 }
 
@@ -96,17 +73,12 @@ bool Pool::launchXvfb(std::string& error)
     std::string number = display_.substr(1);
     ::unlink(("/tmp/.X" + number + "-lock").c_str());
     ::unlink(("/tmp/.X11-unix/X" + number).c_str());
-    pid_t pid = ::fork();
+    Launch spec;
+    spec.args = {"Xvfb", display_, "-screen", "0", "1280x1024x24", "-nolisten", "tcp"};
+    pid_t pid = launch(spec);
     if (pid < 0) {
         error = std::string("fork failed: ") + std::strerror(errno);
         return false;
-    }
-    if (pid == 0) {
-        resetChildSignals();
-        ::setsid();
-        redirectToNull();
-        ::execlp("Xvfb", "Xvfb", display_.c_str(), "-screen", "0", "1280x1024x24", "-nolisten", "tcp", static_cast<char*>(nullptr));
-        ::_exit(127);
     }
     xvfb_ = pid;
     std::string socketPath = "/tmp/.X11-unix/X" + number;
@@ -116,8 +88,7 @@ bool Pool::launchXvfb(std::string& error)
             log("xvfb is up on " + display_);
             return true;
         }
-        int status = 0;
-        if (::waitpid(pid, &status, WNOHANG) == pid) {
+        if (!alive(pid)) {
             xvfb_ = -1;
             error = "Xvfb exited right away, is it installed?";
             return false;
@@ -180,32 +151,17 @@ void Pool::stop()
 
 void Pool::spawn(Worker& worker)
 {
-    pid_t pid = ::fork();
+    Launch spec;
+    spec.dir = config_.rccDir;
+    spec.display = display_;
+    spec.winePrefix = config_.winePrefix;
+    spec.args = {config_.wine, "RCCService.exe", "-Console", "-verbose", "-placeid:-1", "-port", std::to_string(worker.port)};
+    pid_t pid = launch(spec);
     if (pid < 0) {
         log("fork failed for rcc on port " + std::to_string(worker.port) + ": " + std::strerror(errno));
         worker.state = State::Down;
         worker.retryAt = Clock::now() + std::chrono::seconds(5);
         return;
-    }
-    if (pid == 0) {
-        resetChildSignals();
-        ::setsid();
-        if (::chdir(config_.rccDir.c_str()) != 0) {
-            ::_exit(126);
-        }
-        redirectToNull();
-        for (const char* name : {"http_proxy", "https_proxy", "HTTP_PROXY", "HTTPS_PROXY", "no_proxy", "NO_PROXY", "all_proxy", "ALL_PROXY"}) {
-            ::unsetenv(name);
-        }
-        ::setenv("DISPLAY", display_.c_str(), 1);
-        ::setenv("WINEDEBUG", "-all", 1);
-        ::setenv("WINEDLLOVERRIDES", "mscoree,mshtml=", 1);
-        if (!config_.winePrefix.empty()) {
-            ::setenv("WINEPREFIX", config_.winePrefix.c_str(), 1);
-        }
-        std::string portText = std::to_string(worker.port);
-        ::execlp(config_.wine.c_str(), config_.wine.c_str(), "RCCService.exe", "-Console", "-verbose", "-placeid:-1", "-port", portText.c_str(), static_cast<char*>(nullptr));
-        ::_exit(127);
     }
     worker.pid = pid;
     worker.state = State::Starting;
@@ -214,27 +170,6 @@ void Pool::spawn(Worker& worker)
     worker.since = Clock::now();
     worker.lastCheck = Clock::now();
     log("started rcc on port " + std::to_string(worker.port) + " (pid " + std::to_string(pid) + ")");
-}
-
-void Pool::terminate(pid_t pid)
-{
-    if (pid <= 0) {
-        return;
-    }
-    ::kill(-pid, SIGTERM);
-    ::kill(pid, SIGTERM);
-    for (int i = 0; i < 30; i++) {
-        int status = 0;
-        pid_t r = ::waitpid(pid, &status, WNOHANG);
-        if (r == pid || (r < 0 && errno == ECHILD)) {
-            ::kill(-pid, SIGKILL);
-            return;
-        }
-        ::usleep(100000);
-    }
-    ::kill(-pid, SIGKILL);
-    ::kill(pid, SIGKILL);
-    ::waitpid(pid, nullptr, 0);
 }
 
 bool Pool::hello(int port, int timeoutSeconds)
@@ -249,32 +184,26 @@ bool Pool::hello(int port, int timeoutSeconds)
 
 void Pool::reap()
 {
-    while (true) {
-        int status = 0;
-        pid_t pid = ::waitpid(-1, &status, WNOHANG);
-        if (pid <= 0) {
-            return;
+    reapChildren();
+    int status = 0;
+    if (xvfb_ > 0 && takeExit(xvfb_, status)) {
+        log("xvfb exited, starting it again");
+        xvfb_ = -1;
+        std::string error;
+        if (!launchXvfb(error)) {
+            log("xvfb restart failed: " + error);
         }
-        if (pid == xvfb_) {
-            log("xvfb exited, starting it again");
-            xvfb_ = -1;
-            std::string error;
-            if (!launchXvfb(error)) {
-                log("xvfb restart failed: " + error);
-            }
-            continue;
-        }
-        std::lock_guard<std::mutex> guard(lock_);
-        for (auto& worker : workers_) {
-            if (worker.pid == pid) {
-                log("rcc on port " + std::to_string(worker.port) + " exited (" + (WIFSIGNALED(status) ? "signal " + std::to_string(WTERMSIG(status)) : "code " + std::to_string(WEXITSTATUS(status))) + ")");
-                worker.pid = -1;
-                if (worker.state != State::Busy) {
-                    worker.state = State::Down;
-                    worker.retryAt = Clock::now() + std::chrono::seconds(2);
-                } else {
-                    worker.state = State::Restart;
-                }
+    }
+    std::lock_guard<std::mutex> guard(lock_);
+    for (auto& worker : workers_) {
+        if (worker.pid > 0 && takeExit(worker.pid, status)) {
+            log("rcc on port " + std::to_string(worker.port) + " exited (" + describeExit(status) + ")");
+            worker.pid = -1;
+            if (worker.state != State::Busy) {
+                worker.state = State::Down;
+                worker.retryAt = Clock::now() + std::chrono::seconds(2);
+            } else {
+                worker.state = State::Restart;
             }
         }
     }

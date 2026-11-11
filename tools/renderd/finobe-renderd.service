@@ -6,7 +6,7 @@ After=network.target
 User=finobe
 Group=finobe
 Environment=WINEPREFIX=/srv/finobe/wine
-ExecStart=/usr/local/bin/finobe-renderd --rcc /srv/finobe/rcc --wine-prefix /srv/finobe/wine --workers 4 --port 64989
+ExecStart=/usr/local/bin/finobe-renderd --rcc /srv/finobe/rcc --wine-prefix /srv/finobe/wine --workers 4 --game-max 8 --client2012 /srv/finobe/client2012 --access-key-file /srv/finobe/key
 Restart=always
 RestartSec=3
 KillMode=control-group
