@@ -105,7 +105,7 @@ class api extends Controller
             ->map(fn($item) => $item->toArray());
 
         foreach($items as $item) {
-            $item['thumbnail'] = $item['asset_type'] == 3 ? 'https://finobe.wtf/s/img/speaker.png' : $item['additional']['media']['thumbnail'];
+            $item['thumbnail'] = $item['asset_type'] == 3 ? '/s/img/speaker.png' : $item['additional']['media']['thumbnail'];
 
             $user = User::find($item['author']);
 

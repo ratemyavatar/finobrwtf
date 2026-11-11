@@ -103,7 +103,7 @@ class VideoController extends Controller
             abort(404);
         }
 
-        return redirect('https://cdn.finobe.wtf/videos/thumbs/' . Video::find($id)->thumbnail);
+        return redirect(rtrim((string) config('admin.cdn_url'), '/') . '/videos/thumbs/' . Video::find($id)->thumbnail);
     }
 
     public function video_data(Request $request, $id) {

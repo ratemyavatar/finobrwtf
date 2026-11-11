@@ -102,3 +102,12 @@ FINOBE_SERVER_IPS=1.2.3.4,5.6.7.8
 
 launcher build 9 only binds the 2012 relay to `127.0.0.1`, only takes replies from the game server, and refuses play links that don't point at finobe or that try to sneak in extra arguments. players get it on their next launch.
 
+
+## 11. thumbnails and avatars
+
+every render runs on the 2016 rcc with the same `ThumbnailGenerator:Click` finobe used, so framing, lighting and the clear background come straight from the engine.
+
+- avatars, hats, gear and heads render at 768 by 768. places render at 768 by 432
+- shirts, t-shirts, pants and packages render on the classic body colors (yellow head and arms, blue torso, green legs), like the old catalog
+- render and cdn urls follow `FINOBE_DOMAIN` and `FINOBE_CDN_URL`, so renders work on any domain
+- rcc loads the character url through winhttp. if you test with a self signed certificate, rcc can't load it over https. production behind cloudflare is fine

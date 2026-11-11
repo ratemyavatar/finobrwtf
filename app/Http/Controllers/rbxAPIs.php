@@ -465,6 +465,7 @@ class rbxAPIs extends Controller
           pcall(function() game:GetService("ScriptContext"):AddCoreScript(37801172,game:GetService("ScriptContext"),"StarterScript") end)
         end';
 
+        $src = str_replace('finobe.wtf', $domain, $src);
         $src = preg_replace('#https?://www\.' . preg_quote($domain, '#') . '#i', 'http://assetgame.' . $domain, $src);
         return response(SecurityNotary::SignScript($src, FormatVersion::V1), 200)
             ->header("Cache-Control", "no-store, no-cache, must-revalidate")

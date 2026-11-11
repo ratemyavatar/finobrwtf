@@ -127,7 +127,7 @@ class Asset extends Controller
                 0,
                 2,
                 "ScriptExecution",
-                [$id, "https://www.finobe.wtf/asset/?id={$id}", "https://www.finobe.wtf", "PNG", 768, 768]
+                [$id, "https://www." . config('finobe.domain') . "/asset/?id={$id}", "https://www." . config('finobe.domain'), "PNG", 768, 768]
             );
 
             $jobEx = $arbiter->OpenJobEx($constructedJob);
@@ -142,7 +142,7 @@ class Asset extends Controller
             $instance = new self();
             $hatData = self::getAssetData($id);
             $additional = json_decode($hatData->additional);
-            $additional->media->thumbnail = "https://cdn.finobe.wtf/thumbnails/{$filename}";
+            $additional->media->thumbnail = rtrim((string) config('admin.cdn_url'), '/') . "/thumbnails/{$filename}";
             $additional = json_encode($additional);
             $instance->db->table('assets')
                 ->where('id', $id)
@@ -150,7 +150,7 @@ class Asset extends Controller
                     'additional' => $additional
                 ]);
 
-            return "https://cdn.finobe.wtf/thumbnails/{$filename}";
+            return rtrim((string) config('admin.cdn_url'), '/') . "/thumbnails/{$filename}";
         }
         return "";
     }
@@ -204,11 +204,11 @@ class Asset extends Controller
         }
 
         if(is_array($texture)) {
-            $xmltemplate =str_replace("TEXTUREURLPLACEHOLDER", "http://www.finobe.wtf/asset/?id=" . $textureId, $xmltemplate);
+            $xmltemplate =str_replace("TEXTUREURLPLACEHOLDER", "http://www." . config('finobe.domain') . "/asset/?id=" . $textureId, $xmltemplate);
         }
 
         if(is_array($mesh)) {
-            $xmltemplate =str_replace("MESHURLPLACEHOLDER",  "http://www.finobe.wtf/asset/?id=" . $meshId, $xmltemplate);
+            $xmltemplate =str_replace("MESHURLPLACEHOLDER",  "http://www." . config('finobe.domain') . "/asset/?id=" . $meshId, $xmltemplate);
         }
 
         $xmltemplate = self::normalizeItemXml($xmltemplate);
@@ -304,7 +304,7 @@ class Asset extends Controller
                 </Item>
             </roblox>';
         }
-        $xmlTemplate =str_replace("TEXTUREURLPLACEHOLDER", "http://www.finobe.wtf/asset/?id=" . $textureId, $xmlTemplate);
+        $xmlTemplate =str_replace("TEXTUREURLPLACEHOLDER", "http://www." . config('finobe.domain') . "/asset/?id=" . $textureId, $xmlTemplate);
         $xmlTemplate = self::normalizeItemXml($xmlTemplate);
         $accessoryId = self::createAsset($name, $assetType, $author, $xmlTemplate, $description, "r", [
             "price" => $price,
@@ -354,7 +354,7 @@ class Asset extends Controller
 
             if($imageData->asset_type == 18) {
                 $textureData = self::getAssetData($textureId);
-                return "https://cdn.finobe.wtf/assets/{$textureData->file}";
+                return rtrim((string) config('admin.cdn_url'), '/') . "/assets/{$textureData->file}";
             }
 
             return $additional->media->thumbnail ?? "";
@@ -385,7 +385,7 @@ class Asset extends Controller
 
             return config('finobe.cdn_path') . "/assets/{$assetinfo->file}";
         }
-        return "http://cdn.finobe.wtf/";
+        return rtrim((string) config('admin.cdn_url'), '/') . "/";
     }
 
     public static function isAllowedToDownload(int $assetId): bool
@@ -429,6 +429,14 @@ class Asset extends Controller
                     game:GetService("ScriptContext").ScriptsDisabled = true
                     player = game:GetService("Players"):CreateLocalPlayer(0)
                     player:LoadCharacter(false)
+                    local bodyColors = Instance.new("BodyColors")
+                    bodyColors.HeadColor = BrickColor.new(24)
+                    bodyColors.LeftArmColor = BrickColor.new(24)
+                    bodyColors.RightArmColor = BrickColor.new(24)
+                    bodyColors.TorsoColor = BrickColor.new(23)
+                    bodyColors.LeftLegColor = BrickColor.new(119)
+                    bodyColors.RightLegColor = BrickColor.new(119)
+                    bodyColors.Parent = player.Character
                     c = Instance.new("Pants")
                     c.PantsTemplate = game:GetObjects(asseturl)[1].PantsTemplate
                     c.Parent = player.Character
@@ -440,7 +448,7 @@ class Asset extends Controller
                 0,
                 2,
                 "ScriptExecution",
-                [$id, "https://www.finobe.wtf/asset/?id={$id}", "https://www.finobe.wtf", "PNG", 768, 768]
+                [$id, "https://www." . config('finobe.domain') . "/asset/?id={$id}", "https://www." . config('finobe.domain'), "PNG", 768, 768]
             );
 
             $jobEx = $arbiter->OpenJobEx($constructedJob);
@@ -455,7 +463,7 @@ class Asset extends Controller
             $instance = new self();
             $hatData = self::getAssetData($id);
             $additional = json_decode($hatData->additional);
-            $additional->media->thumbnail = "https://cdn.finobe.wtf/thumbnails/{$filename}";
+            $additional->media->thumbnail = rtrim((string) config('admin.cdn_url'), '/') . "/thumbnails/{$filename}";
             $additional = json_encode($additional);
             $instance->db->table('assets')
                 ->where('id', $id)
@@ -463,7 +471,7 @@ class Asset extends Controller
                     'additional' => $additional
                 ]);
 
-            return "https://cdn.finobe.wtf/thumbnails/{$filename}";
+            return rtrim((string) config('admin.cdn_url'), '/') . "/thumbnails/{$filename}";
         }
         return "";
     }
@@ -484,6 +492,14 @@ class Asset extends Controller
                     game:GetService("ScriptContext").ScriptsDisabled = true
                     player = game:GetService("Players"):CreateLocalPlayer(0)
                      player:LoadCharacter(false)
+                     local bodyColors = Instance.new("BodyColors")
+                     bodyColors.HeadColor = BrickColor.new(24)
+                     bodyColors.LeftArmColor = BrickColor.new(24)
+                     bodyColors.RightArmColor = BrickColor.new(24)
+                     bodyColors.TorsoColor = BrickColor.new(23)
+                     bodyColors.LeftLegColor = BrickColor.new(119)
+                     bodyColors.RightLegColor = BrickColor.new(119)
+                     bodyColors.Parent = player.Character
                     c = Instance.new("Shirt")
                     c.ShirtTemplate = game:GetObjects(asseturl)[1].ShirtTemplate
                     c.Parent = player.Character
@@ -495,7 +511,7 @@ class Asset extends Controller
                 0,
                 2,
                 "ScriptExecution",
-                [$id, "https://www.finobe.wtf/asset/?id={$id}", "https://www.finobe.wtf", "PNG", 768, 768]
+                [$id, "https://www." . config('finobe.domain') . "/asset/?id={$id}", "https://www." . config('finobe.domain'), "PNG", 768, 768]
             );
 
             $jobEx = $arbiter->OpenJobEx($constructedJob);
@@ -510,7 +526,7 @@ class Asset extends Controller
             $instance = new self();
             $hatData = self::getAssetData($id);
             $additional = json_decode($hatData->additional);
-            $additional->media->thumbnail = "https://cdn.finobe.wtf/thumbnails/{$filename}";
+            $additional->media->thumbnail = rtrim((string) config('admin.cdn_url'), '/') . "/thumbnails/{$filename}";
             $additional = json_encode($additional);
             $instance->db->table('assets')
                 ->where('id', $id)
@@ -518,7 +534,7 @@ class Asset extends Controller
                     'additional' => $additional
                 ]);
 
-            return "https://cdn.finobe.wtf/thumbnails/{$filename}";
+            return rtrim((string) config('admin.cdn_url'), '/') . "/thumbnails/{$filename}";
         }
         return "";
     }
@@ -539,6 +555,14 @@ class Asset extends Controller
                     game:GetService("ScriptContext").ScriptsDisabled = true
                     player = game:GetService("Players"):CreateLocalPlayer(0)
                      player:LoadCharacter(false)
+                     local bodyColors = Instance.new("BodyColors")
+                     bodyColors.HeadColor = BrickColor.new(24)
+                     bodyColors.LeftArmColor = BrickColor.new(24)
+                     bodyColors.RightArmColor = BrickColor.new(24)
+                     bodyColors.TorsoColor = BrickColor.new(23)
+                     bodyColors.LeftLegColor = BrickColor.new(119)
+                     bodyColors.RightLegColor = BrickColor.new(119)
+                     bodyColors.Parent = player.Character
                     c = Instance.new("ShirtGraphic")
                     c.Graphic = game:GetObjects(asseturl)[1].Graphic
                     c.Parent = player.Character
@@ -550,7 +574,7 @@ class Asset extends Controller
                 0,
                 2,
                 "ScriptExecution",
-                [$id, "https://www.finobe.wtf/asset/?id={$id}", "https://www.finobe.wtf", "PNG", 768, 768]
+                [$id, "https://www." . config('finobe.domain') . "/asset/?id={$id}", "https://www." . config('finobe.domain'), "PNG", 768, 768]
             );
 
             $jobEx = $arbiter->OpenJobEx($constructedJob);
@@ -565,7 +589,7 @@ class Asset extends Controller
             $instance = new self();
             $hatData = self::getAssetData($id);
             $additional = json_decode($hatData->additional);
-            $additional->media->thumbnail = "https://cdn.finobe.wtf/thumbnails/{$filename}";
+            $additional->media->thumbnail = rtrim((string) config('admin.cdn_url'), '/') . "/thumbnails/{$filename}";
             $additional = json_encode($additional);
             $instance->db->table('assets')
                 ->where('id', $id)
@@ -573,7 +597,7 @@ class Asset extends Controller
                     'additional' => $additional
                 ]);
 
-            return "https://cdn.finobe.wtf/thumbnails/{$filename}";
+            return rtrim((string) config('admin.cdn_url'), '/') . "/thumbnails/{$filename}";
         }
         return "";
     }
@@ -600,7 +624,7 @@ class Asset extends Controller
                 0,
                 2,
                 "ScriptExecution",
-                [$id, "https://www.finobe.wtf/asset/?id={$id}", "https://www.finobe.wtf", "PNG", 768, 768]
+                [$id, "https://www." . config('finobe.domain') . "/asset/?id={$id}", "https://www." . config('finobe.domain'), "PNG", 768, 768]
             );
 
             $jobEx = $arbiter->OpenJobEx($constructedJob);
@@ -615,7 +639,7 @@ class Asset extends Controller
             $instance = new self();
             $hatData = self::getAssetData($id);
             $additional = json_decode($hatData->additional);
-            $additional->media->thumbnail = "https://cdn.finobe.wtf/thumbnails/{$filename}";
+            $additional->media->thumbnail = rtrim((string) config('admin.cdn_url'), '/') . "/thumbnails/{$filename}";
             $additional = json_encode($additional);
             $instance->db->table('assets')
                 ->where('id', $id)
@@ -623,7 +647,7 @@ class Asset extends Controller
                     'additional' => $additional
                 ]);
 
-            return "https://cdn.finobe.wtf/thumbnails/{$filename}";
+            return rtrim((string) config('admin.cdn_url'), '/') . "/thumbnails/{$filename}";
         }
         return "";
     }
@@ -657,7 +681,7 @@ class Asset extends Controller
                 0,
                 2,
                 "ScriptExecution",
-                [$id, "https://www.finobe.wtf/asset/?id={$id}", "https://www.finobe.wtf", "PNG", 768, 768]
+                [$id, "https://www." . config('finobe.domain') . "/asset/?id={$id}", "https://www." . config('finobe.domain'), "PNG", 768, 768]
             );
 
             $jobEx = $arbiter->OpenJobEx($constructedJob);
@@ -672,7 +696,7 @@ class Asset extends Controller
             $instance = new self();
             $hatData = self::getAssetData($id);
             $additional = json_decode($hatData->additional);
-            $additional->media->thumbnail = "https://cdn.finobe.wtf/thumbnails/{$filename}";
+            $additional->media->thumbnail = rtrim((string) config('admin.cdn_url'), '/') . "/thumbnails/{$filename}";
             $additional = json_encode($additional);
             $instance->db->table('assets')
                 ->where('id', $id)
@@ -680,7 +704,7 @@ class Asset extends Controller
                     'additional' => $additional
                 ]);
 
-            return "https://cdn.finobe.wtf/thumbnails/{$filename}";
+            return rtrim((string) config('admin.cdn_url'), '/') . "/thumbnails/{$filename}";
         }
         return "";
     }
@@ -709,10 +733,18 @@ class Asset extends Controller
                 game:GetService("ScriptContext").ScriptsDisabled = true
                 local player = game:GetService("Players"):CreateLocalPlayer(0)
                 player:LoadCharacter(false)
+                local bodyColors = Instance.new("BodyColors")
+                bodyColors.HeadColor = BrickColor.new(24)
+                bodyColors.LeftArmColor = BrickColor.new(24)
+                bodyColors.RightArmColor = BrickColor.new(24)
+                bodyColors.TorsoColor = BrickColor.new(23)
+                bodyColors.LeftLegColor = BrickColor.new(119)
+                bodyColors.RightLegColor = BrickColor.new(119)
+                bodyColors.Parent = player.Character
                 local character = player.Character
                 for assetid in string.gmatch(assetids, "%d+") do
                     local ok, asset = pcall(function()
-                        return game:GetObjects("https://www.finobe.wtf/asset/?id=" .. assetid)[1]
+                        return game:GetObjects(url .. "/asset/?id=" .. assetid)[1]
                     end)
                     if ok and asset then
                         local class = asset.ClassName
@@ -736,7 +768,7 @@ class Asset extends Controller
             0,
             2,
             "ScriptExecution",
-            [implode(",", $assetIds), "https://www.finobe.wtf", "PNG", 768, 768]
+            [implode(",", $assetIds), "https://www." . config('finobe.domain'), "PNG", 768, 768]
         );
 
         $jobEx = $arbiter->OpenJobEx($constructedJob);
@@ -751,7 +783,7 @@ class Asset extends Controller
         $instance = new self();
         $packageData = self::getAssetData($id);
         $additional = json_decode($packageData->additional);
-        $additional->media->thumbnail = "https://cdn.finobe.wtf/thumbnails/{$filename}";
+        $additional->media->thumbnail = rtrim((string) config('admin.cdn_url'), '/') . "/thumbnails/{$filename}";
         $additional = json_encode($additional);
         $instance->db->table('assets')
             ->where('id', $id)
@@ -759,7 +791,7 @@ class Asset extends Controller
                 'additional' => $additional
             ]);
 
-        return "https://cdn.finobe.wtf/thumbnails/{$filename}";
+        return rtrim((string) config('admin.cdn_url'), '/') . "/thumbnails/{$filename}";
     }
 
     public static function createPackage(string $name, array $assetIds, int $author, string $description, int $price, bool $onSale = false, bool $isLimited = false): int
