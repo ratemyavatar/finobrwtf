@@ -15,4 +15,16 @@ return [
         10 => ['name' => 'да (Русский)', 'color' => '96, 104, 111', 'about' => 'Only Russian is allowed in this section. Offenders will be banned. хахахахахаха'],
         12 => ['name' => 'Minecraft', 'color' => '96, 104, 111', 'about' => 'Talk about Minecraft here.'],
     ],
+
+    'trash' => [
+        'is finobe a virus',
+        'is this a virus',
+        'is the client a virus',
+        'is the launcher a virus',
+        'finobe is a virus',
+        'is finobe safe',
+        'is finobe dead',
+    ],
+
+    'trash_ban_reason' => '[Automated Ban] Posting trash on the forum even after being warned',
 ];

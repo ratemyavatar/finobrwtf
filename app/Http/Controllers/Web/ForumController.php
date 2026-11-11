@@ -883,6 +883,23 @@ class ForumController extends Controller
                     return redirect('/app/forum/new/post');
                 }
 
+                if(Auth::user()->status != 'admin' && \App\Services\ForumTrash::matches((string) $data['title'])) {
+                    if(!$request->boolean('continue_anyway')) {
+                        Session::put('error', 'You will be banned automatically if you post this trash.');
+                        return redirect('/app/forum/new/post');
+                    }
+
+                    Ban::create([
+                        'username' => Auth::user()->username,
+                        'reason' => (string) config('forum.trash_ban_reason'),
+                        'expire' => null,
+                        'moderator' => 'Auto',
+                        'perm' => true,
+                    ]);
+
+                    return redirect('/');
+                }
+
                 $post = Thread::create([
                     'category' => $data['section'],
                     'author' => Auth::user()->username,
@@ -898,6 +915,8 @@ class ForumController extends Controller
                 return redirect('/forum/post?id=' . $post->id);
             }
         }
+
+        $pageData['trash'] = \App\Services\ForumTrash::phrases();
 
         if(Auth::user()->status == 'admin') {
             $mediaDir = config('finobe.cdn_path') . '/forum/media';
