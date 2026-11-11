@@ -39,3 +39,4 @@ storage/setup/*.zip
 
 # Python bytecode from tools/*
 __pycache__/
+dump.rdb
