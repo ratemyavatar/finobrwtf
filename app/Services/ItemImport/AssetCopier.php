@@ -59,19 +59,34 @@ class AssetCopier
         $ids = [];
         foreach (($bundle['items'] ?? []) as $item) {
             $robloxId = (int) ($item['id'] ?? 0);
-            $type = self::finobeType((int) ($item['assetType'] ?? 0));
-            if ($robloxId === 0 || $type === null) {
+            if ($robloxId === 0 || ($item['type'] ?? 'Asset') !== 'Asset') {
+                continue;
+            }
+            $assetType = (int) ($item['assetType'] ?? 0);
+            if ($assetType === 0) {
+                try {
+                    $assetType = (int) (self::details($robloxId)['AssetTypeId'] ?? 0);
+                } catch (\Throwable $e) {
+                    report($e);
+                    continue;
+                }
+            }
+            $item['assetType'] = $assetType;
+            $type = self::finobeType($assetType);
+            if ($type === null) {
                 continue;
             }
             try {
-                $ids[] = self::importItem($robloxId, $type, (string) ($item['name'] ?? $name), $author);
+                $ids[] = $type === 'bodypart'
+                    ? ItemImporter::importBodyPart(ItemImporter::download($robloxId), (string) ($item['name'] ?? $name), $author, (int) $item['assetType'])
+                    : self::importItem($robloxId, $type, (string) ($item['name'] ?? $name), $author);
             } catch (\Throwable $e) {
                 report($e);
             }
         }
 
         if (!$ids) {
-            throw new ImportException("That Roblox bundle is all body shapes and animations, which this site can't use yet.");
+            throw new ImportException("Nothing in that Roblox bundle works on the 2016 client: it only has animations or body parts with no R6 version.");
         }
 
         $packageId = AssetHelper::createPackage($name, $ids, $author, $desc, $price, $onSale);
@@ -85,6 +100,7 @@ class AssetCopier
             in_array($robloxType, self::HAT_TYPES, true) => 'hat',
             $robloxType === 17, $robloxType === 79 => 'head',
             $robloxType === 18 => 'face',
+            $robloxType >= 27 && $robloxType <= 31 => 'bodypart',
             $robloxType === 11 => 'shirt',
             $robloxType === 12 => 'pants',
             $robloxType === 2 => 'tshirt',
@@ -152,15 +168,20 @@ class AssetCopier
 
     private static function details(int $id): array
     {
-        try {
-            $r = Http::timeout(15)->retry(2, 500, throw: false)->get("https://economy.roproxy.com/v2/assets/{$id}/details");
-        } catch (\Throwable $e) {
-            throw new ImportException("Couldn't reach Roblox to look up item {$id}, try again.");
+        foreach (['economy.roproxy.com', 'economy.roblox.com'] as $host) {
+            try {
+                $r = Http::timeout(15)->retry(2, 500, throw: false)->get("https://{$host}/v2/assets/{$id}/details");
+            } catch (\Throwable $e) {
+                continue;
+            }
+            if ($r->ok() && is_array($r->json())) {
+                return $r->json();
+            }
+            if ($r->status() === 400 || $r->status() === 404) {
+                throw new ImportException("Roblox has no item {$id}.");
+            }
         }
-        if (!$r->ok() || !is_array($r->json())) {
-            throw new ImportException("Roblox has no item {$id}.");
-        }
-        return $r->json();
+        throw new ImportException("Couldn't reach Roblox to look up item {$id}, try again.");
     }
 
     public static function bundleIdFromLink(string $link): ?int

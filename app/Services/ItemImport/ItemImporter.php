@@ -52,6 +52,57 @@ class ItemImporter
         return $assetId;
     }
 
+    public static function importBodyPart(string $file, string $title, int $author, int $type): int
+    {
+        $importer = new self($author, $title);
+        $xml = $importer->bodyPart($file);
+        $assetId = AssetHelper::createAsset($title, $type, $author, $xml, '', 'n', [
+            'price' => 0,
+            'onSale' => false,
+            'isLimited' => false,
+            'historicPrice' => [],
+            'media' => ['thumbnail' => ''],
+        ]);
+        AssetHelper::grantToCreator($assetId, $author);
+
+        return $assetId;
+    }
+
+    public function bodyPart(string $file): string
+    {
+        $doc = new DOMDocument();
+        if (!@$doc->loadXML(RbxmReader::toXml($file), LIBXML_NONET | LIBXML_PARSEHUGE)) {
+            throw new ImportException("The body part file couldn't be read.");
+        }
+        $xp = new DOMXPath($doc);
+        $mesh = $xp->query('//Item[@class="Folder" and Properties/string[@name="Name"]="R6"]/Item[@class="CharacterMesh"]')->item(0)
+            ?? $xp->query('//Item[@class="CharacterMesh"]')->item(0);
+        if (!$mesh instanceof DOMElement) {
+            throw new ImportException('That body part has no R6 version, so the 2016 client can\'t use it.');
+        }
+
+        $num = fn(string $name) => (int) trim((string) $this->prop($xp, $mesh, $name));
+        $bodyPart = $num('BodyPart');
+        $meshId = $num('MeshId');
+        if ($bodyPart < 1 || $bodyPart > 5 || $meshId <= 0) {
+            throw new ImportException('That body part has no usable R6 mesh.');
+        }
+        $base = $num('BaseTextureId');
+        $overlay = $num('OverlayTextureId');
+
+        $props = [
+            '<int64 name="BaseTextureId">' . ($base > 0 ? $this->texture($base) : 0) . '</int64>',
+            '<token name="BodyPart">' . $bodyPart . '</token>',
+            '<int64 name="MeshId">' . $this->mesh($meshId) . '</int64>',
+            '<string name="Name">' . RbxmReader::esc($this->title) . '</string>',
+            '<int64 name="OverlayTextureId">' . ($overlay > 0 ? $this->texture($overlay) : 0) . '</int64>',
+        ];
+
+        return '<roblox xmlns:xmime="http://www.w3.org/2005/05/xmlmime" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.roblox.com/roblox.xsd" version="4">' . "\n"
+            . "\t<External>null</External>\n\t<External>nil</External>\n"
+            . "\t<Item class=\"CharacterMesh\" referent=\"RBX0\">\n\t\t<Properties>\n\t\t\t" . implode("\n\t\t\t", $props) . "\n\t\t</Properties>\n\t</Item>\n</roblox>";
+    }
+
     public function convert(string $file, ?int $expectType = null): array
     {
         $doc = new DOMDocument();
