@@ -72,22 +72,15 @@ def main():
             np.add.at(normals, faces[:, k], fn)
         normals /= np.maximum(np.linalg.norm(normals, axis=1, keepdims=True), 1e-9)
 
-    colors = attribute(mesh, 4)
-    if colors is not None and np.asarray(colors).size == n * 4:
-        colors = np.asarray(colors, np.uint8).reshape(-1, 4)
-    else:
-        colors = np.full((n, 4), 255, np.uint8)
-
     if len(lods) >= 2 and lods[1] > lods[0]:
         faces = faces[lods[0]:lods[1]]
 
     out = bytearray(b"version 2.00\n")
-    out += struct.pack("<HBBII", 12, 40, 12, n, len(faces))
-    vert = np.zeros(n, dtype=[("p", "<f4", 3), ("n", "<f4", 3), ("uv", "<f4", 3), ("c", "u1", 4)])
+    out += struct.pack("<HBBII", 12, 36, 12, n, len(faces))
+    vert = np.zeros(n, dtype=[("p", "<f4", 3), ("n", "<f4", 3), ("uv", "<f4", 3)])
     vert["p"] = pos
     vert["n"] = normals
     vert["uv"][:, :2] = uv
-    vert["c"] = colors
     out += vert.tobytes()
     out += faces.astype("<u4").tobytes()
     sys.stdout.buffer.write(bytes(out))

@@ -13,7 +13,7 @@ class RobloxAssetProxy
 
     public static function fetch(int $assetId, int $versionId = 0): array
     {
-        $key = $versionId > 0 ? "roblox_assetversion_b64_{$versionId}" : "roblox_asset_b64_{$assetId}";
+        $key = $versionId > 0 ? "roblox_assetversion_legacy_{$versionId}" : "roblox_asset_legacy_{$assetId}";
         $cached = self::cacheGet($key);
         if (is_string($cached) && $cached !== '' && ($decoded = base64_decode($cached, true)) !== false) {
             return [$decoded, 200];
@@ -31,12 +31,28 @@ class RobloxAssetProxy
         }
 
         if ($body !== '') {
+            $body = self::legacy($body);
             self::cachePut($key, base64_encode($body), self::CACHE_OK);
         } elseif ($status >= 400 && $status < 500 && $status !== 429) {
             self::cachePut("{$key}_miss", $status, self::CACHE_MISS);
         }
 
         return [$body, $status];
+    }
+
+    private static function legacy(string $body): string
+    {
+        try {
+            if (preg_match('/^version [3-9]\.\d\d\r?\n/', $body) || str_starts_with($body, "version 2.00")) {
+                return \App\Services\ItemImport\MeshConverter::toLegacy($body);
+            }
+            if (str_starts_with($body, '<roblox!')) {
+                return \App\Services\ItemImport\RbxmReader::toXml($body);
+            }
+        } catch (\Throwable $e) {
+            report($e);
+        }
+        return $body;
     }
 
     private static function cacheGet(string $key)

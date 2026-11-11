@@ -74,6 +74,7 @@ class ItemImporter
             throw new ImportException('That model is ' . ($type === self::HAT ? 'a hat/accessory' : 'a tool') . ', pick "' . ($type === self::HAT ? 'Hat' : 'Gear') . '" as the asset type.');
         }
 
+        $wasAccessory = $root->getAttribute('class') === 'Accessory';
         if (in_array($root->getAttribute('class'), ['Accessory', 'Accoutrement'], true)) {
             $root->setAttribute('class', 'Hat');
         }
@@ -93,6 +94,10 @@ class ItemImporter
 
         if ($type === self::HAT && !$xp->query('./Item[@class="Part" and Properties/string[@name="Name"]="Handle"]', $root)->length) {
             throw new ImportException('The accessory has no part named "Handle".');
+        }
+
+        if ($type === self::HAT && $wasAccessory) {
+            $this->attachmentToHatPoint($doc, $xp, $root);
         }
 
         $kept = [];
@@ -181,6 +186,79 @@ class ItemImporter
         $add('Vector3', 'Scale', RbxmReader::vec(...$scale));
         $add('Vector3', 'VertexColor', RbxmReader::vec(1, 1, 1));
         $item->insertBefore($mesh, $props->nextSibling);
+    }
+
+    const HEAD_ATTACHMENTS = [
+        'HairAttachment' => [0, 0.6, 0],
+        'HatAttachment' => [0, 0.6, 0],
+        'FaceFrontAttachment' => [0, 0, -0.6],
+        'FaceCenterAttachment' => [0, 0, 0],
+        'NeckAttachment' => [0, -0.5, 0],
+        'BodyFrontAttachment' => [0, -1.5, -0.5],
+        'BodyBackAttachment' => [0, -1.5, 0.5],
+        'LeftCollarAttachment' => [-1, -0.5, 0],
+        'RightCollarAttachment' => [1, -0.5, 0],
+        'WaistFrontAttachment' => [0, -2.5, -0.5],
+        'WaistCenterAttachment' => [0, -2.5, 0],
+        'WaistBackAttachment' => [0, -2.5, 0.5],
+        'LeftShoulderAttachment' => [-1.5, -0.5, 0],
+        'RightShoulderAttachment' => [1.5, -0.5, 0],
+        'LeftFootAttachment' => [-0.5, -4, 0],
+        'RightFootAttachment' => [0.5, -4, 0],
+        'RootAttachment' => [0, -1.5, 0],
+    ];
+
+    const HAT_MOUNT = [0, 0.5, 0];
+
+    private function attachmentToHatPoint(DOMDocument $doc, DOMXPath $xp, DOMElement $root): void
+    {
+        $handle = $xp->query('./Item[@class="Part" and Properties/string[@name="Name"]="Handle"]', $root)->item(0);
+        if (!$handle instanceof DOMElement) {
+            return;
+        }
+
+        foreach ($xp->query('./Item[@class="Attachment"]', $handle) as $att) {
+            $name = $this->prop($xp, $att, 'Name');
+            if (!isset(self::HEAD_ATTACHMENTS[$name])) {
+                continue;
+            }
+            $cf = $this->cframe($xp, $xp->query('./Properties/CoordinateFrame[@name="CFrame"]', $att)->item(0));
+            if ($cf === null) {
+                continue;
+            }
+            $mount = self::HEAD_ATTACHMENTS[$name];
+            $d = [self::HAT_MOUNT[0] - $mount[0], self::HAT_MOUNT[1] - $mount[1], self::HAT_MOUNT[2] - $mount[2]];
+            $r = $cf['r'];
+            $pos = [];
+            for ($i = 0; $i < 3; $i++) {
+                $pos[$i] = $cf['p'][$i] + $r[$i * 3] * $d[0] + $r[$i * 3 + 1] * $d[1] + $r[$i * 3 + 2] * $d[2];
+            }
+
+            $props = $xp->query('./Properties', $root)->item(0);
+            foreach (iterator_to_array($xp->query('./*[@name="AttachmentPoint"]', $props)) as $old) {
+                $props->removeChild($old);
+            }
+            $inner = '<X>' . RbxmReader::num($pos[0]) . '</X><Y>' . RbxmReader::num($pos[1]) . '</Y><Z>' . RbxmReader::num($pos[2]) . '</Z>';
+            foreach (['R00', 'R01', 'R02', 'R10', 'R11', 'R12', 'R20', 'R21', 'R22'] as $k => $tag) {
+                $inner .= "<{$tag}>" . RbxmReader::num($r[$k]) . "</{$tag}>";
+            }
+            $f = $doc->createDocumentFragment();
+            $f->appendXML('<CoordinateFrame name="AttachmentPoint">' . $inner . '</CoordinateFrame>');
+            $props->appendChild($f);
+            return;
+        }
+    }
+
+    private function cframe(DOMXPath $xp, $node): ?array
+    {
+        if (!$node) {
+            return null;
+        }
+        $get = fn($k) => (float) ($xp->query("./{$k}", $node)->item(0)?->textContent ?? 0);
+        return [
+            'p' => [$get('X'), $get('Y'), $get('Z')],
+            'r' => array_map($get, ['R00', 'R01', 'R02', 'R10', 'R11', 'R12', 'R20', 'R21', 'R22']),
+        ];
     }
 
     private function prop(DOMXPath $xp, DOMElement $item, string $name): ?string

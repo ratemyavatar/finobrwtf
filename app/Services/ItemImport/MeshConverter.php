@@ -12,7 +12,10 @@ class MeshConverter
         $major = (int) $m[1];
         $o = strlen($m[0]);
 
-        if ($major <= 2) {
+        if ($major === 2) {
+            return self::narrowV2($mesh, $o);
+        }
+        if ($major < 2) {
             return $mesh;
         }
 
@@ -168,11 +171,27 @@ class MeshConverter
     {
         $n = intdiv(strlen($verts), 40);
         $nf = intdiv(strlen($faces), 12);
-        $out = "version 2.00\n" . pack('vCCVV', 12, 40, 12, $n, $nf);
+        $out = "version 2.00\n" . pack('vCCVV', 12, 36, 12, $n, $nf);
         for ($i = 0; $i < $n; $i++) {
-            $v = substr($verts, $i * 40, 40);
-            $out .= substr($v, 0, 32) . "\0\0\0\0" . substr($v, 36, 4);
+            $out .= substr($verts, $i * 40, 32) . "\0\0\0\0";
         }
         return $out . $faces;
+    }
+
+    private static function narrowV2(string $mesh, int $o): string
+    {
+        $h = unpack('vheader/Cvert/Cface/Vn/Vnf', $mesh, $o);
+        if ($h['vert'] <= 36 || $h['face'] !== 12) {
+            return $mesh;
+        }
+        $b = $o + $h['header'];
+        if (strlen($mesh) < $b + $h['n'] * $h['vert'] + $h['nf'] * 12) {
+            throw new ImportException("A mesh in the model is cut short.");
+        }
+        $out = substr($mesh, 0, $o) . pack('vCCVV', 12, 36, 12, $h['n'], $h['nf']);
+        for ($i = 0; $i < $h['n']; $i++) {
+            $out .= substr($mesh, $b + $i * $h['vert'], 36);
+        }
+        return $out . substr($mesh, $b + $h['n'] * $h['vert'], $h['nf'] * 12);
     }
 }
