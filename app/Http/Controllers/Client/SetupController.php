@@ -19,7 +19,7 @@ class SetupController extends Controller
         return $version !== '' ? $version : response("No {$year} client is published yet.", 404);
     }
 
-    public const LAUNCHER_BUILD = 8;
+    public const LAUNCHER_BUILD = 9;
 
     public function getLauncherBuild (Request $request): string {
         return (string) self::LAUNCHER_BUILD;

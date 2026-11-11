@@ -1,4 +1,4 @@
-local placeId, port, url, creatorid, accessKey = ...
+local placeId, port, url, creatorid, accessKey, forceFiltering = ...
 
 local auth = "?accesskey=" .. tostring(accessKey or "")
 
@@ -85,19 +85,93 @@ settings().Diagnostics.LuaRamLimit = 0
 
 local everyoneLeftAt = nil
 
+pcall(function() Players.CharacterAutoLoads = false end)
+Players.Changed:connect(function(property)
+	if property == "CharacterAutoLoads" and Players.CharacterAutoLoads then
+		Players.CharacterAutoLoads = false
+	end
+end)
+
+local function removePlayer(player, reason)
+	pcall(function() player:Kick(reason) end)
+	pcall(function()
+		for _, replicator in pairs(ns:GetChildren()) do
+			local ok, owner = pcall(function() return replicator:GetPlayer() end)
+			if ok and owner == player then
+				pcall(function() replicator:CloseConnection() end)
+			end
+		end
+	end)
+	pcall(function() player:Remove() end)
+end
+
+local function joinKey(player)
+	for i = 1, 150 do
+		if player.Parent == nil then return nil end
+		local key = string.match(tostring(player.CharacterAppearance or ""), "[?&]jk=(%x+)")
+		if key ~= nil then return key end
+		wait(0.1)
+	end
+	return nil
+end
+
+local function verifyPlayer(player)
+	local key = joinKey(player)
+	if key == nil then return nil end
+	for attempt = 1, 3 do
+		local ok, reply = pcall(function()
+			return game:HttpGet(url .. "/api/gameserver/verify/" .. game.JobId .. "/" .. player.userId .. auth .. "&key=" .. key, true)
+		end)
+		if ok then
+			return string.match(tostring(reply or ""), "^1|(.+)$")
+		end
+		wait(1)
+	end
+	return nil
+end
+
+local function spawnPlayer(player)
+	if player.Parent == nil then return end
+	pcall(function() player:LoadCharacter() end)
+end
+
 game:GetService("Players").PlayerAdded:connect(function(player)
 	print("Player " .. player.userId .. " added")
 	everyoneLeftAt = nil
 
-	local ok, allowed = pcall(function()
-		return game:HttpGet(url .. "/api/gameserver/verify/" .. game.JobId .. "/" .. player.userId .. auth, true)
-	end)
-	if ok and allowed ~= "1" then
-		pcall(function() player:Kick("Couldn't verify you, rejoin from the website.") end)
+	for _, other in pairs(Players:GetPlayers()) do
+		if other ~= player and other.userId == player.userId then
+			removePlayer(player, "You're already in this server.")
+			return
+		end
+	end
+
+	local name = verifyPlayer(player)
+	if name == nil then
+		removePlayer(player, "Couldn't verify you, rejoin from the website.")
 		return
 	end
+
+	pcall(function() player.Name = name end)
+	pcall(function() player.CharacterAppearance = url .. "/Asset/CharacterFetch.ashx?userId=" .. player.userId .. "&placeId=" .. placeId end)
+
 	pcall(function() game:HttpGet(url .. "/api/gameserver/visit/" .. game.JobId .. auth) end)
 	reportPlayers()
+
+	player.CharacterAdded:connect(function(character)
+		spawn(function()
+			local humanoid = character:WaitForChild("Humanoid")
+			humanoid.Died:connect(function()
+				wait(5)
+				if not Players.CharacterAutoLoads and player.Parent ~= nil and player.Character == character then
+					spawnPlayer(player)
+				end
+			end)
+		end)
+	end)
+	if not Players.CharacterAutoLoads then
+		spawnPlayer(player)
+	end
 
 	local animLines = ""
 	pcall(function() animLines = game:HttpGet(url .. "/api/gameserver/animations/" .. player.userId .. auth, true) end)
@@ -156,6 +230,11 @@ if placeId~=nil and url~=nil then
 
 	game:Load(url .. "/asset/?id=" .. placeId .. "&accesskey=" .. tostring(accessKey or ""))
 end
+
+if tostring(forceFiltering) ~= "0" then
+	pcall(function() workspace.FilteringEnabled = true end)
+end
+pcall(function() Players.CharacterAutoLoads = false end)
 
 ns:Start(port)
 

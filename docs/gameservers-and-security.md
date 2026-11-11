@@ -69,3 +69,36 @@ don't turn on cloudflare's zone wide "always use https". the 2012 client talks p
 ## 6. asset ids skip numbers, and that's fine
 
 asset ids never get reused. a deleted row or a failed insert still uses up a number. also, a hat or gear upload makes three assets: the texture, the mesh and then the item. so the item id jumps by 3. a face, shirt or pants jumps by 2, and a place by 1.
+
+## 7. how players are checked when they join
+
+- the play button, the launcher and the client never see the account token. they get a ticket that lasts 15 minutes. it's signed with the app key, so it can't be faked or moved to another account, and it stops working if the account token is rotated
+- `join.ashx` puts a one time join key in the character appearance url
+- the game server reads that key from the player, asks `/api/gameserver/verify/<job>/<user>?key=<key>`, and kicks the player if the key is missing, wrong or already used. if the site can't be reached, the player is kicked too
+- the site answers with the real username. the server sets the name and the appearance url itself, then loads the character. characters never load from a url the client picked
+- a second connection with the same user id is kicked
+
+old game servers that are still running don't send the key, so restart them after you update.
+
+## 8. filtering
+
+2016 servers turn on `FilteringEnabled` so clients can't change the game for everyone. if an old place breaks with it on, you can turn it off for all 2016 games:
+
+```
+FINOBE_FORCE_FILTERING=false
+```
+
+2012 has no filtering. the 2012 server removes any server script that wasn't in the place when it loaded, except scripts that show up while the server is loading a character (hats, gear and the default character scripts). place scripts that insert new server scripts while the game runs won't work on 2012.
+
+## 9. unapproved assets
+
+assets waiting for review are only sent to admins and our own servers. a server counts if it sends the access key or its ip is the arbiter, a game server host, the 2012 host, or listed in:
+
+```
+FINOBE_SERVER_IPS=1.2.3.4,5.6.7.8
+```
+
+## 10. launcher
+
+launcher build 9 only binds the 2012 relay to `127.0.0.1`, only takes replies from the game server, and refuses play links that don't point at finobe or that try to sneak in extra arguments. players get it on their next launch.
+

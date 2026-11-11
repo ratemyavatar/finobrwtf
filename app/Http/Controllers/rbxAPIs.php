@@ -83,10 +83,6 @@ class rbxAPIs extends Controller
         return response()->json($this->response, 200);
     }
 
-    public function gameServerLua() {
-        return response(SecurityNotary::SignScript(file_get_contents(storage_path("rbx/files/scripts/test2012.lua")), FormatVersion::V1), 200);
-    }
-
     public function getScriptStateAshx() {
         return response("0 0 0 00 0 1 0", 200)
             ->header("Cache-Control", "no-store, no-cache, must-revalidate")
@@ -128,17 +124,18 @@ class rbxAPIs extends Controller
                     return response('', 200);
                 }
 
-                $requester = request()->header('requester');
-                $userAgent = request()->header('User-Agent');
-
-                if($assetinfo->visibility == 'r' && !(strtolower($requester) == 'server' && in_array($userAgent, ['Roblox/WinHttp', 'Finobe/WinHttp']))) {
+                if($assetinfo->visibility == 'r' && !RobloxUtilities::IsTrustedServerRequest()) {
                     if(!Auth::check() || Auth::user()->toArray()['status'] != 'admin') {
                         return response('', 200);
                     }
                 }
 
                 if($assetinfo->asset_type != 3) {
-                    $body = file_get_contents(Asset::getCdnLink($assetId));
+                    $path = Asset::getCdnLink($assetId);
+                    $body = is_file($path) ? file_get_contents($path) : false;
+                    if ($body === false) {
+                        abort(404);
+                    }
 
                     if (is_string($body)) {
                         $body = preg_replace('#https?://www\\.' . preg_quote(config('finobe.domain'), '#') . '#i', 'http://assetgame.' . config('finobe.domain'), $body);
@@ -288,7 +285,22 @@ class rbxAPIs extends Controller
         if (!RobloxUtilities::IsFinobeCloudAuthorized()) {
             return response('', 403);
         }
-        return response(\Illuminate\Support\Facades\Cache::has("gameserver_join_{$jobId}_" . (int) $userId) ? '1' : '0', 200);
+        $userId = (int) $userId;
+        $cacheKey = "gameserver_join_{$jobId}_{$userId}";
+        $key = (string) request()->query('key', '');
+        $expected = Cache::get($cacheKey);
+
+        if (!is_string($expected) || $key === '' || !hash_equals($expected, $key) || !Cache::add("{$cacheKey}_used_{$key}", true, 600)) {
+            return response('0', 200);
+        }
+
+        Cache::forget($cacheKey);
+        $user = User::find($userId);
+        if (!$user || ($user->banned ?? false) || \App\Services\Restrictions::message($userId, 'play')) {
+            return response('0', 200);
+        }
+
+        return response('1|' . $user->username, 200)->header('Content-Type', 'text/plain');
     }
 
     public function playerAnimations($userId) {
@@ -424,36 +436,6 @@ class rbxAPIs extends Controller
         return response()->json($this->response, 200);
     }
 
-    public function negotiateAshx(Request $request) {
-        $data = $request->all();
-
-        if (!isset($data["suggest"]))
-        {
-            $this->response = [
-                "code" => 405,
-                "message" => "Suggest is missing."
-            ];
-
-            return response()->json($this->response, 405);
-        }
-
-        if (!User::where('token', $data['suggest']))
-        {
-            $this->response = [
-                "code" => 404,
-                "message" => "Invalid token."
-            ];
-
-            return response()->json($this->response, 404);
-        }
-
-        $authToken = User::where('token', $data['suggest'])->first();
-
-        Auth::login($authToken);
-
-        return ($_COOKIE['finobe_session'] ?? Auth::id());
-    }
-
     public function studioAshx() {
         $domain = config('finobe.domain');
         $src = '-- Setup studio cmd bar & load core scripts
@@ -490,149 +472,4 @@ class rbxAPIs extends Controller
             ->header("Expires", "0");
     }
 
-    public function placeLauncher(Request $request) {
-        $data = $request->all();
-
-        if (!Auth::check()) {
-            $this->response = [
-                "code" => 403,
-                "message" => "You're not authorized to access this page."
-            ];
-
-            return response()->json($this->response, 403);
-        }
-
-        $user = (object) Auth::user()->toArray();
-
-        if(!in_array($user->id, [1, 2, 29, 88, 4365, 565, 619, 2394, 1054, 4922, 5317, 395, 4189, 2836, 4861, 4862, 580, 450, 4363, 2722, 1386, 3144, 4203, 5322, 4875, 1211, 246, 3269, 4828, 5373, 4979, 5374, 5368, 4363, 4790, 2402, 5405])) {
-            $this->response = [
-                "code" => 403,
-                "message" => "You're not authorized to access this page."
-            ];
-
-            return response()->json($this->response, 403);
-        }
-
-        $requestType = $data["request"] ?? "RequestGame";
-        $placeId = $data["placeId"] ?? 0;
-        $isTeleport = $data["isTeleport"] ?? false;
-
-        switch ($requestType) {
-            case "RequestGame":
-                $requestGame = RobloxUtilities::RequestGame($placeId, $user);
-                if ($requestGame->success == true)
-                {
-                    $data = (object)$requestGame->data;
-
-                    if ($data->status != 2)
-                    {
-                        return response(RobloxUtilities::ConstructPlaceLauncher($data->jobId, $data->status, "", "", "", ""), 200);
-                    }
-                    return response(RobloxUtilities::ConstructPlaceLauncher($data->jobId, $data->status, "https://assetgame.finobe.wtf/Game/Join.ashx?jobId={$data->jobId}", "https://www.finobe.wtf/Login/Negotiate.ashx", $user->token, ""), 200);
-                }
-            case "RequestGameJob":
-                $jobId = $data["gameId"];
-                $RequestGameJob = RobloxUtilities::RequestGameJob($placeId, $jobId, $user);
-
-                if ($RequestGameJob->success == true)
-                {
-                    $data = (object)$RequestGameJob->data;
-
-                    if ($data->status != 2)
-                    {
-                        return response(RobloxUtilities::ConstructPlaceLauncher($data->jobId, $data->status, "", "", "", ""), 200);
-                    }
-                    return response(RobloxUtilities::ConstructPlaceLauncher($data->jobId, $data->status, "https://assetgame.finobe.wtf/Game/Join.ashx?jobId={$data->jobId}", "https://www.finobe.wtf/Login/Negotiate.ashx", $user->token, ""), 200);
-                }
-            default:
-                return response('', 200);
-        }
-    }
-
-    public function joinAshx(Request $request) {
-        $data = $request->all();
-
-        if (!Auth::check()) {
-            $this->response = [
-                "code" => 403,
-                "message" => "You're not authorized to access this page."
-            ];
-
-            return response()->json($this->response, 403);
-        }
-
-        try
-        {
-            $userInformation = Auth::user();
-
-            if (!isset($data["jobId"])) {
-                $this->response = [
-                    "code" => 405,
-                    "message" => "jobId is missing."
-                ];
-
-                return response()->json($this->response, 405);
-            }
-            $jobId = $data["jobId"];
-
-            if (!$this->db->table('servers')->where('jobId', $jobId)->exists()) {
-                $this->response = [
-                    "code" => 404,
-                    "message" => "Server not found."
-                ];
-
-                return response()->json($this->response, 404);
-            }
-
-            $serverInformation = $this->db->table('servers')->where('jobId', $jobId)->first();
-
-            if (!$this->db->table('servers')->where('placeId', $serverInformation->placeid)->exists()) {
-                $this->response = [
-                    "code" => 404,
-                    "message" => "Invalid placeId"
-                ];
-
-                return response()->json($this->response, 404);
-            }
-
-            $placeInformation = $this->db->table('assets')->where('id', $serverInformation->placeid)->first();
-            $additionalInfo = json_decode($placeInformation->additional, false);
-
-            if ($additionalInfo->allowplaying === false && $placeInformation->author !== $userInformation->id) {
-                $this->response = [
-                    "code" => 403,
-                    "message" => "You do not have permission to join this game."
-                ];
-
-                return response()->json($this->response, 403);
-            }
-
-            if (count(json_decode($serverInformation->players)) >= $additionalInfo->maxplayers) {
-                $this->response = [
-                    "code" => 403,
-                    "message" => "This game is full."
-                ];
-
-                return response()->json($this->response, 403);
-            }
-
-            $joinScript = RobloxUtilities::ConstructJoinScript($userInformation, $placeInformation, $serverInformation, $additionalInfo);
-
-            if (\App\Services\ClientVersions::joinFormat((string) $additionalInfo->version) === 'lua2012') {
-                return response(SecurityNotary::SignScript($joinScript, FormatVersion::V1), 200);
-            }
-
-            return response(SecurityNotary::SignScript($joinScript, FormatVersion::V2), 200);
-        }
-        catch (exception $e)
-        {
-            $this->response = [
-                "code" => 500,
-                "message" => "Something went wrong!",
-                "details" => $e->getMessage()
-            ];
-
-            return response()->json($this->response, 500);
-        }
-    }
 }

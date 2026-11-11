@@ -214,7 +214,7 @@ class PlaceLauncher
         return self::result(Status::Joining, $server->jobId, '', [
             'joinScriptUrl' => "{$scheme}://assetgame.{$domain}/game/join.ashx?jobId=" . urlencode($server->jobId) . "&ticket={$ticket}",
             'authenticationUrl' => "https://www.{$domain}/Login/Negotiate.ashx",
-            'authenticationTicket' => (string) ($user->token ?? ''),
+            'authenticationTicket' => (string) ($user->ticket ?? ''),
 
             'serverAddress' => (string) ($server->ip ?? ''),
             'serverPort' => (int) ($server->port ?? 0),

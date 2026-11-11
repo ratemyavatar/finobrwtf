@@ -27,12 +27,11 @@ class RobloxUtilities extends Controller
 
     public static function GenerateGUID(): string
     {
-        if (function_exists('com_create_guid') === true)
-        {
-            return trim(com_create_guid(), '{}');
-        }
+        $bytes = random_bytes(16);
+        $bytes[6] = chr((ord($bytes[6]) & 0x0f) | 0x40);
+        $bytes[8] = chr((ord($bytes[8]) & 0x3f) | 0x80);
 
-        return sprintf('%04X%04X-%04X-%04X-%04X-%04X%04X%04X', mt_rand(0, 65535), mt_rand(0, 65535), mt_rand(0, 65535), mt_rand(16384, 20479), mt_rand(32768, 49151), mt_rand(0, 65535), mt_rand(0, 65535), mt_rand(0, 65535));
+        return strtoupper(vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($bytes), 4)));
     }
 
     public static function IsFinobeCloudAuthorized()
@@ -42,28 +41,58 @@ class RobloxUtilities extends Controller
         return is_string($exceptKey) && $exceptKey !== '' && hash_equals($exceptKey, (string)$requestKey);
     }
 
-    public static function ConstructPlaceLauncher(string $jobId, int $status, string $joinScriptUrl, string $authenticationUrl, string $authenticationToken, string $message)
+    public static function IsTrustedServerRequest(): bool
     {
-        return json_encode(
-            [
-                "jobId" => $jobId,
-                "status" => $status,
-                "joinScriptUrl" => $joinScriptUrl,
-                "authenticationUrl" => $authenticationUrl,
-                "authenticationTicket" => $authenticationToken,
-                "message" => $message
-            ],
-            JSON_UNESCAPED_SLASHES
-        );
+        if (self::IsFinobeCloudAuthorized()) {
+            return true;
+        }
+
+        $ip = (string) request()->ip();
+        if ($ip === '') {
+            return false;
+        }
+
+        return in_array($ip, self::ServerAddresses(), true);
     }
 
-    public static function ConstructJoinScript(object $userInformation, object $placeInformation, object $serverInformation, object $additionalInfo)
+    public static function ServerAddresses(): array
     {
+        $hosts = array_merge(
+            [
+                config('finobe.arbiter.host'),
+                config('finobe.gameserver.host'),
+                config('finobe.clients.2012.gameserver_host'),
+                parse_url((string) config('finobe.host2012.url'), PHP_URL_HOST),
+            ],
+            explode(',', (string) config('finobe.server_ips'))
+        );
+
+        $addresses = [];
+        foreach ($hosts as $host) {
+            $host = trim((string) $host);
+            if ($host === '') {
+                continue;
+            }
+            if (filter_var($host, FILTER_VALIDATE_IP)) {
+                $addresses[] = $host;
+                continue;
+            }
+            $resolved = \Illuminate\Support\Facades\Cache::remember('server_host_' . md5($host), 300, fn () => gethostbynamel($host) ?: []);
+            $addresses = array_merge($addresses, $resolved);
+        }
+
+        return array_values(array_unique($addresses));
+    }
+
+    public static function ConstructJoinScript(object $userInformation, object $placeInformation, object $serverInformation, object $additionalInfo, string $joinKey = '')
+    {
+        $joinKey = preg_replace('/[^0-9a-f]/', '', $joinKey);
+        $keyParam = $joinKey !== '' ? "&jk={$joinKey}" : '';
         $format = \App\Services\ClientVersions::joinFormat((string) $additionalInfo->version);
         switch ($format === 'json' ? '2016' : (string) $additionalInfo->version) {
             case "2016":
                 $domain = config('finobe.domain');
-                $charApp = "https://www.{$domain}/Asset/CharacterFetch.ashx?userId={$userInformation->id}&placeId={$placeInformation->id}";
+                $charApp = "https://www.{$domain}/Asset/CharacterFetch.ashx?userId={$userInformation->id}&placeId={$placeInformation->id}{$keyParam}";
                 $created = is_numeric($userInformation->created ?? null) ? (int) $userInformation->created : (int) strtotime((string) ($userInformation->created ?? ""));
 
                 return json_encode([
@@ -113,235 +142,22 @@ class RobloxUtilities extends Controller
                     return "I'm so tired bruhh";
                 }
 
-                $joinscript = str_replace("{placeId}", $placeInformation->id, $joinscript);
-                $joinscript = str_replace("{jobId}", $serverInformation->jobId, $joinscript);
+                $joinscript = str_replace("{placeId}", (string) (int) $placeInformation->id, $joinscript);
+                $joinscript = str_replace("{jobId}", preg_replace('/[^A-Za-z0-9-]/', '', (string) $serverInformation->jobId), $joinscript);
 
                 $serverAddress = 'localhost';
                 $joinscript = str_replace("{serverip}", $serverAddress, $joinscript);
-                $joinscript = str_replace("{creatorId}", $placeInformation->author, $joinscript);
+                $joinscript = str_replace("{creatorId}", (string) (int) $placeInformation->author, $joinscript);
                 $joinscript = str_replace("{chatstyle}", "ClassicAndBubble", $joinscript);
-                $joinscript = str_replace("{serverport}", $serverInformation->port, $joinscript);
-                $joinscript = str_replace("{userid}", $userInformation->id, $joinscript);
-                $joinscript = str_replace("{username}", $userInformation->username, $joinscript);
+                $joinscript = str_replace("{serverport}", (string) (int) $serverInformation->port, $joinscript);
+                $joinscript = str_replace("{userid}", (string) (int) $userInformation->id, $joinscript);
+                $joinscript = str_replace("{username}", preg_replace('/[^A-Za-z0-9_ .-]/', '', (string) $userInformation->username), $joinscript);
 
-                $charAppUrl = "http://assetgame." . config('finobe.domain') . "/Asset/CharacterFetch.ashx?userId={$userInformation->id}&placeId={$placeInformation->id}";
+                $charAppUrl = "http://assetgame." . config('finobe.domain') . "/Asset/CharacterFetch.ashx?userId={$userInformation->id}&placeId={$placeInformation->id}{$keyParam}";
                 $joinscript = str_replace("{charapp}", $charAppUrl, $joinscript);
                 return $joinscript;
             default:
                 return "Not implemented yet!";
         }
-    }
-
-    public static function RequestGame(int $placeId, object $user): object
-    {
-        $instance = new self();
-
-        if (!$instance->db->table('assets')->where('id', $placeId)->exists()) {
-            return (object)[
-                "success" => false,
-                "data" => [],
-                "publicMessage" => "Invalid placeId"
-            ];
-        }
-        $asset = $instance->db->table('assets')
-            ->where('id', $placeId)
-            ->first();
-
-        $additional = json_decode($asset->additional);
-        if ($additional->allowplaying === false && (int) $asset->author !== (int) $user->id)
-        {
-            return (object)[
-                "success" => false,
-                "data" => [],
-                "publicMessage" => "You don't have permission to join this game"
-            ];
-        }
-
-        if ($reason = \App\Services\PlaceAccess::denyReason($asset, $user))
-        {
-            return (object)[
-                "success" => false,
-                "data" => [],
-                "publicMessage" => $reason
-            ];
-        }
-
-        if ($asset->asset_type == 9) {
-            if (!$instance->db->table('servers')->where('placeid', $placeId)->whereIn('status', [1, 2])->exists()) {
-                $port = self::FreeGameServerPort();
-                $ip = config('finobe.gameserver.host');
-                $aaaaaaaaaaa = "[]";
-                $godIhatepdo = 1;
-                $jobId = self::startGame($placeId, $asset->author, $port);
-
-                $instance->db->table('servers')->insert([
-                    'ip' => $ip,
-                    'port' => $port,
-                    'placeid' => $placeId,
-                    'players' => $aaaaaaaaaaa,
-                    'jobId' => $jobId,
-                    'status' => $godIhatepdo
-                ]);
-
-                return (object)[
-                    "success" => true,
-                    "data" => [
-                        "status" => 0,
-                        "jobId" => $jobId,
-                    ],
-                    "publicMessage" => "Requested a new server"
-                ];
-            }
-
-            $server = $instance->db->table('servers')
-                ->where('placeid', $placeId)
-                ->whereIn('status', [1, 2])
-                ->first();
-
-            if (count(json_decode($server->players)) >= $additional->maxplayers) {
-                $port = self::FreeGameServerPort();
-                $ip = config('finobe.gameserver.host');
-                $aaaaaaaaaaa = "[]";
-                $godIhatepdo = 1;
-                $jobId = self::startGame($placeId, $asset->author, $port);
-
-                $instance->db->table('servers')->insert([
-                    'ip' => $ip,
-                    'port' => $port,
-                    'placeid' => $placeId,
-                    'players' => $aaaaaaaaaaa,
-                    'jobId' => $jobId,
-                    'status' => $godIhatepdo
-                ]);
-
-                return (object)[
-                    "success" => true,
-                    "data" => [
-                        "status" => 0,
-                        "jobId" => $jobId,
-                    ],
-                    "publicMessage" => "Requested a new server"
-                ];
-            }
-
-            return (object)[
-                "success" => true,
-                "data" => [
-                    "status" => $server->status,
-                    "jobId" => $server->jobId,
-                ]
-            ];
-        }
-
-        return (object)[
-            "success" => false,
-            "data" => [],
-            "publicMessage" => "Invalid placeId"
-        ];
-    }
-
-    private static function FreeGameServerPort(): int
-    {
-        $min = (int) config('finobe.gameserver.port_min');
-        $max = (int) config('finobe.gameserver.port_max');
-
-        $used = (new self())->db->table('servers')
-            ->whereIn('status', [1, 2])
-            ->pluck('port')
-            ->map(fn($port) => (int) $port)
-            ->all();
-
-        $free = array_values(array_diff(range($min, $max), $used));
-
-        if (empty($free)) {
-            throw new \RuntimeException('No free game server ports in the configured range');
-        }
-
-        return $free[random_int(0, count($free) - 1)];
-    }
-
-    private static function startGame(int $placeId, int $creatorId, int $port)
-    {
-        $arbiter = new RobloxArbiterUtilities(config('finobe.arbiter.host'), (int) config('finobe.arbiter.port'));
-        $jobId = self::GenerateGUID();
-        $gamescript = file_get_contents(storage_path("rbx/files/scripts/gameserver2016.lua"));
-        $constructJob = $arbiter->constructJob(
-            $jobId,
-            "{$gamescript}",
-            90,
-            0,
-            1,
-            "ScriptExecution",
-            [
-                $placeId,
-                $port,
-                "https://www." . config('finobe.domain'),
-                $creatorId,
-                (string) config('finobe.cloud_key')
-            ]
-        );
-
-        $arbiter->OpenJobEx($constructJob);
-
-        return $jobId;
-    }
-
-    public static function RequestGameJob(int $placeId, string $jobId, object $user,)
-    {
-        $instance = new self();
-
-        if (!$instance->db->table('assets')->where('id', $placeId)->exists()) {
-            return (object)[
-                "success" => false,
-                "data" => [],
-                "publicMessage" => "Invalid placeId"
-            ];
-        }
-        $asset = $instance->db->table('assets')
-            ->where('id', $placeId)
-            ->first();
-
-        $additional = json_decode($asset->additional);
-        if ($additional->allowplaying === false && (int) $asset->author !== (int) $user->id)
-        {
-            return (object)[
-                "success" => false,
-                "data" => [],
-                "publicMessage" => "You don't have permission to join this game"
-            ];
-        }
-
-        if ($reason = \App\Services\PlaceAccess::denyReason($asset, $user))
-        {
-            return (object)[
-                "success" => false,
-                "data" => [],
-                "publicMessage" => $reason
-            ];
-        }
-        if ($asset->asset_type == 9) {
-            if ($instance->db->table('servers')->where('placeid', $placeId)->where('jobId', $jobId)->where('status', 2)->exists()) {
-                return (object)[
-                    "success" => true,
-                    "data" => [
-                        "status" => 2,
-                        "jobId" => $jobId,
-                    ],
-                    "publicMessage" => "Joining a server"
-                ];
-            }
-        } else {
-            return (object)[
-                "success" => false,
-                "data" => [],
-                "publicMessage" => "Job doesnt exists"
-            ];
-        }
-
-        return (object)[
-            "success" => false,
-            "data" => [],
-            "publicMessage" => "Unknown error"
-        ];
     }
 }

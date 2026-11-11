@@ -23,7 +23,7 @@ static const wchar_t* kDomain = L"finobe.wtf";
 static const wchar_t* kProtocol = L"finobe-launcher";
 static const wchar_t* kTitle = L"Finobe";
 
-static const int kLauncherBuild = 8;
+static const int kLauncherBuild = 9;
 
 enum { WM_APP_STATUS = WM_APP + 1, WM_APP_PROGRESS, WM_APP_DONE, WM_APP_FAIL };
 
@@ -235,6 +235,18 @@ static LaunchArgs parseLaunchUri(const std::wstring& raw)
     return a;
 }
 
+static bool startsWith(const std::wstring& s, const std::wstring& prefix) { return s.compare(0, prefix.size(), prefix) == 0; }
+
+static bool safeLaunchArgs(const LaunchArgs& a)
+{
+    if (a.token.empty() || a.token.size() > 128 || a.token.find_first_not_of(L"0123456789abcdef-") != std::wstring::npos) return false;
+    if (a.placeLauncher.size() > 1024 || a.placeLauncher.find_first_of(L"\"'\\ \t\r\n<>^|`") != std::wstring::npos) return false;
+    for (wchar_t ch : a.placeLauncher) if (ch < 0x21 || ch > 0x7e) return false;
+    std::wstring d = kDomain;
+    return startsWith(a.placeLauncher, L"https://assetgame." + d + L"/") || startsWith(a.placeLauncher, L"http://assetgame." + d + L"/")
+        || startsWith(a.placeLauncher, L"https://www." + d + L"/");
+}
+
 static bool isYear(const std::wstring& y) { return y.size() == 4 && y.find_first_not_of(L"0123456789") == std::wstring::npos; }
 
 static std::wstring clientExe(const std::wstring& year) { return year == L"2012" ? L"RobloxApp.exe" : L"RobloxPlayerBeta.exe"; }
@@ -293,7 +305,7 @@ static bool bindRelay()
     if (s == INVALID_SOCKET) { if (lf) { fprintf(lf, "bind: socket failed %d\n", WSAGetLastError()); fclose(lf); } return false; }
     sockaddr_in local = {};
     local.sin_family = AF_INET;
-    local.sin_addr.s_addr = INADDR_ANY;
+    local.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
     local.sin_port = htons((u_short) gRelayPort);
     if (bind(s, (sockaddr*) &local, sizeof local) != 0) {
         int e = WSAGetLastError();
@@ -324,6 +336,7 @@ static DWORD WINAPI relayThread(LPVOID)
 
     SOCKET up = socket(AF_INET, SOCK_DGRAM, 0);
     if (up == INVALID_SOCKET) { if (lf) { fprintf(lf, "relay: upstream socket failed\n"); fclose(lf); } return 1; }
+    if (connect(up, (sockaddr*) &target, sizeof target) != 0) { if (lf) { fprintf(lf, "relay: upstream connect failed\n"); fclose(lf); } closesocket(up); return 1; }
     if (lf) { fprintf(lf, "relay: forwarding to %s:%d\n", gRelayAddr.c_str(), gRelayPort); fflush(lf); }
 
     char buf[65535];
@@ -334,10 +347,12 @@ static DWORD WINAPI relayThread(LPVOID)
         if (FD_ISSET(gRelaySock, &r)) {
             int n = sizeof client;
             int got = recvfrom(gRelaySock, buf, sizeof buf, 0, (sockaddr*) &client, &n);
-            if (got > 0) { clientLen = n; sendto(up, buf, got, 0, (sockaddr*) &target, sizeof target); }
+            bool local = got > 0 && client.ss_family == AF_INET
+                && ((sockaddr_in*) &client)->sin_addr.s_addr == htonl(INADDR_LOOPBACK);
+            if (local) { clientLen = n; send(up, buf, got, 0); }
         }
         if (FD_ISSET(up, &r)) {
-            int got = recvfrom(up, buf, sizeof buf, 0, nullptr, nullptr);
+            int got = recv(up, buf, sizeof buf, 0);
             if (got > 0 && clientLen) sendto(gRelaySock, buf, got, 0, (sockaddr*) &client, clientLen);
         }
     }
@@ -542,6 +557,10 @@ static DWORD WINAPI worker(LPVOID)
     if (_wcsicmp(self, launcher.c_str()) != 0) CopyFileW(self, launcher.c_str(), FALSE);
     registerProtocol(launcher);
 
+    if (args.present && args.mode == L"play" && !safeLaunchArgs(args)) {
+        PostMessageW(gWnd, WM_APP_FAIL, 0, (LPARAM) new std::wstring(L"That play link isn't valid. Press Play on the Finobe website again."));
+        return 0;
+    }
     if (args.present && args.mode == L"play" && !args.token.empty() && !args.placeLauncher.empty()) {
         setStatus(L"Starting Finobe...");
         clearHttpCacheIfUpdated();

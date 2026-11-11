@@ -61,23 +61,153 @@ pcall(function()
 end)
 
 local everyoneLeftAt = nil
+local networkServer = game:GetService("NetworkServer")
+
+pcall(function() Players.CharacterAutoLoads = false end)
+
+local function removePlayer(player, reason)
+	print("Removing player " .. tostring(player.userId) .. ": " .. reason)
+	pcall(function()
+		for _, replicator in pairs(networkServer:GetChildren()) do
+			local ok, owner = pcall(function() return replicator:GetPlayer() end)
+			if ok and owner == player then
+				pcall(function() replicator:CloseConnection() end)
+			end
+		end
+	end)
+	pcall(function() player:Remove() end)
+end
+
+local function joinKey(player)
+	for i = 1, 150 do
+		if player.Parent == nil then return nil end
+		local key = string.match(tostring(player.CharacterAppearance or ""), "[?&]jk=(%x+)")
+		if key ~= nil then return key end
+		wait(0.1)
+	end
+	return nil
+end
+
+local function verifyPlayer(player)
+	local key = joinKey(player)
+	if key == nil then return nil end
+	for attempt = 1, 3 do
+		local ok, reply = pcall(function()
+			return game:HttpGet(url .. "/api/gameserver/verify/" .. jobId .. "/" .. player.userId .. auth .. "&key=" .. key, true)
+		end)
+		if ok then
+			return string.match(tostring(reply or ""), "^1|(.+)$")
+		end
+		wait(1)
+	end
+	return nil
+end
+
+local knownSources = {}
+local loadingPlayers = {}
+
+local function readSource(object)
+	local ok, source = pcall(function() return object.Source end)
+	if ok and type(source) == "string" then return source end
+	return nil
+end
+
+local function insideLoadingPlayer(object)
+	local parent = object.Parent
+	while parent ~= nil do
+		for player in pairs(loadingPlayers) do
+			if parent == player or parent == player.Character then
+				return true
+			end
+		end
+		parent = parent.Parent
+	end
+	return false
+end
+
+local function guardScript(object)
+	local ok, isScript = pcall(function() return object.ClassName == "Script" end)
+	if not ok or not isScript then return end
+	local source = readSource(object)
+	if source == nil or knownSources[source] then return end
+	if insideLoadingPlayer(object) then
+		knownSources[source] = true
+		return
+	end
+	pcall(function() object.Disabled = true end)
+	pcall(function() object:Remove() end)
+	print("Removed a script the server didn't load")
+end
+
+local function rememberScripts(root)
+	local ok, children = pcall(function() return root:GetChildren() end)
+	if not ok then return end
+	for _, child in pairs(children) do
+		pcall(function()
+			if child.ClassName == "Script" then
+				local source = readSource(child)
+				if source ~= nil then knownSources[source] = true end
+			end
+		end)
+		rememberScripts(child)
+	end
+end
+
+local function spawnPlayer(player)
+	if player.Parent == nil then return end
+	loadingPlayers[player] = true
+	pcall(function() player:LoadCharacter() end)
+	delay(3, function() loadingPlayers[player] = nil end)
+end
 
 Players.PlayerAdded:connect(function(player)
 	print("Player " .. player.userId .. " added")
 	everyoneLeftAt = nil
 
-	local ok, allowed = pcall(function() return get("/api/gameserver/verify/" .. jobId .. "/" .. player.userId) end)
-	if ok and allowed ~= "1" then
-		print("Player " .. player.userId .. " couldn't be verified, removing")
-		pcall(function() player:Remove() end)
+	for _, other in pairs(Players:GetChildren()) do
+		if other ~= player and other:IsA("Player") and other.userId == player.userId then
+			removePlayer(player, "already in this server")
+			return
+		end
+	end
+
+	local name = verifyPlayer(player)
+	if name == nil then
+		removePlayer(player, "couldn't be verified")
 		return
 	end
+
+	pcall(function() player.Name = name end)
+	pcall(function() player.CharacterAppearance = url .. "/Asset/CharacterFetch.ashx?userId=" .. player.userId .. "&placeId=" .. placeId end)
+
 	pcall(function() get("/api/gameserver/visit/" .. jobId) end)
 	reportPlayers()
+
+	player.CharacterAdded:connect(function(character)
+		delay(0, function()
+			local humanoid = nil
+			for i = 1, 100 do
+				humanoid = character:FindFirstChild("Humanoid")
+				if humanoid ~= nil or character.Parent == nil then break end
+				wait(0.1)
+			end
+			if humanoid == nil then return end
+			humanoid.Died:connect(function()
+				wait(5)
+				if not Players.CharacterAutoLoads and player.Parent ~= nil and player.Character == character then
+					spawnPlayer(player)
+				end
+			end)
+		end)
+	end)
+	if not Players.CharacterAutoLoads then
+		spawnPlayer(player)
+	end
 end)
 
 Players.PlayerRemoving:connect(function(player)
 	print("Player " .. player.userId .. " leaving")
+	loadingPlayers[player] = nil
 	delay(1, function()
 		reportPlayers()
 		if Players.NumPlayers == 0 then everyoneLeftAt = tick() end
@@ -86,7 +216,16 @@ end)
 
 game:Load(url .. "/asset/?id=" .. placeId .. "&accesskey=" .. accessKey)
 
-game:GetService("NetworkServer"):Start(port)
+pcall(function() Players.CharacterAutoLoads = false end)
+Players.Changed:connect(function(property)
+	if property == "CharacterAutoLoads" and Players.CharacterAutoLoads then
+		Players.CharacterAutoLoads = false
+	end
+end)
+rememberScripts(game)
+game.DescendantAdded:connect(guardScript)
+
+networkServer:Start(port)
 
 pcall(function() scriptContext:SetTimeout(10) end)
 scriptContext.ScriptsDisabled = false

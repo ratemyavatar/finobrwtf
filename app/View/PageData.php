@@ -81,8 +81,9 @@ final class PageData
 
     private function viewer(User $user): array
     {
-        $viewer = $user->makeVisible(['email', 'token'])->toArray();
-        $user->makeHidden(['email', 'token']);
+        $viewer = $user->makeVisible(['email'])->toArray();
+        $user->makeHidden(['email']);
+        $viewer['token'] = \App\Services\ClientTicket::issue($user);
         $viewer['version'] = 'v2';
         $viewer['formattedDius'] = Format::number($user->Dius);
         $viewer['places'] = Asset::where('author', $user->id)->where('asset_type', 9)->count();

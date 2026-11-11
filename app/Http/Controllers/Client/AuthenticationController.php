@@ -24,9 +24,7 @@ class AuthenticationController extends Controller
             return response()->json(['code' => 0, 'error' => 'Bad Request'], status: 403);
 		}
         $valid = $validator->valid();
-        $authToken = is_string($valid['suggest']) && $valid['suggest'] !== ''
-            ? User::where('token', $valid['suggest'])->first()
-            : null;
+        $authToken = \App\Services\ClientTicket::resolve($valid['suggest']);
 
         if (!$authToken)
         {
@@ -44,7 +42,7 @@ class AuthenticationController extends Controller
     {
         if (!Auth::check())
             return response()->json(['code'=> 0,'error'=> 'not authenticated'], 403);
-        return response(route('client-routes.negotiate', [ 'suggest' => Auth::user()->token ]));
+        return response(route('client-routes.negotiate', [ 'suggest' => \App\Services\ClientTicket::issue(Auth::user()) ]));
     }
 
     public function logout(Request $request)

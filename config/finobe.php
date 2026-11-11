@@ -22,6 +22,8 @@ return [
         'create_invite_keys' => (bool) env('FINOBE_CREATE_INVITE_KEYS', false),
     ],
     'trusted_proxies' => env('FINOBE_TRUSTED_PROXIES', '127.0.0.1,::1'),
+    'server_ips' => env('FINOBE_SERVER_IPS', ''),
+    'force_filtering' => (bool) env('FINOBE_FORCE_FILTERING', true),
     'mail' => [
         'mode' => (int) env('FINOBE_MAIL_MODE', 3),
         'from' => env('MAIL_FROM_ADDRESS', 'noreply@finobe.wtf'),

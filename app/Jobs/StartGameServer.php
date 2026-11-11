@@ -68,6 +68,7 @@ class StartGameServer
                 'https://www.' . config('finobe.domain'),
                 (int) $place->author,
                 (string) config('finobe.cloud_key'),
+                config('finobe.force_filtering', true) ? 1 : 0,
             ]);
 
             $result = $arbiter->SoapCallService('OpenJobEx', $job);

@@ -22,7 +22,7 @@ class GameJoinControlller extends Controller
 
         $ticket = $request->query('ticket');
         if (!$user && is_string($ticket) && $ticket !== '') {
-            $user = User::where('token', $ticket)->first();
+            $user = \App\Services\ClientTicket::resolve($ticket);
         }
 
         $clientSession = $request->cookie(AuthenticationController::CLIENT_COOKIE);
@@ -63,7 +63,7 @@ class GameJoinControlller extends Controller
             }
         }
 
-        return $this->launcherResponse(PlaceLauncher::request($placeId, (object) ($user->toArray() + ['token' => $user->token]), $jobId), $request, $user);
+        return $this->launcherResponse(PlaceLauncher::request($placeId, (object) ($user->toArray() + ['ticket' => \App\Services\ClientTicket::issue($user)]), $jobId), $request, $user);
     }
 
     public function joinScript(Request $request)
@@ -105,9 +105,10 @@ class GameJoinControlller extends Controller
             return response()->json(['code' => 403, 'message' => $reason], 403);
         }
 
-        Cache::put("gameserver_join_{$server->jobId}_{$user->id}", true, 600);
+        $joinKey = bin2hex(random_bytes(16));
+        Cache::put("gameserver_join_{$server->jobId}_{$user->id}", $joinKey, 600);
 
-        $joinScript = RobloxUtilities::ConstructJoinScript((object) $user->toArray(), $place, $server, $additional);
+        $joinScript = RobloxUtilities::ConstructJoinScript((object) $user->toArray(), $place, $server, $additional, $joinKey);
 
         $signed = SecurityNotary::SignScript($joinScript, \App\Services\ClientVersions::joinFormat($additional->version) === 'lua2012' ? FormatVersion::V1 : FormatVersion::V2);
 

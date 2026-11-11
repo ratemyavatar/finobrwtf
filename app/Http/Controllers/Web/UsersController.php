@@ -152,6 +152,6 @@ class UsersController extends Controller
     public function gettoken(Request $request) {
         $user = $request->user();
 
-        return $user ? response($user->token, 200) : response('', 204);
+        return $user ? response(\App\Services\ClientTicket::issue($user), 200)->header('Cache-Control', 'no-store') : response('', 204);
     }
 }
