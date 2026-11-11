@@ -259,6 +259,22 @@ class api extends Controller
         return redirect('/forum/post?id=' . $notification->forum_id . ($page_number < 1 ? '&page=' . $page_number : ''));
     }
 
+    public function markOne(Request $request) {
+        $user = $request->user();
+        abort_unless($user, 401);
+        Notification::where('id', (int) $request->input('id'))->where('touser', $user->id)->update(['readed' => true]);
+
+        return response()->json(['success' => true]);
+    }
+
+    public function markAll(Request $request) {
+        $user = $request->user();
+        abort_unless($user, 401);
+        Notification::where('touser', $user->id)->update(['readed' => true]);
+
+        return response()->json(['success' => true]);
+    }
+
     public function purchase(Request $request) {
         $data = $request->all();
 

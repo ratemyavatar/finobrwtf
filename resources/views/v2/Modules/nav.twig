@@ -16,7 +16,7 @@
         <li class="nav-item"><a href="/app/places" class="nav-link">Games</a></li>
         <li class="nav-item"><a href="/catalog/" class="nav-link">Catalog</a></li>
 		{% endif %}
-        <li class="nav-item"><a href="/forum/home" class="nav-link">Forum</a></li>
+        <li class="nav-item"><a href="/forum" class="nav-link">Forum</a></li>
         {% if data.siteusername %}
         <li class="nav-item"><a href="/users" class="nav-link">Users</a></li>
         {% endif %}
@@ -36,8 +36,8 @@
       </ul>
       {% if not data.siteusername %}
       <ul class="nav navbar-nav my-2 my-lg-0">
-        <li class="nav-item"><a href="/auth/login" class="nav-link">Login</a></li>
-        <li class="nav-item"><a href="/auth/register" class="nav-link">Register</a></li>
+        <li class="nav-item"><a href="/login" class="nav-link">Login</a></li>
+        <li class="nav-item"><a href="/register" class="nav-link">Register</a></li>
       </ul>
       {% else %}
       <ul class="nav navbar-nav my-2 my-lg-0">

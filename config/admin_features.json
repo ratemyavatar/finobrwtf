@@ -1,118 +1,120 @@
 {
-  "forum_posts": {
-    "label": "Forum posting",
-    "paths": [
-      "app/forum/new/post",
-      "forum/new/reply",
-      "forum/edit"
-    ]
-  },
-  "messages": {
-    "label": "Private messages",
-    "paths": [
-      "app/inbox/compose",
-      "app/inbox/message"
-    ]
-  },
-  "uploads": {
-    "label": "Asset uploads",
-    "paths": [
-      "catalog/new"
-    ]
-  },
-  "trades": {
-    "label": "Trading",
-    "paths": [
-      "trades",
-      "api/trade"
-    ]
-  },
-  "purchases": {
-    "label": "Purchases",
-    "paths": [
-      "api/purchase"
-    ]
-  },
-  "avatar": {
-    "label": "Avatar changes",
-    "paths": [
-      "api/character"
-    ]
-  },
-  "render": {
-    "label": "Avatar rendering",
-    "paths": [
-      "api/render"
-    ]
-  },
-  "profile": {
-    "label": "Profile changes",
-    "paths": [
-      "app/settings"
-    ]
-  },
-  "invites": {
-    "label": "Invite creation",
-    "paths": [
-      "invites/new"
-    ]
-  },
-  "videos": {
-    "label": "Video uploads",
-    "paths": [
-      "api/video/*"
-    ]
-  },
-  "places": {
-    "label": "Place editing",
-    "paths": [
-      "place/*/settings",
-      "app/place/new"
-    ]
-  },
-  "comments": {
-    "label": "Comments",
-    "paths": [
-      "forum/new/reply"
-    ]
-  },
-  "friends": {
-    "label": "Friend requests",
-    "paths": [
-      "user/*/add",
-      "user/*/accept",
-      "user/*/remove"
-    ]
-  },
-  "election": {
-    "label": "Election entries",
-    "paths": [
-      "election"
-    ]
-  },
-  "account_changes": {
-    "label": "Account changes",
-    "paths": [
-      "app/settings",
-      "app/theme",
-      "app/connect",
-      "api/connect",
-      "password/verify/*/*"
-    ]
-  },
-  "registration": {
-    "label": "Registration",
-    "paths": [
-      "auth/register",
-      "auth/form"
-    ],
-    "all_methods": true
-  },
-  "login": {
-    "label": "New logins",
-    "paths": [
-      "auth/login"
-    ],
-    "all_methods": true
-  }
+    "forum_posts": {
+        "label": "Forum posting",
+        "paths": [
+            "app/forum/new/post",
+            "forum/new/reply",
+            "forum/edit"
+        ]
+    },
+    "messages": {
+        "label": "Private messages",
+        "paths": [
+            "app/inbox/compose",
+            "app/inbox/message"
+        ]
+    },
+    "uploads": {
+        "label": "Asset uploads",
+        "paths": [
+            "catalog/new"
+        ]
+    },
+    "trades": {
+        "label": "Trading",
+        "paths": [
+            "trades",
+            "trade/new/*",
+            "trade/info/*",
+            "api/trade"
+        ]
+    },
+    "purchases": {
+        "label": "Purchases",
+        "paths": [
+            "api/purchase"
+        ]
+    },
+    "avatar": {
+        "label": "Avatar changes",
+        "paths": [
+            "api/character"
+        ]
+    },
+    "render": {
+        "label": "Avatar rendering",
+        "paths": [
+            "api/render"
+        ]
+    },
+    "profile": {
+        "label": "Profile changes",
+        "paths": [
+            "app/settings"
+        ]
+    },
+    "invites": {
+        "label": "Invite creation",
+        "paths": [
+            "invites/new"
+        ]
+    },
+    "videos": {
+        "label": "Video uploads",
+        "paths": [
+            "api/video/*"
+        ]
+    },
+    "places": {
+        "label": "Place editing",
+        "paths": [
+            "publish/place-edit",
+            "games/new"
+        ]
+    },
+    "comments": {
+        "label": "Comments",
+        "paths": [
+            "forum/new/reply"
+        ]
+    },
+    "friends": {
+        "label": "Friend requests",
+        "paths": [
+            "user/*/add",
+            "user/*/accept",
+            "user/*/remove"
+        ]
+    },
+    "election": {
+        "label": "Election entries",
+        "paths": [
+            "election"
+        ]
+    },
+    "account_changes": {
+        "label": "Account changes",
+        "paths": [
+            "app/settings",
+            "app/theme",
+            "app/connect",
+            "api/connect",
+            "password/verify/*/*"
+        ]
+    },
+    "registration": {
+        "label": "Registration",
+        "paths": [
+            "register",
+            "register/form"
+        ],
+        "all_methods": true
+    },
+    "login": {
+        "label": "New logins",
+        "paths": [
+            "login"
+        ],
+        "all_methods": true
+    }
 }

@@ -120,7 +120,7 @@ class GamesController extends Controller
                 Session::put('error', 'Could not render the thumbnail right now. Please try again later.');
             }
 
-            return redirect('/place/' . $id . '/settings#thumbnail');
+            return redirect(\App\Support\Paths::placeEdit((int) $id, 'thumbnail'));
         }
 
         if($request->isMethod('post')) {
@@ -142,7 +142,7 @@ class GamesController extends Controller
 
             if($validator->fails()) {
                 Session::put('error', $validator->errors()->first());
-                return redirect('/place/' . $id . '/settings');
+                return redirect(\App\Support\Paths::placeEdit((int) $id));
             }
 
             $place['additional']['allowplaying'] = isset($data['allowplaying']);
@@ -164,7 +164,7 @@ class GamesController extends Controller
             $asset->save();
             
             Session::put('successv2', 'Place settings saved.');
-            return redirect('/place/' . $id . '/settings');
+            return redirect(\App\Support\Paths::placeEdit((int) $id));
         }
 
         // normalise the on/off flags to real booleans: they can be true/false (JSON),
@@ -219,7 +219,7 @@ class GamesController extends Controller
 
             if($validator->fails()) {
                 Session::put('error', $validator->errors()->first());
-                return redirect('/app/place/new');
+                return redirect('/games/new');
             }
 
             $version = $data['game-version'] ?? \App\Services\ClientVersions::DEFAULT;
@@ -230,12 +230,12 @@ class GamesController extends Controller
             
             if(!(bool)env('FINOBE_CREATE_PLACES')) {
                 Session::put('error', 'Creating assets is currently disabled');
-                return redirect('/app/place/new');
+                return redirect('/games/new');
             }
 
             if($games >= $this->request['data']['user']['slots']) {
                 Session::put('error', 'You have used all of your place slots');
-                return redirect('/app/place/new');
+                return redirect('/games/new');
             }
 
             /*
@@ -275,7 +275,7 @@ class GamesController extends Controller
 
             if ($defaultPlace === false) {
                 Session::put('error', 'Place creation is not set up on this server (baseplate file missing)');
-                return redirect('/app/place/new');
+                return redirect('/games/new');
             }
 
             $id = AssetHelper::createAsset(trim($data['title']), 9, $this->request['data']['user']['id'], $defaultPlace, trim($data['description'] ?? ''), "n", [

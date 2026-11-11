@@ -366,7 +366,7 @@ class AccountController extends Controller
 
                 if(!Hash::check($data['password'], $this->request['data']['user']['password'])) {
                     Session::put('errorlogin', true);
-                    return redirect('/auth/login');
+                    return redirect('/login');
                 }
 
                 $user = Auth::user();
@@ -523,7 +523,7 @@ class AccountController extends Controller
         $pending = Session::get('2fa_login');
         if(!$pending || $pending['expires'] < time() || !($user = User::find($pending['id']))) {
             Session::forget('2fa_login');
-            return redirect('/auth/login');
+            return redirect('/login');
         }
 
         if($request->isMethod('post')) {
@@ -792,19 +792,19 @@ class AccountController extends Controller
 
             if($validator->fails()) {
                 Session::put('error', $validator->errors()->first());
-                return redirect('/auth/form');
+                return redirect('/register/form');
             }
 
             if(!(bool) config('admin.invites_enabled')) {
                 Session::put('error', 'Account creation is currently disabled');
-                return redirect('/auth/form');
+                return redirect('/register/form');
             }
 
             $username = strtolower($data['username']);
             foreach ($forbiddenPhrases as $phrase) {
                 if (str_contains($username, strtolower($phrase))) {
                     Session::put('error', 'The username field must not be greater than 20 characters.');
-                    return redirect('/auth/form');
+                    return redirect('/register/form');
                 }
             }
 
@@ -817,7 +817,7 @@ class AccountController extends Controller
 
                 if(!($response['success'] ?? false)) {
                     Session::put('error', 'CAPTCHA failed.');
-                    return redirect('/auth/form');
+                    return redirect('/register/form');
                 }
             }
 
@@ -827,7 +827,7 @@ class AccountController extends Controller
 
             if($inviteKey !== '' && !Keys::where('IID', $inviteKey)->where('used', 'n')->exists()) {
                 Session::put('error', 'Invalid invite key.');
-                return redirect('/auth/form');
+                return redirect('/register/form');
             }
 
             if($inviteKey !== '') {
@@ -841,7 +841,7 @@ class AccountController extends Controller
 
                 if(!$claimed) {
                     Session::put('error', 'Invalid invite key.');
-                    return redirect('/auth/form');
+                    return redirect('/register/form');
                 }
             }
 
@@ -904,19 +904,19 @@ class AccountController extends Controller
 
             if($validator->fails()) {
                 Session::put('errorlogin', true);
-                return redirect('/auth/login');
+                return redirect('/login');
             }
 
             if(!User::where('email', $data['email'])->exists()) {
                 Session::put('errorlogin', true);
-                return redirect('/auth/login');
+                return redirect('/login');
             }
 
             $user = User::where('email', $data['email'])->first();
 
             if(!Hash::check($data['password'], $user->password)) {
                 Session::put('errorlogin', true);
-                return redirect('/auth/login');
+                return redirect('/login');
             }
 
             // accounts with two-factor authentication need a code from the app first

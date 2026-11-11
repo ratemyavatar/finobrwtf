@@ -12,7 +12,7 @@
                         You've used {{ data.user.places }} of {{ data.user.slots }} place slots.
                     </p>
                     <div class="card-body text-center">
-                        <form role="form" id="form" method="POST" action="/app/place/new" enctype="multipart/form-data">
+                        <form role="form" id="form" method="POST" action="/games/new" enctype="multipart/form-data">
                             <input type="hidden" name="_token" value="{{ data.csrf_token }}">
     
                             <div class="form-group row">

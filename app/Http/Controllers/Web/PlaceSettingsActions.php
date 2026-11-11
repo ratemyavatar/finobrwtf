@@ -31,7 +31,7 @@ class PlaceSettingsActions
         if ($ok) Session::put('successv2', $ok);
         if ($error) Session::put('error', $error);
 
-        return redirect('/place/' . $this->place->id . '/settings#' . $tab);
+        return redirect(\App\Support\Paths::placeEdit((int) $this->place->id, $tab));
     }
 
     private function fail(string $tab, $validator)
