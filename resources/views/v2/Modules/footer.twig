@@ -11,7 +11,7 @@
     </div>
     {% endif %}
     <div class="container">
-        <p class="my-0"><b>Copyright © Finobe 2026 - 2027</b> | <b>Lucky number:</b> {{ data.lucky_number }}{% if data.server_name %} ({{ data.server_name }}){% endif %}
+        <p class="my-0"><b>Copyright © Finobe {{ "now"|date("Y") }}</b> | <b>Lucky number:</b> {{ data.lucky_number }}{% if data.server_name %} ({{ data.server_name }}){% endif %}
         </p>
         <div class="d-flex align-items-center mt-1 mb-0">
             <div class="dropdown">
@@ -75,3 +75,32 @@ if(!document.getElementById('ZMRrwOVaKiIQ')) {
 }
 </script>
 {% endif %}
+<script src="/s/js/bootstrap.bundle.min.js"></script>
+<script>
+  (function () {
+    var token = document.querySelector('meta[name="csrf-token"]');
+    var csrf = token ? token.content : '{{ data.csrf_token }}';
+    function post(url, body) {
+      var form = new FormData();
+      form.append('_token', csrf);
+      Object.keys(body || {}).forEach(function (k) { form.append(k, body[k]); });
+      return fetch(url, { method: 'POST', body: form, headers: { 'Accept': 'application/json' }, credentials: 'same-origin' });
+    }
+    var all = document.getElementById('notification-markall');
+    if (all) {
+      all.addEventListener('click', function (e) {
+        e.preventDefault();
+        post('/forum/api/notifications/allread').then(function () { location.reload(); });
+      });
+    }
+    document.querySelectorAll('.notification-link').forEach(function (link) {
+      link.addEventListener('click', function (e) {
+        e.preventDefault();
+        var target = link.getAttribute('href');
+        post('/forum/api/notifications/oneread', { id: link.dataset.notifyId }).then(function () {
+          if (target && target !== '#') { location.href = target; } else { location.reload(); }
+        });
+      });
+    });
+  })();
+</script>

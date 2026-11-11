@@ -91,12 +91,19 @@ final class PageData
 
     private function notifications(User $user): array
     {
-        $items = Notification::where('touser', $user->id)->orderByDesc('date')->limit(50)->get()
-            ->map(fn ($n) => [
-                'id' => $n->id,
-                'message' => $n->message,
-                'date' => date('M j Y g:i:s A', strtotime($n->date)),
-            ])->all();
+        $rows = Notification::where('touser', $user->id)->orderByDesc('date')->limit(50)->get();
+        $genders = User::whereIn('id', $rows->pluck('owner')->filter()->unique())->pluck('gender', 'id');
+        $items = $rows->map(fn ($n) => [
+            'id' => $n->id,
+            'message' => $n->message,
+            'date' => date('M j Y g:i:s A', strtotime($n->date)),
+            'href' => $n->forum_id ? '/forum/post?id=' . $n->forum_id : ($n->owner ? '/user/' . $n->owner : '#'),
+            'icon' => match ($genders[$n->owner] ?? null) {
+                'f' => 'fa-venus',
+                'm' => 'fa-mars',
+                default => 'fa-genderless',
+            },
+        ])->all();
 
         $incomingFriends = collect($user->friends ?? [])->where('status', 'pending')->count();
 

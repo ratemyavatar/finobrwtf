@@ -65,15 +65,15 @@
 							<span class="badge badge-danger badge-notification">{{ data.notifications.info.number }}</span>
               {% endif %}
 						</div>
-						<a href="/api/mark?id=all" class="dropdown-item" id="notification-markall">Mark all as read</a>
+						<a href="#" class="dropdown-item" id="notification-markall">Mark all as read</a>
 						<div class="dropdown-divider"></div>
 						<div class="navbar-notification-list">
 							{% for notification in data.notifications.data %}
-							<a class="notification-title notification-link dropdown-item" data-notify-id="196905"
-								href="/api/mark?id={{ notification.id }}"><i class="far fa-mars align-center fa-fw"></i>
+							<a class="notification-title notification-link dropdown-item" data-notify-id="{{ notification.id }}"
+								href="{{ notification.href }}"><i class="far {{ notification.icon }} align-center fa-fw"></i>
 								{{ notification.message }} at {{ notification.date }}</a>
 							{% endfor %}
-							{% if not data.notifications %}
+							{% if not data.notifications.data %}
 								<p class="dropdown-header">Nothingness.</p>
 							{% endif %}
 						</div>

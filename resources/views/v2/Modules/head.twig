@@ -10,7 +10,7 @@
 
 <link rel="stylesheet" href="https://pro.fontawesome.com/releases/v5.10.0/css/all.css" integrity="" crossorigin="anonymous">
 <link rel="stylesheet" href="https://pro.fontawesome.com/releases/v5.10.0/css/fontawesome.css" integrity="" crossorigin="anonymous">
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="/s/js/jquery.min.js"></script>
 
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-PVJB8ZM445"></script>
 <script>
@@ -22,21 +22,23 @@
 </script>
 <script src="https://js.sentry-cdn.com/2775cf79ccd8b1b85feeb7451721f44b.min.js" crossorigin="anonymous"></script>
 <script>
-  Sentry.init({
+  if (window.Sentry) Sentry.init({
     dsn: 'https://2775cf79ccd8b1b85feeb7451721f44b@o4509407434178560.ingest.us.sentry.io/4509407437062144',
     integrations: [Sentry.browserTracing],
     tracesSampleRate: 1.0,
   });
 </script>
-<script type="text/javascript" src="/s/js/bundle-playback.js" charset="utf-8"></script>
-<script type="text/javascript" src="/s/js/wombat.js" charset="utf-8"></script>
-<script src="/s/js/app.js"></script>
-<script src="/s/js/f.js"></script>
-<script src="/s/js/f(1).js"></script>
-<script src="/s/js/f(2).js"></script>
-<script src="/s/js/vendor.js"></script>
 <script src="/s/js/manifest.js"></script>
-<script src="/s/js/manifest1.js"></script>
+<script src="/s/js/settings.js"></script>
+<script>
+  window.Finobe.AppName = "Finobe";
+  window.Finobe.Currency = "Diu";
+  window.Finobe.CurrencyImage = "/s/img/diu_16.png";
+  window.Finobe.IsDarkTheme = {{ (data.user.theme == 1 or data.user.gary == 1) ? 'true' : 'false' }};
+{% if data.siteusername %}
+  window.Finobe.User = { UserId: {{ data.user.id|json_encode|raw }}, UserName: {{ data.user.username|json_encode|raw }} };
+{% endif %}
+</script>
 <script>
   function openUri(uri, success, fail) {
     let hasBlurred = false;
