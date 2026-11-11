@@ -50,6 +50,25 @@ python3 tools/client/rakfail_patch.py RCCService.exe
 
 this adds the missing size check to raknet's split packet code, so a crafted packet can't crash the game server. it keeps a `.bak`. use `--check` to only see if a file is vulnerable.
 
+## 2007 client
+
+```bash
+python3 tools/client/patch2007.py Roblox.exe
+```
+
+this only works on the original 0.3.676.0 `Roblox.exe` from december 2007 (sha256 `f16069ab...6cc`). it keeps a `.bak`. use `--check` to see if a file is patched.
+
+we found these by reading the openrbx decompile (github.com/Asphaltian/OpenRBX), which gives the real name and address of each function:
+
+- lua bytecode. `loadstring` and `load` ran precompiled lua bytecode, which can be used to run any code on the player's pc. the patch makes lua always use the text parser, so bytecode just fails with a syntax error. 2007 never sends bytecode, so nothing breaks
+- split packets. raknet 3.0 read the piece number and piece count without checking them. now a piece must have `index < count` and the count can't be over 32768, or the packet is thrown away
+- duplicate pieces. sending the same piece twice leaked memory forever. now the new piece replaces the old one and the old one is freed
+- stuck split messages. only unreliable ones were cleaned up, so reliable ones that never finish piled up until the game server or client ran out of memory. now any split message that gets no new piece for the connection timeout is cleaned up
+
+the raknet fixes are in the same code the 2007 game server uses, so patch the exe the server runs too.
+
+things that were already safe in 2007: game scripts can't use `settings()`, `loadfile`, `dofile` or turn on `io`. only `-Script` command line scripts and com calls get those, so the launcher has to only pass our own urls to `-Script` when 2007 gets hooked up.
+
 ## not done here
 
 - the exe is still signed by roblox and patching breaks that signature. the client only tells the game server about it, and our rcc has that check patched out
