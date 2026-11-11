@@ -70,6 +70,7 @@ Route::group(['as' => 'client-routes.'], function(){
 
     Route::get('login/negotiate.ashx', [AuthenticationController::class,'authenticateClient']);
     Route::get('login/requestauth.ashx', [AuthenticationController::class,'requestAuth'])->name('request-auth');
+    Route::post('mobileapi/login', [\App\Http\Controllers\Client\LoginApiController::class,'mobile'])->middleware('limit:10,1');
 });
 
 ?>

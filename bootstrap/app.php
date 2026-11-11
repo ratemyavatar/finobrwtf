@@ -42,6 +42,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->validateCsrfTokens([
             '/marketplace/productinfo',
             '/login/v1',
+            '/mobileapi/login',
             '/asset/getscriptstate.ashx',
             '/game/placelauncher.ashx',
             '/api/gameserver/update',

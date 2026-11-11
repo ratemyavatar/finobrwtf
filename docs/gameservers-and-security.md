@@ -120,3 +120,9 @@ every render runs on the 2016 rcc with the same `ThumbnailGenerator:Click` finob
 - a wrong name or password gives a 403 with `{"errors":[{"code":1,"message":"Incorrect username or password. Please try again."}]}`
 - banned accounts and accounts with two step verification are refused, so this can't be used to skip a 2fa code
 - each ip gets 10 tries a minute
+
+`POST /mobileapi/login` on www, assetgame and api takes the same `username=&password=` and works the same way, but answers like the old mobile api:
+
+- success gives `{"Status":"OK","UserInfo":{"userId":..,"username":..,"RobuxBalance":..,"IsAnyBuildersClubMember":..,"ThumbnailUrl":..}}`
+- otherwise `Status` is `InvalidPassword`, `MissingRequiredField`, `AccountNotApproved` (banned) or `TwoStepVerificationRequired`
+- RobuxBalance is the user's dius
