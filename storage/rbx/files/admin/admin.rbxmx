@@ -31,7 +31,7 @@
 	['JoinMessage'] = false;
 	['DonorPerks'] = false;
 	['PermBanKey'] = '0.482719482746592';
-	['FreeAdmin'] = true;
+	['FreeAdmin'] = false;
 	['FreeAdminType'] = 'Admin';
 	['AutoClean'] = false;
 	['AutoCleanDelay'] = 60;

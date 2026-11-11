@@ -20,6 +20,7 @@ ADMIN_EDITS = [
     ('[\'Owners\'] = {"thugshaker", "trypozz", "rot5", "Mainnex"};', "['Owners'] = {FINOBE_OWNERS};"),
     ('[\'BanList\'] = {"Josh"};', "['BanList'] = {};"),
     ("['ChangedSettingsStick'] = true;", "['ChangedSettingsStick'] = false;"),
+    ("['FreeAdmin'] = true;", "['FreeAdmin'] = false;"),
     ("Pcall(function() if game.CreatorId<=0 then table.insert(set['Owners'],'Player1') end end)\n", ''),
     ("or plr.userId==game.CreatorId then return true end", "then return true end"),
     ("""	set.MakeCommand('Executes Undetected V2 for the target player.',3,set.Prefix,{'f3x','f3x'},{'player'},1,function(plr,args)
