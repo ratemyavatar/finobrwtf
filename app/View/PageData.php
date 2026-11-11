@@ -31,7 +31,7 @@ final class PageData
         $data = array_merge($this->all(), $extra);
 
         if ($title !== null) {
-            $data['embeds']['title'] = $title . ' - Finobe';
+            $data['embeds']['title'] = e(html_entity_decode($title, ENT_QUOTES | ENT_HTML5, 'UTF-8')) . ' - Finobe';
         }
 
         return $data;

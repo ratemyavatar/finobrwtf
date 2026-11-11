@@ -58,12 +58,16 @@ class TelescopeServiceProvider extends TelescopeApplicationServiceProvider
             return;
         }
 
-        Telescope::hideRequestParameters(['_token']);
+        Telescope::hideRequestParameters(['_token', 'password', 'password_confirmation', 'current_password', 'new_password', 'old_password', 'code', 'otp', 'backup_code', 'invite_key', 'token']);
 
         Telescope::hideRequestHeaders([
             'cookie',
             'x-csrf-token',
             'x-xsrf-token',
+            'authorization',
+            'accesskey',
+            'roblox-security',
+            'cf-connecting-ip',
         ]);
     }
 

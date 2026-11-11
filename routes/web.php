@@ -36,6 +36,7 @@ use App\Http\Controllers\Web\ElectionController;
 use App\Http\Controllers\Web\CurrencyController;
 use App\Http\Controllers\Web\MessagesController;
 use App\Http\Middleware\Moderation;
+use App\Http\Middleware\RequireLinkToken;
 use App\Http\Middleware\SerializeWrites;
 use App\Support\Paths;
 use Illuminate\Http\Request;
@@ -153,16 +154,16 @@ Route::middleware([Moderation::class, SerializeWrites::class])->group(function (
             Route::get('/transaction-log', [CurrencyController::class, 'transactions']);
             Route::get('/{id}', [ProfileController::class, 'index']);
             Route::get('/{id}/friends', [FriendsController::class, 'list']);
-            Route::get('/{id}/add', [FriendsController::class, 'add']);
-            Route::get('/{id}/accept', [FriendsController::class, 'accept']);
-            Route::get('/{id}/remove', [FriendsController::class, 'remove']);
+            Route::get('/{id}/add', [FriendsController::class, 'add'])->middleware(RequireLinkToken::class);
+            Route::get('/{id}/accept', [FriendsController::class, 'accept'])->middleware(RequireLinkToken::class);
+            Route::get('/{id}/remove', [FriendsController::class, 'remove'])->middleware(RequireLinkToken::class);
         });
 
         Route::prefix('forum')->group(function () {
             Route::get('/', [ForumController::class, 'index']);
             Route::get('/home', [ForumController::class, 'index']);
             Route::get('/home/{section}', [ForumController::class, 'section']);
-            Route::get('/subscribe', [ForumController::class, 'subscribe']);
+            Route::get('/subscribe', [ForumController::class, 'subscribe'])->middleware(RequireLinkToken::class);
             Route::get('/search', [ForumController::class, 'search']);
             Route::match(['post', 'get'], '/post', [ForumController::class, 'post']);
             Route::match(['post', 'get'], '/edit', [ForumController::class, 'edit_reply']);
@@ -186,12 +187,12 @@ Route::middleware([Moderation::class, SerializeWrites::class])->group(function (
 
         Route::prefix('admin')->group(function () {
             Route::get('/', [AdminController::class, 'index']);
-            Route::get('/pin', [AdminController::class, 'pin']);
-            Route::get('/lock', [AdminController::class, 'lock']);
-            Route::get('/unpin', [AdminController::class, 'unpin']);
-            Route::get('/stick', [AdminController::class, 'stick']);
-            Route::get('/unlock', [AdminController::class, 'unlock']);
-            Route::get('/unstick', [AdminController::class, 'unstick']);
+            Route::get('/pin', [AdminController::class, 'pin'])->middleware(RequireLinkToken::class);
+            Route::get('/lock', [AdminController::class, 'lock'])->middleware(RequireLinkToken::class);
+            Route::get('/unpin', [AdminController::class, 'unpin'])->middleware(RequireLinkToken::class);
+            Route::get('/stick', [AdminController::class, 'stick'])->middleware(RequireLinkToken::class);
+            Route::get('/unlock', [AdminController::class, 'unlock'])->middleware(RequireLinkToken::class);
+            Route::get('/unstick', [AdminController::class, 'unstick'])->middleware(RequireLinkToken::class);
             Route::get('/decider', [AdminController::class, 'decider']);
             Route::match(['post', 'get'], '/warn', [AdminController::class, 'warn']);
             Route::match(['post', 'get'], '/bans', [AdminController::class, 'bans']);

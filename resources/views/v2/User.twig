@@ -61,22 +61,22 @@
                                                         #}
                                                         {% if friend.status == "pending" %}
                                                         <div class="btn-group" role="group" style="display: block;">
-                                                            <a href="/user/{{ data.profile.id }}/accept" class="btn btn-success mr-2 nowrap " style="margin-right: -2px !important;">
+                                                            <a href="/user/{{ data.profile.id }}/accept?_token={{ data.csrf_token }}" class="btn btn-success mr-2 nowrap " style="margin-right: -2px !important;">
                                                                 accept
                                                             </a>
-                                                            <a href="/user/{{ data.profile.id }}/remove" class="btn btn-danger mr-2 nowrap ">
+                                                            <a href="/user/{{ data.profile.id }}/remove?_token={{ data.csrf_token }}" class="btn btn-danger mr-2 nowrap ">
                                                                 decline
                                                             </a>
                                                         </div>
                                                         {% elseif friend.status == "friends" %}
                                                         <p>
-                                                            <a href="/user/{{ data.profile.id }}/remove" class="btn btn-danger mr-2 nowrap">
+                                                            <a href="/user/{{ data.profile.id }}/remove?_token={{ data.csrf_token }}" class="btn btn-danger mr-2 nowrap">
                                                                 remove friend
                                                             </a>
                                                         </p>{#
                                                         {% elseif not user.friends|filter(user => user.status != "pending")|length %}
                                                                 <p>
-                                                                    <a href="/user/{{ data.profile.id }}/add" class="btn btn-primary mr-2 nowrap">
+                                                                    <a href="/user/{{ data.profile.id }}/add?_token={{ data.csrf_token }}" class="btn btn-primary mr-2 nowrap">
                                                                         Send Friend Request
                                                                     </a>
                                                                 </p>#}
@@ -92,7 +92,7 @@
                                                     </p>{#
                                                     {% elseif not data.profile.friends|filter(user => user.status != "pending")|length %}
                                                     <p>
-                                                        <a href="/user/{{ data.profile.id }}/add" class="btn btn-primary mr-2 nowrap">
+                                                        <a href="/user/{{ data.profile.id }}/add?_token={{ data.csrf_token }}" class="btn btn-primary mr-2 nowrap">
                                                             Send Friend Request
                                                          </a>
                                                     </p>#}
@@ -101,7 +101,7 @@
                                                 {#% if (not user.friends|filter(friend => friend.status != "pending")|length or not data.profile.friends|filter(friend2 => friend2.status != "pending")|length) and (not user.friends|filter(friend => friend.status == "pending")|length or not data.profile.friends|filter(friend2 => friend2.status == "pending")|length) %#}
                                                 {% if not data.profile.friends|default([])|filter(friend => friend.userid == data.user.id)|length and not data.user.friends|default([])|filter(friend => friend.userid == data.profile.id)|length %}
                                                     <p>
-                                                        <a href="/user/{{ data.profile.id }}/add" class="btn btn-primary mr-2 nowrap">
+                                                        <a href="/user/{{ data.profile.id }}/add?_token={{ data.csrf_token }}" class="btn btn-primary mr-2 nowrap">
                                                             Send Friend Request
                                                         </a>
                                                     </p>

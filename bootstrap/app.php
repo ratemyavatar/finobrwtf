@@ -46,7 +46,6 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->redirectUsersTo('/');
         $middleware->alias(['admin' => \App\Http\Middleware\RequireAdmin::class, 'limit' => \App\Http\Middleware\LimitRoute::class]);
         $middleware->validateCsrfTokens([
-            '/logout',
             '/marketplace/productinfo',
             '/asset/getscriptstate.ashx',
             '/game/placelauncher.ashx',

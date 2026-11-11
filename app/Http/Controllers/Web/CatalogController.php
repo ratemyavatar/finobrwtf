@@ -373,6 +373,7 @@ class CatalogController extends Controller
             return redirect('/item/' . $id . '/settings');
         }
 
+        $item['title'] = htmlspecialchars($item['title']);
         $title = $item['title'];
         $pageData['item'] = $item;
         $pageData['isAdmin'] = $isAdmin;

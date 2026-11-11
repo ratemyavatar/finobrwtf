@@ -17,7 +17,7 @@
                                         <div>
                                             <p class="mb-0"><a href="/user/{{ user.userid }}">{{ user.username }}</a></p>
                                         </div>
-                                        <div class="btn-group"><a href="/user/{{ user.userid }}/accept?feature=incoming" class="btn btn-success">accept</a><a href="/user/{{ user.userid }}/remove?feature=incoming" class="btn btn-danger">deny</a></div>
+                                        <div class="btn-group"><a href="/user/{{ user.userid }}/accept?feature=incoming&_token={{ data.csrf_token }}" class="btn btn-success">accept</a><a href="/user/{{ user.userid }}/remove?feature=incoming&_token={{ data.csrf_token }}" class="btn btn-danger">deny</a></div>
                                         <div class="ml-1">
                                             <a href="/user/{{ user.userid }}">
                                                 <img src="{{ avatar_url(user.pfp) }}" style="max-width: 100px;">
