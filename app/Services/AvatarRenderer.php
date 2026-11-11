@@ -165,6 +165,21 @@ class AvatarRenderer
             end
         end
 
+        pcall(function()
+            local head = player.Character:FindFirstChild("Head")
+            local mesh = head and head:FindFirstChild("Mesh")
+            if mesh and mesh:IsA("SpecialMesh") and mesh.Offset.magnitude > 0.05 then
+                local box = Instance.new("Part")
+                box.Name = "MeshBounds"
+                box.Anchored = true
+                box.CanCollide = false
+                box.Transparency = 1
+                box.FormFactor = Enum.FormFactor.Custom
+                box.Size = head.Size
+                box.CFrame = head.CFrame * CFrame.new(mesh.Offset)
+                box.Parent = player.Character
+            end
+        end)
         game:GetService("ThumbnailGenerator").GraphicsMode = 4
         return game:GetService("ThumbnailGenerator"):Click(fileExtension, x, y, true)
     ';

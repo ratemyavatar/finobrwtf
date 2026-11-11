@@ -20,14 +20,16 @@ class ItemImporter
     private array $meshes = [];
     private array $textures = [];
     private array $meshCenters = [];
+    public ?array $headOffset = null;
 
     public function __construct(private int $author, private string $title)
     {
     }
 
-    public static function import(string $file, string $title, int $author, string $description, int $price, bool $onSale, ?int $expectType = null): int
+    public static function import(string $file, string $title, int $author, string $description, int $price, bool $onSale, ?int $expectType = null, ?array $headOffset = null): int
     {
         $importer = new self($author, $title);
+        $importer->headOffset = $headOffset;
         [$xml, $type] = $importer->convert($file, $expectType);
 
         $assetId = AssetHelper::createAsset($title, $type, $author, $xml, $description, 'n', [
@@ -52,10 +54,10 @@ class ItemImporter
         return $assetId;
     }
 
-    public static function importBodyPart(string $file, string $title, int $author, int $type): int
+    public static function importBodyPart(string $file, string $title, int $author, int $type, ?array $rig = null): int
     {
         $importer = new self($author, $title);
-        $xml = $importer->bodyPart($file);
+        $xml = $importer->bodyPart($file, $type, $rig);
         $assetId = AssetHelper::createAsset($title, $type, $author, $xml, '', 'n', [
             'price' => 0,
             'onSale' => false,
@@ -68,8 +70,14 @@ class ItemImporter
         return $assetId;
     }
 
-    public function bodyPart(string $file): string
+    const BODY_PARTS = [27 => 1, 28 => 3, 29 => 2, 30 => 4, 31 => 5];
+
+    public function bodyPart(string $file, int $type = 0, ?array $rig = null): string
     {
+        if (!R15ToR6::hasR6($file) && isset(self::BODY_PARTS[$type])) {
+            return $this->r15BodyPart($file, self::BODY_PARTS[$type], $rig);
+        }
+
         $doc = new DOMDocument();
         if (!@$doc->loadXML(RbxmReader::toXml($file), LIBXML_NONET | LIBXML_PARSEHUGE)) {
             throw new ImportException("The body part file couldn't be read.");
@@ -98,6 +106,30 @@ class ItemImporter
             '<int64 name="OverlayTextureId">' . ($overlay > 0 ? $this->texture($overlay) : 0) . '</int64>',
         ];
 
+        return $this->characterMesh($props);
+    }
+
+    private function r15BodyPart(string $file, int $bodyPart, ?array $rig): string
+    {
+        $parts = R15ToR6::parts($file);
+        if (!$parts) {
+            throw new ImportException('That body part has no R6 or R15 version the 2016 client can use.');
+        }
+        [$mesh, $texture] = R15ToR6::build($bodyPart, $parts, $rig, fn(int $id) => self::download($id));
+        $meshId = AssetHelper::createAsset("{$this->title} Mesh", 4, $this->author, $mesh, '', 'n', []);
+        $textureId = $texture !== null ? AssetHelper::createAsset("{$this->title} Texture", 1, $this->author, $texture, '', 'n', [], true) : 0;
+
+        return $this->characterMesh([
+            '<int64 name="BaseTextureId">' . $textureId . '</int64>',
+            '<token name="BodyPart">' . $bodyPart . '</token>',
+            '<int64 name="MeshId">' . $meshId . '</int64>',
+            '<string name="Name">' . RbxmReader::esc($this->title) . '</string>',
+            '<int64 name="OverlayTextureId">0</int64>',
+        ]);
+    }
+
+    private function characterMesh(array $props): string
+    {
         return '<roblox xmlns:xmime="http://www.w3.org/2005/05/xmlmime" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.roblox.com/roblox.xsd" version="4">' . "\n"
             . "\t<External>null</External>\n\t<External>nil</External>\n"
             . "\t<Item class=\"CharacterMesh\" referent=\"RBX0\">\n\t\t<Properties>\n\t\t\t" . implode("\n\t\t\t", $props) . "\n\t\t</Properties>\n\t</Item>\n</roblox>";
@@ -354,6 +386,14 @@ class ItemImporter
         $add('Content', 'TextureId', $textureId === null ? '<null></null>' : '<url>' . $this->siteUrl($this->texture($textureId)) . '</url>');
         $add('string', 'Name', 'Mesh');
         $scale = $this->vector($xp, $props, 'Scale') ?? [1, 1, 1];
+        $offset = $this->vector($xp, $props, 'Offset') ?? [0, 0, 0];
+        if ($this->headOffset !== null && $meshId !== null) {
+            $c = $this->meshCenters[$meshId] ?? [0, 0, 0];
+            $offset = [$this->headOffset[0] - $c[0] * $scale[0], $this->headOffset[1] - $c[1] * $scale[1], $this->headOffset[2] - $c[2] * $scale[2]];
+        }
+        if ($offset !== [0, 0, 0]) {
+            $add('Vector3', 'Offset', RbxmReader::vec(...$offset));
+        }
         $add('Vector3', 'Scale', RbxmReader::vec(...$scale));
         $add('Vector3', 'VertexColor', RbxmReader::vec(1, 1, 1));
 

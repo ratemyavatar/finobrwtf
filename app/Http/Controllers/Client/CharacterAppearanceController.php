@@ -131,13 +131,51 @@ class CharacterAppearanceController extends Controller
         );
 
         $ids = self::expandPackages(array_map('intval', $ids));
+        $kept = self::withoutFaceForDynamicHead($ids);
+        $urls = array_map(fn($id) => $base . route('client-routes.asset', ['id' => $id], false), $kept ?? $ids);
+        if ($kept !== null) {
+            $urls[] = $base . route('client-routes.asset', ['id' => self::blankFaceId()], false);
+        }
 
-        $charApp .= $ids ? implode(";", array_map(
-            fn($id) => $base . route('client-routes.asset', ['id' => $id], false),
-            $ids
-        )) : "";
+        $charApp .= implode(";", $urls);
 
         return response($charApp, 200);
+    }
+
+    public static function blankFaceId(): int
+    {
+        return (int) Cache::rememberForever('blank_face_asset', function () {
+            $id = (int) Asset::where('asset_type', 18)->where('title', 'Blank Face')->where('visibility', 'n')->value('id');
+            if ($id) {
+                return $id;
+            }
+            $img = imagecreatetruecolor(256, 256);
+            imagesavealpha($img, true);
+            imagealphablending($img, false);
+            imagefill($img, 0, 0, imagecolorallocatealpha($img, 0, 0, 0, 127));
+            $tmp = tempnam(sys_get_temp_dir(), 'finobe_face_');
+            imagepng($img, $tmp);
+            try {
+                $id = AssetHelper::createAccessory('Blank Face', ['tmp_name' => $tmp], 1, '', 0, false, false, 'face');
+            } finally {
+                @unlink($tmp);
+            }
+            Asset::where('id', $id)->update(['visibility' => 'n']);
+            return $id;
+        });
+    }
+
+    public static function withoutFaceForDynamicHead(array $ids): ?array
+    {
+        if (!$ids) {
+            return null;
+        }
+        $assets = Asset::whereIn('id', $ids)->get(['id', 'asset_type', 'additional'])->keyBy('id');
+        $dynamic = $assets->contains(fn($a) => (int) $a->asset_type === 17 && !empty($a->additional['dynamicHead']));
+        if (!$dynamic) {
+            return null;
+        }
+        return array_values(array_filter($ids, fn($id) => (int) ($assets[$id]->asset_type ?? 0) !== 18));
     }
 
     public static function expandPackages(array $ids): array

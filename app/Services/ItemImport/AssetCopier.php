@@ -28,8 +28,11 @@ class AssetCopier
             return ['id' => $siteId, 'name' => $name];
         }
 
-        if ($type === 17) {
+        if ($type === 17 || $type === 79) {
             $siteId = ItemImporter::import(ItemImporter::download($id), $name, $author, $desc, $price, $onSale, ItemImporter::HEAD);
+            if ($type === 79) {
+                self::markDynamicHead($siteId);
+            }
             return ['id' => $siteId, 'name' => $name];
         }
 
@@ -56,7 +59,7 @@ class AssetCopier
         $name = trim((string) ($title ?: ($bundle['name'] ?? "Bundle {$bundleId}")));
         $desc = (string) ($description ?? ($bundle['description'] ?? ''));
 
-        $ids = [];
+        $items = [];
         foreach (($bundle['items'] ?? []) as $item) {
             $robloxId = (int) ($item['id'] ?? 0);
             if ($robloxId === 0 || ($item['type'] ?? 'Asset') !== 'Asset') {
@@ -71,15 +74,55 @@ class AssetCopier
                     continue;
                 }
             }
-            $item['assetType'] = $assetType;
             $type = self::finobeType($assetType);
             if ($type === null) {
                 continue;
             }
+            $items[] = ['id' => $robloxId, 'assetType' => $assetType, 'type' => $type, 'name' => (string) ($item['name'] ?? $name)];
+        }
+
+        $files = [];
+        $r15 = [];
+        foreach ($items as $i => $item) {
+            if (!in_array($item['type'], ['bodypart', 'head'], true)) {
+                continue;
+            }
             try {
-                $ids[] = $type === 'bodypart'
-                    ? ItemImporter::importBodyPart(ItemImporter::download($robloxId), (string) ($item['name'] ?? $name), $author, (int) $item['assetType'])
-                    : self::importItem($robloxId, $type, (string) ($item['name'] ?? $name), $author);
+                $files[$i] = ItemImporter::download($item['id']);
+            } catch (\Throwable $e) {
+                report($e);
+                continue;
+            }
+            if ($item['type'] === 'bodypart' && !R15ToR6::hasR6($files[$i])) {
+                $r15[ItemImporter::BODY_PARTS[$item['assetType']]] = R15ToR6::parts($files[$i]);
+            }
+        }
+        $rig = $r15 ? R15ToR6::rig($r15) : null;
+        if ($rig !== null && isset($r15[1])) {
+            try {
+                $rig[3] = R15ToR6::profile(R15ToR6::build(1, $r15[1], $rig, fn(int $id) => ItemImporter::download($id), false)[0]);
+            } catch (\Throwable $e) {
+                report($e);
+            }
+        }
+
+        $ids = [];
+        foreach ($items as $i => $item) {
+            try {
+                if ($item['type'] === 'bodypart') {
+                    if (!isset($files[$i])) {
+                        continue;
+                    }
+                    $ids[] = ItemImporter::importBodyPart($files[$i], $item['name'], $author, $item['assetType'], $rig);
+                } elseif ($item['type'] === 'head' && isset($files[$i])) {
+                    $offset = $rig !== null ? R15ToR6::headOffset(R15ToR6::headAttachments($files[$i]), $rig, $r15) : null;
+                    $ids[] = $headId = self::importHead($files[$i], $item['name'], $author, $offset);
+                    if ($item['assetType'] === 79) {
+                        self::markDynamicHead($headId);
+                    }
+                } else {
+                    $ids[] = self::importItem($item['id'], $item['type'], $item['name'], $author);
+                }
             } catch (\Throwable $e) {
                 report($e);
             }
@@ -106,6 +149,24 @@ class AssetCopier
             $robloxType === 2 => 'tshirt',
             default => null,
         };
+    }
+
+    private static function markDynamicHead(int $id): void
+    {
+        $asset = \App\Models\Asset::find($id);
+        if ($asset) {
+            $asset->additional = array_merge(is_array($asset->additional) ? $asset->additional : [], ['dynamicHead' => true]);
+            $asset->save();
+        }
+    }
+
+    private static function importHead(string $file, string $name, int $author, ?array $offset): int
+    {
+        try {
+            return ItemImporter::import($file, $name, $author, '', 0, false, ItemImporter::HEAD, $offset);
+        } catch (ImportException $e) {
+            return ItemImporter::import($file, $name, $author, '', 0, false, null, $offset);
+        }
     }
 
     private static function importItem(int $robloxId, string $type, string $name, int $author): int
