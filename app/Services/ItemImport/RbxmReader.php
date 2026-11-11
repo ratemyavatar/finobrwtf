@@ -2,21 +2,12 @@
 
 namespace App\Services\ItemImport;
 
-/*
-    RbxmReader
-     - turns a .rbxm/.rbxmx (XML, or the binary "<roblox!" format modern Studio saves) into
-       2016-style XML the old client and RCC can load
-     - binary: only property types an old client understands are written; newer ones
-       (UniqueId, Capabilities, Font, ...) and Studio-only bookkeeping are dropped
-*/
 class RbxmReader
 {
-    /** Content properties (written as <Content><url>) */
     const CONTENT = ['MeshId', 'TextureId', 'TextureID', 'Texture', 'Image', 'SoundId', 'AnimationId', 'Graphic',
         'ShirtTemplate', 'PantsTemplate', 'LinkedSource', 'ColorMap', 'NormalMap', 'MetalnessMap', 'RoughnessMap',
         'SkyboxBk', 'SkyboxDn', 'SkyboxFt', 'SkyboxLf', 'SkyboxRt', 'SkyboxUp', 'Face', 'CageMeshId', 'ReferenceMeshId'];
 
-    /** properties a 2016 client doesn't have, or that only matter to Studio */
     const SKIP = ['AttributesSerialize', 'Tags', 'Capabilities', 'DefinesCapabilities', 'HistoryId', 'UniqueId',
         'SourceAssetId', 'ScriptGuid', 'CollisionGroup', 'CollisionGroupId', 'MaterialVariantSerialized',
         'PivotOffset', 'WorldPivotData', 'NeedsPivotMigration', 'ModelStreamingMode', 'ModelMeshCFrame',
@@ -25,10 +16,8 @@ class RbxmReader
         'CanQuery', 'CanTouch', 'AudioCanCollide', 'EnableFluidForces', 'RootPriority', 'Massless',
         'PhysicsData', 'PhysicalConfigData', 'MeshContent', 'TextureContent', 'Color3uint8'];
 
-    /** BrickColor number => rgb, to turn a modern part colour back into a BrickColor */
     const PALETTE = [1=>[242,243,243], 2=>[161,165,162], 3=>[249,233,153], 5=>[215,197,154], 6=>[194,218,184], 9=>[232,186,200], 11=>[128,187,219], 12=>[203,132,66], 18=>[204,142,105], 21=>[196,40,28], 22=>[196,112,160], 23=>[13,105,172], 24=>[245,205,48], 25=>[98,71,50], 26=>[27,42,53], 27=>[109,110,108], 28=>[40,127,71], 29=>[161,196,140], 36=>[243,207,155], 37=>[75,151,75], 38=>[160,95,53], 39=>[193,202,222], 40=>[236,236,236], 41=>[205,84,75], 42=>[193,223,240], 43=>[123,182,232], 44=>[247,241,141], 45=>[180,210,228], 47=>[217,133,108], 48=>[132,182,141], 49=>[248,241,132], 50=>[236,232,222], 100=>[238,196,182], 101=>[218,134,122], 102=>[110,153,202], 103=>[199,193,183], 104=>[107,50,124], 105=>[226,155,64], 106=>[218,133,65], 107=>[0,143,156], 108=>[104,92,67], 110=>[67,84,147], 111=>[191,183,177], 112=>[104,116,172], 113=>[229,173,200], 115=>[199,210,60], 116=>[85,165,175], 118=>[183,215,213], 119=>[164,189,71], 120=>[217,228,167], 121=>[231,172,88], 123=>[211,111,76], 124=>[146,57,120], 125=>[234,184,146], 126=>[165,165,203], 127=>[220,188,129], 128=>[174,122,89], 131=>[156,163,168], 133=>[213,115,61], 134=>[216,221,86], 135=>[116,134,157], 136=>[135,124,144], 137=>[224,152,100], 138=>[149,138,115], 140=>[32,58,86], 141=>[39,70,45], 143=>[207,226,247], 145=>[121,136,161], 146=>[149,142,163], 147=>[147,135,103], 148=>[87,88,87], 149=>[22,29,50], 150=>[171,173,172], 151=>[120,144,130], 153=>[149,121,119], 154=>[123,46,47], 157=>[255,246,123], 158=>[225,164,194], 168=>[117,108,98], 176=>[151,105,91], 178=>[180,132,85], 179=>[137,135,136], 180=>[215,169,75], 190=>[249,214,46], 191=>[232,171,45], 192=>[105,64,40], 193=>[207,96,36], 194=>[163,162,165], 195=>[70,103,164], 196=>[35,71,139], 198=>[142,66,133], 199=>[99,95,98], 200=>[130,138,93], 208=>[229,228,223], 209=>[176,142,68], 210=>[112,149,120], 211=>[121,181,181], 212=>[159,195,233], 213=>[108,129,183], 216=>[144,76,42], 217=>[124,92,70], 218=>[150,112,159], 219=>[107,98,155], 220=>[167,169,206], 221=>[205,98,152], 222=>[228,173,200], 223=>[220,144,149], 224=>[240,213,160], 225=>[235,184,127], 226=>[253,234,141], 232=>[125,187,221], 268=>[52,43,117], 301=>[80,109,84], 302=>[91,93,105], 303=>[0,16,176], 304=>[44,101,29], 305=>[82,124,174], 306=>[51,88,130], 307=>[16,42,220], 308=>[61,21,133], 309=>[52,142,64], 310=>[91,154,76], 311=>[159,161,172], 312=>[89,34,89], 313=>[31,128,29], 314=>[159,173,192], 315=>[9,137,207], 316=>[123,0,123], 317=>[124,156,107], 318=>[138,171,133], 319=>[185,196,177], 320=>[202,203,209], 322=>[123,47,123], 323=>[148,190,129], 324=>[168,189,153], 325=>[223,223,222], 327=>[151,0,0], 328=>[177,229,166], 329=>[152,194,219], 330=>[255,152,220], 331=>[255,89,89], 332=>[117,0,0], 334=>[248,217,109], 335=>[231,231,236], 336=>[199,212,228], 337=>[255,148,148], 338=>[190,104,98], 339=>[86,36,36], 340=>[241,231,199], 341=>[254,243,187], 342=>[224,178,208], 343=>[212,144,189], 344=>[150,85,85], 346=>[211,190,150], 347=>[226,220,188], 348=>[237,234,234], 349=>[233,218,218], 350=>[136,62,62], 351=>[188,155,93], 352=>[199,172,120], 353=>[202,191,163], 354=>[187,179,178], 355=>[108,88,75], 356=>[160,132,79], 357=>[149,137,136], 358=>[171,168,158], 359=>[175,148,131], 360=>[150,103,102], 361=>[86,66,54], 362=>[126,104,63], 363=>[105,102,92], 364=>[90,76,66], 365=>[106,57,9], 1001=>[248,248,248], 1002=>[205,205,205], 1003=>[17,17,17], 1004=>[255,0,0], 1005=>[255,176,0], 1006=>[180,128,255], 1007=>[163,75,75], 1008=>[193,190,66], 1009=>[255,255,0], 1010=>[0,0,255], 1011=>[0,32,96], 1012=>[33,84,185], 1013=>[4,175,236], 1014=>[170,85,0], 1015=>[170,0,170], 1016=>[255,102,204], 1017=>[255,175,0], 1018=>[18,238,212], 1019=>[0,255,255], 1020=>[0,255,0], 1021=>[58,125,21], 1022=>[127,142,100], 1023=>[140,91,159], 1024=>[175,221,255], 1025=>[255,201,201], 1026=>[177,167,255], 1027=>[159,243,233], 1028=>[204,255,204], 1029=>[255,255,204], 1030=>[255,204,153], 1031=>[98,37,209], 1032=>[255,0,191]];
 
-    /** @return string 2016-style XML */
     public static function toXml(string $data): string
     {
         if (str_starts_with($data, '<roblox!')) {
@@ -40,12 +29,10 @@ class RbxmReader
         throw new ImportException("That file isn't a Roblox model (.rbxm or .rbxmx).");
     }
 
-    // ---------------------------------------------------------------- binary
-
-    private array $classes = [];     // classId => [name, referents[]]
-    private array $props = [];       // referent => [name => [xmlType, value]]
-    private array $classOf = [];     // referent => class name
-    private array $parent = [];      // referent => parent referent (-1 = root)
+    private array $classes = [];
+    private array $props = [];
+    private array $classOf = [];
+    private array $parent = [];
     private array $sharedStrings = [];
 
     private function binaryToXml(string $d): string
@@ -93,7 +80,7 @@ class RbxmReader
         $o = 0;
         $id = self::i32($b, $o);
         $name = self::str($b, $o);
-        $o += 1; // isService
+        $o += 1;
         $n = self::u32($b, $o);
         $refs = self::refs($b, $o, $n);
         $this->classes[$id] = [$name, $refs];
@@ -118,7 +105,7 @@ class RbxmReader
         $o = 4;
         $n = self::u32($b, $o);
         for ($i = 0; $i < $n; $i++) {
-            $o += 16; // md5
+            $o += 16;
             $this->sharedStrings[] = self::str($b, $o);
         }
     }
@@ -136,7 +123,6 @@ class RbxmReader
         [$class, $refs] = $this->classes[$id];
         $n = count($refs);
 
-        // a modern part only has Color3uint8: keep it as the nearest BrickColor
         if ($name === 'Color3uint8' && $type === 26) {
             $vals = [];
             for ($i = 0; $i < $n; $i++) {
@@ -164,12 +150,11 @@ class RbxmReader
         }
     }
 
-    /** @return array|null [[xmlType, innerXml], ...] per instance, null for a type that isn't kept */
     private function values(string $name, int $type, string $b, int $o, int $n): ?array
     {
         $out = [];
         switch ($type) {
-            case 1: // string / Content / ProtectedString
+            case 1:
                 for ($i = 0; $i < $n; $i++) {
                     $s = self::str($b, $o);
                     if ($name === 'Source') {
@@ -201,7 +186,7 @@ class RbxmReader
                     $out[] = ['double', self::num(unpack('e', substr($b, $o + 8 * $i, 8))[1])];
                 }
                 return $out;
-            case 7: // UDim2
+            case 7:
                 $sx = self::floats($b, $o, $n); $sy = self::floats($b, $o, $n);
                 $ox = self::ints($b, $o, $n); $oy = self::ints($b, $o, $n);
                 for ($i = 0; $i < $n; $i++) {
@@ -220,7 +205,7 @@ class RbxmReader
                     $out[] = ['int', (string) $v];
                 }
                 return $out;
-            case 12: // Color3 -> packed 0xFFRRGGBB, which every client version reads
+            case 12:
                 $r = self::floats($b, $o, $n); $g = self::floats($b, $o, $n); $bl = self::floats($b, $o, $n);
                 for ($i = 0; $i < $n; $i++) {
                     $c = fn($x) => max(0, min(255, (int) round($x * 255)));
@@ -239,7 +224,7 @@ class RbxmReader
                     $out[] = ['Vector3', self::vec($x[$i], $y[$i], $z[$i])];
                 }
                 return $out;
-            case 16: // CFrame
+            case 16:
                 $rots = [];
                 for ($i = 0; $i < $n; $i++) {
                     $id = ord($b[$o++]);
@@ -255,12 +240,12 @@ class RbxmReader
                     $out[] = ['CoordinateFrame', self::cframe([$x[$i], $y[$i], $z[$i]], $rots[$i])];
                 }
                 return $out;
-            case 18: // enum
+            case 18:
                 foreach (self::uints($b, $o, $n) as $v) {
                     $out[] = ['token', (string) $v];
                 }
                 return $out;
-            case 19: // referent
+            case 19:
                 foreach (self::refs($b, $o, $n) as $r) {
                     $out[] = ['Ref', $r < 0 ? 'null' : 'RBX' . $r];
                 }
@@ -271,8 +256,8 @@ class RbxmReader
                     $out[] = ['Vector3int16', "<X>{$x}</X><Y>{$y}</Y><Z>{$z}</Z>"];
                 }
                 return $out;
-            case 21: // NumberSequence
-            case 22: // ColorSequence
+            case 21:
+            case 22:
                 for ($i = 0; $i < $n; $i++) {
                     $k = self::u32($b, $o);
                     $per = $type === 21 ? 3 : 5;
@@ -301,7 +286,7 @@ class RbxmReader
                 }
                 return $out;
             default:
-                return null; // newer types (UniqueId, Font, SecurityCapabilities, ...) and ones items don't use
+                return null;
         }
     }
 
@@ -332,8 +317,6 @@ class RbxmReader
         }
         return $s . "{$t}</Item>\n";
     }
-
-    // ---------------------------------------------------------------- helpers
 
     public static function nearestBrickColor(int $r, int $g, int $b): int
     {
@@ -374,7 +357,6 @@ class RbxmReader
 
     public static function esc(string $s): string
     {
-        // drop bytes XML can't hold (control characters)
         $s = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F]/', '', mb_convert_encoding($s, 'UTF-8', 'UTF-8'));
         return htmlspecialchars($s, ENT_XML1 | ENT_QUOTES, 'UTF-8');
     }
@@ -385,7 +367,6 @@ class RbxmReader
         return '<![CDATA[' . str_replace(']]>', ']]]]><![CDATA[>', $s) . ']]>';
     }
 
-    /** the 24 axis-aligned rotations the format stores as one byte */
     private static function basicRotation(int $id): array
     {
         $vectors = [[1, 0, 0], [0, 1, 0], [0, 0, 1], [-1, 0, 0], [0, -1, 0], [0, 0, -1]];
@@ -393,7 +374,7 @@ class RbxmReader
         $xv = $vectors[intdiv($id, 6)];
         $yv = $vectors[$id % 6];
         $zv = [$xv[1] * $yv[2] - $xv[2] * $yv[1], $xv[2] * $yv[0] - $xv[0] * $yv[2], $xv[0] * $yv[1] - $xv[1] * $yv[0]];
-        // rows of the matrix: x, y, z are its columns
+
         return [$xv[0], $yv[0], $zv[0], $xv[1], $yv[1], $zv[1], $xv[2], $yv[2], $zv[2]];
     }
 
@@ -419,7 +400,6 @@ class RbxmReader
         return $s;
     }
 
-    /** n values of $size bytes stored byte-plane by byte-plane, each returned big-endian */
     private static function deinterleave(string $b, int &$o, int $n, int $size): array
     {
         $out = [];

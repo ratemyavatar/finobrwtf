@@ -27,7 +27,7 @@
                                         .nowrap {
                                             white-space: nowrap;
                                         }
-                                    </style>
+</style>
                                     <div class="d-flex flex-column">
                                         <div style="margin-bottom: auto;">
                                             <h4>{% if data.profile.gender == 'f' %}<i class='fal fa-venus fa-1x'></i> {% elseif data.profile.gender != 'n' %}<i class='fal fa-mars fa-1x'></i> {% endif %}{{ data.profile.username | raw }}</h4>
@@ -51,14 +51,7 @@
                                                 </p>
                                                 {% for friend in data.user.friends %}
                                                     {% if friend.userid == data.profile.id %}
-                                                        {# wwhy???
-                                                        {% if friend.status == "pending" %}
-                                                        <p>
-                                                            <a class="btn btn-theme mr-2 nowrap disabled">
-                                                                pending...
-                                                            </a>
-                                                        </p>
-                                                        #}
+
                                                         {% if friend.status == "pending" %}
                                                         <div class="btn-group" role="group" style="display: block;">
                                                             <a href="/user/{{ data.profile.id }}/accept?_token={{ data.csrf_token }}" class="btn btn-success mr-2 nowrap " style="margin-right: -2px !important;">
@@ -73,13 +66,7 @@
                                                             <a href="/user/{{ data.profile.id }}/remove?_token={{ data.csrf_token }}" class="btn btn-danger mr-2 nowrap">
                                                                 remove friend
                                                             </a>
-                                                        </p>{#
-                                                        {% elseif not user.friends|filter(user => user.status != "pending")|length %}
-                                                                <p>
-                                                                    <a href="/user/{{ data.profile.id }}/add?_token={{ data.csrf_token }}" class="btn btn-primary mr-2 nowrap">
-                                                                        Send Friend Request
-                                                                    </a>
-                                                                </p>#}
+                                                        </p>
                                                         {% endif %}
                                                     {% endif %}
                                                 {% endfor %}
@@ -89,16 +76,10 @@
                                                         <a class="btn btn-theme mr-2 nowrap disabled">
                                                             pending request
                                                         </a>
-                                                    </p>{#
-                                                    {% elseif not data.profile.friends|filter(user => user.status != "pending")|length %}
-                                                    <p>
-                                                        <a href="/user/{{ data.profile.id }}/add?_token={{ data.csrf_token }}" class="btn btn-primary mr-2 nowrap">
-                                                            Send Friend Request
-                                                         </a>
-                                                    </p>#}
+                                                    </p>
                                                     {% endif %}
                                                 {% endfor %}
-                                                {#% if (not user.friends|filter(friend => friend.status != "pending")|length or not data.profile.friends|filter(friend2 => friend2.status != "pending")|length) and (not user.friends|filter(friend => friend.status == "pending")|length or not data.profile.friends|filter(friend2 => friend2.status == "pending")|length) %#}
+
                                                 {% if not data.profile.friends|default([])|filter(friend => friend.userid == data.user.id)|length and not data.user.friends|default([])|filter(friend => friend.userid == data.profile.id)|length %}
                                                     <p>
                                                         <a href="/user/{{ data.profile.id }}/add?_token={{ data.csrf_token }}" class="btn btn-primary mr-2 nowrap">
@@ -181,7 +162,7 @@
                                             var game = document.getElementById('game-' + number);
                                             game.style.display = game.style.display == "none" ? "" : "none";
                                         }
-                                    </script>
+</script>
                                 {% endif %}
                                 {% if not data.profile.places|length %}
                                     <p style="margin-bottom:0px;">This user has no active places.</p>
@@ -217,53 +198,15 @@
                         <div data-v-4350f98c="" class="" id="loader">
                             <div data-v-4350f98c="">
                                 <div data-v-28f94fdd="" data-v-4350f98c="" class="finobe__vloader text-center">
-                                    <span data-v-28f94fdd="" class="finobe__spinning_blob finobe__blob_thinking"></span> 
+                                    <span data-v-28f94fdd="" class="finobe__spinning_blob finobe__blob_thinking"></span>
                                     <h3 data-v-28f94fdd="" class="mt-2">Hold on, I need a moment to think...</h3>
                                 </div>
                             </div>
                         </div>
                         <div class="row d-flex" id="inventory" style="margin-left: 10px;">
-                            {#
-                            <div class="card p-0 mb-4" style="width: 31%;">
-                                <a href="" style="text-decoration: none; color: inherit;">
-                                    <div class="card-body">
-                                        <div class="d-flex justify-content-center align-items-center mb-3">
-                                            <img src="/s/img/finnobe3logo.png" height="95" width="95">
-                                        </div>
-                                        <p class="mb-0">bean</p>
-                                        <p class="text-muted mb-0">by <a href="/user/1">Sudo</a>
-                                    </div>
-                                </a>
-                            </div>
-                            #}
-                            {#
-                            <div class="card col-md-4 p-0">
-                                <a href="" style="text-decoration: none; color: inherit;">
-                                <div class="card-body">
-                                    <div class="d-flex justify-content-center align-items-center">
-                                        <img src="/s/img/finnobe3logo.png" height="95" width="95">
-                                    </div>
-                                    <p class="mb-0">bean</p>
-                                    <p class="text-muted mb-0">by <a href="/user/1">Sudo</a>
-                                </div>
-                                </a>
-                            </div>
-                            <div class="card col-md-4 p-0">
-                                <a href="" style="text-decoration: none; color: inherit;">
-                                <div class="card-body">
-                                    <div class="d-flex justify-content-center align-items-center">
-                                        <img src="/s/img/finnobe3logo.png" height="95" width="95">
-                                    </div>
-                                    <p class="mb-0">bean</p>
-                                    <p class="text-muted mb-0">by <a href="/user/1">Sudo</a>
-                                </div>
-                                </a>
-                            </div>
-                            #}
+
                         </div>
-                        {#
-                        <div data-v-e236382e="" data-v-4350f98c="" class="paginator clearfix text-center clearfix"><a data-v-e236382e="" class="btn btn-theme mr-2"><i data-v-e236382e="" class="far fa-chevron-left"></i></a> <span data-v-e236382e=""><input data-v-e236382e="" type="number" min="1" place="current" value="1" class="form-control form-control-sm page-input mr-1"> of <span data-v-e236382e="" place="total">1</span></span> <a data-v-e236382e="" class="btn btn-theme ml-2 "><i data-v-e236382e="" class="far fa-chevron-right"></i></a></div>
-                        #}
+
                         <div data-v-e236382e="" data-v-4350f98c="" class="paginator clearfix text-center clearfix">
                             <a data-v-e236382e="" class="btn btn-theme mr-2" id="previous-page" onclick="changePage('prev')">
                                 <i data-v-e236382e="" class="far fa-chevron-left"></i>
@@ -351,7 +294,7 @@
                                                     </div>
                                                 `;
                                             }
-                                            
+
                                             count++;
                                         });
                                     }
@@ -405,7 +348,7 @@
                         });
 
                         fetchInventory('t-shirts');
-                    </script>
+</script>
                 </div>
             </div>
         </div>

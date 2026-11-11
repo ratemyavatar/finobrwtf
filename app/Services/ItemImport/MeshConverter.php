@@ -2,14 +2,6 @@
 
 namespace App\Services\ItemImport;
 
-/*
-    MeshConverter
-     - the 2016 client reads mesh versions 1.00, 1.01 and 2.00
-     - newer meshes (3.00 / 3.01 with LODs, 4.00 / 4.01 / 5.00 with skinning and FACS, 6.00 with
-       uncompressed chunks) are rewritten as 2.00 using their highest-detail LOD
-     - 7.00 (and 6.00 with a compressed COREMESH) store their geometry with Google's Draco, which is
-       decoded by tools/mesh/v7_to_v2.py (needs python3 + `pip install DracoPy`)
-*/
 class MeshConverter
 {
     public static function toLegacy(string $mesh): string
@@ -21,7 +13,7 @@ class MeshConverter
         $o = strlen($m[0]);
 
         if ($major <= 2) {
-            return $mesh; // already readable
+            return $mesh;
         }
 
         [$verts, $faces] = match (true) {
@@ -38,7 +30,6 @@ class MeshConverter
         return self::writeV2($verts, $faces);
     }
 
-    /** @return array{0: string, 1: string} vertex bytes (40 each) and face bytes (12 each), LOD 0 only */
     private static function readV3(string $d, int $o): array
     {
         $h = unpack('vheader/Cvert/Cface/vlodSize/vlods/VnumVerts/VnumFaces', $d, $o);
@@ -59,7 +50,7 @@ class MeshConverter
         $verts = substr($d, $o, $h['numVerts'] * 40);
         $o += $h['numVerts'] * 40;
         if ($h['bones'] > 0) {
-            $o += $h['numVerts'] * 8; // skinning
+            $o += $h['numVerts'] * 8;
         }
         $faces = substr($d, $o, $h['numFaces'] * 12);
         $o += $h['numFaces'] * 12;
@@ -68,7 +59,6 @@ class MeshConverter
         return [$verts, self::lod0($faces, $lods)];
     }
 
-    /** 6.00: "COREMESH" / "LODS" / ... chunks; only the uncompressed (chunk version 1) form */
     private static function readChunked(string $d, int $o): array
     {
         $verts = null;
@@ -108,7 +98,6 @@ class MeshConverter
         return false;
     }
 
-    /** Draco-compressed meshes go through tools/mesh/v7_to_v2.py */
     private static function decodeDraco(string $mesh): string
     {
         $script = base_path('tools/mesh/v7_to_v2.py');
@@ -135,7 +124,6 @@ class MeshConverter
         return $out;
     }
 
-    /** centre of a 2.00 mesh's bounding box (null for other versions) */
     public static function center(string $mesh): ?array
     {
         if (!str_starts_with($mesh, 'version 2.00')) {
@@ -164,7 +152,6 @@ class MeshConverter
         return $faces;
     }
 
-    /** vertices normalised to the 40-byte pos/normal/uv/tangent/colour layout */
     private static function verts(string $d, int $o, int $n, int $size): string
     {
         if ($size === 40) {
@@ -177,7 +164,6 @@ class MeshConverter
         return $out;
     }
 
-    /** 2.00 with 40-byte vertices: pos(3f) normal(3f) uvw(3f) colour(RGBA) */
     private static function writeV2(string $verts, string $faces): string
     {
         $n = intdiv(strlen($verts), 40);

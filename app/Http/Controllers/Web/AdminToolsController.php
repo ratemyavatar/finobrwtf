@@ -14,15 +14,8 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Session;
 
-/*
-    The 2020 admin panel tools that weren't in this source yet: IP Bans, Force Regen Character,
-    Purge Inactive Game Servers, Item Purchase Log, Give Asset (Non-dependent / Dependent),
-    Asset Approval Log, Player List Thumbnails, and the links under the tiles (Set User Rank,
-    Clear Timed Cache, Force Username Change, Invite Tree)
-*/
 class AdminToolsController extends Controller
 {
-
     public function __construct(Request $request) {
         if(!Auth::check() || Auth::user()->status != 'admin') {
             abort(404);
@@ -54,7 +47,6 @@ class AdminToolsController extends Controller
         return ctype_digit($name) ? User::find((int) $name) : User::where('username', $name)->first();
     }
 
-    /* IP Bans: ban / unban addresses; look up the addresses a user logged in from */
     public function ipBans(Request $request) {
         if($request->isMethod('post')) {
             if($request->input('action') === 'unban') {
@@ -87,7 +79,6 @@ class AdminToolsController extends Controller
         return $this->toolPage('IpBans', 'IP Bans', ['bans' => $bans->map(fn($b) => (array) $b + ['moderator' => $mods[$b->moderator_id] ?? null])->all(), 'lookup' => $lookup]);
     }
 
-    /* Force Regen Character: re-render avatars */
     public function forceRegen(Request $request) {
         $results = [];
         if($request->isMethod('post')) {
@@ -103,7 +94,6 @@ class AdminToolsController extends Controller
         return $this->toolPage('ForceRegen', 'Force Regen Character', ['results' => $results]);
     }
 
-    /* Purge Inactive Game Servers: drop servers that stopped checking in */
     public function purgeGames(Request $request) {
         $cutoff = now()->subMinutes(10);
         $dead = function () use ($cutoff) {
@@ -124,7 +114,6 @@ class AdminToolsController extends Controller
         return $this->toolPage('PurgeGames', 'Purge Inactive Game Servers', ['servers' => $servers->map(fn($s) => (array) $s + ['place' => $places[$s->placeid] ?? '?'])->all()]);
     }
 
-    /* Item Purchase Log */
     public function purchaseLog(Request $request) {
         $q = Purchases::whereIn('type', [1, 2, Trading::TYPE_TRADED])->where('assetid', '>', 0);
         if($user = trim((string) $request->query('user'))) {
@@ -147,10 +136,6 @@ class AdminToolsController extends Controller
             'pagination' => ['page' => min($page, $pages), 'pages' => $pages]]);
     }
 
-    /*
-        Give Asset (Non-dependent): a copy outside the stock (a Unique shows serial N/A)
-        Give Asset (Dependent): counts like a purchase (a Unique takes the next serial, and not past its stock)
-    */
     public function giveAsset(Request $request, string $mode) {
         $dependent = $mode === 'dependent';
         $title = $dependent ? 'Give Asset (Dependent)' : 'Give Asset (Non-dependent)';
@@ -188,7 +173,6 @@ class AdminToolsController extends Controller
         return $this->toolPage('GiveAsset', $title, ['dependent' => $dependent]);
     }
 
-    /* Asset Approval Log */
     public function approvalLog(Request $request) {
         $rows = $this->db()->table('asset_approval_log')->orderByDesc('id')->limit(200)->get();
         $titles = Asset::whereIn('id', $rows->pluck('asset_id')->all())->pluck('title', 'id');
@@ -199,7 +183,6 @@ class AdminToolsController extends Controller
         ])->all()]);
     }
 
-    /* Player List Thumbnails: the small headshots the in-game player list shows; re-render broken ones */
     public function playerListThumbs(Request $request) {
         if($request->isMethod('post') && ($user = $this->findUser($request->input('user')))) {
             \App\Jobs\RenderAvatar::dispatchAfterResponse($user->id);
@@ -214,7 +197,6 @@ class AdminToolsController extends Controller
         return $this->toolPage('PlayerListThumbs', 'Player List Thumbnails', ['users' => $users, 'search' => $search]);
     }
 
-    /* - Set User Rank */
     public function setRank(Request $request) {
         if($request->isMethod('post')) {
             $user = $this->findUser($request->input('user'));
@@ -223,7 +205,6 @@ class AdminToolsController extends Controller
                 return $this->back("That user doesn't exist.", false);
             }
 
-            // A named staff role: keep them a member, swap in the role's scope preset.
             if(\App\Admin\Roles::scopes((string) $rank) !== null) {
                 $scopes = \App\Admin\Roles::apply((int) $user->id, (string) $rank);
                 return $this->back($user->username . ' is now ' . $rank . ' (' . implode(', ', $scopes) . ').');
@@ -251,7 +232,6 @@ class AdminToolsController extends Controller
         ]);
     }
 
-    /* - Clear Timed Cache: the remembered counts, names, thumbnails and place lists (not sessions) */
     public function clearCache(Request $request) {
         if($request->isMethod('post')) {
             $prefixes = ['user_count', 'latest_places', 'client_data', 'pfp_', 'username_', 'thumbnail_', 'ip_bans'];
@@ -276,7 +256,6 @@ class AdminToolsController extends Controller
         return $this->toolPage('ClearCache', 'Clear Timed Cache');
     }
 
-    /* - Force Username Change: free and without a cooldown */
     public function forceUsername(Request $request) {
         if($request->isMethod('post')) {
             $user = $this->findUser($request->input('user'));
@@ -298,9 +277,6 @@ class AdminToolsController extends Controller
         return $this->toolPage('ForceUsername', 'Force Username Change');
     }
 
-    /* Invite Keys: mint (or revoke) registration invite keys from the panel.
-       Temporary: the public invite creator stays off, but staff can still make keys here.
-       The keys themselves are still redeemed by the normal /auth/register flow. */
     public function inviteKeys(Request $request) {
         $db = $this->db();
 
@@ -361,7 +337,6 @@ class AdminToolsController extends Controller
         ]);
     }
 
-    /* - Invite Tree: who invited whom */
     public function inviteTree(Request $request) {
         $keys = $this->db()->table('invitekeys')->where('used', true)->whereNotNull('usedBy')->get(['author', 'usedBy', 'dateUsed']);
         $names = User::pluck('username', 'id')->all();
@@ -369,7 +344,6 @@ class AdminToolsController extends Controller
         $children = [];
         $invited = [];
         foreach($keys as $k) {
-            // usedBy holds a username (older rows may hold an id)
             $childId = ctype_digit((string) $k->usedBy) ? (int) $k->usedBy : ($ids[$k->usedBy] ?? null);
             if($childId === null) {
                 continue;

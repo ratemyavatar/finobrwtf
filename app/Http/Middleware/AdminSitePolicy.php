@@ -19,7 +19,7 @@ final class AdminSitePolicy
         $features=json_decode(file_get_contents(config_path('admin_features.json')),true);
         foreach($features as $key=>$feature) {
             $isWrite=!in_array($request->method(),['GET','HEAD','OPTIONS']);
-            // Friends and invitations in the legacy app also mutate on GET.
+
             $legacyWrite=$request->is('user/*/add','user/*/accept','user/*/remove','invites/new','forum/subscribe');
             if (!$isWrite && !$legacyWrite && empty($feature['all_methods'])) continue;
             if (!$request->is(...$feature['paths'])) continue;

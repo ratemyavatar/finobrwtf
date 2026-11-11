@@ -25,14 +25,13 @@ use App\Support\Format;
 
 class ForumController extends Controller
 {
-
     public function index(Request $request) {
         $data = $request->all();
         $title = 'Forum';
         $pageData['section'] = false;
 
         $posts = Thread::count();
-        
+
         $pages_to_show = 10;
         $results_per_page = 10;
         $number_of_pages = ceil($posts / $results_per_page);
@@ -47,7 +46,7 @@ class ForumController extends Controller
             ->limit($results_per_page)
             ->get()
             ->map(fn($item) => $item->toArray());
-        
+
         $pageData['threads'] = [
             'data' => [],
             'pages' => [
@@ -95,7 +94,7 @@ class ForumController extends Controller
         $pageData['section'] = $section;
 
         $posts = Thread::where('category', $section)->count();
-        
+
         $pages_to_show = 10;
         $results_per_page = 10;
         $number_of_pages = ceil($posts / $results_per_page);
@@ -111,7 +110,7 @@ class ForumController extends Controller
             ->limit($results_per_page)
             ->get()
             ->map(fn($item) => $item->toArray());
-        
+
         $pageData['threads'] = [
             'data' => [],
             'pages' => [
@@ -165,7 +164,7 @@ class ForumController extends Controller
         $search = '%' . htmlspecialchars($data['q']) . '%';
 
         $posts = Thread::whereRaw('LOWER(title) LIKE ?', [$search])->count();
-        
+
         $pages_to_show = 10;
         $results_per_page = 10;
         $number_of_pages = ceil($posts / $results_per_page);
@@ -181,7 +180,7 @@ class ForumController extends Controller
             ->limit($results_per_page)
             ->get()
             ->map(fn($item) => $item->toArray());
-        
+
         $pageData['threads'] = [
             'data' => [],
             'pages' => [
@@ -247,7 +246,7 @@ class ForumController extends Controller
             }
 
             $post = Thread::find($data['id']);
-            
+
             if($post->author != Auth::user()->username) {
                 Session::put('error', 'You do not own this post');
                 return redirect('/forum/post?id=' . $data['id']);
@@ -260,19 +259,11 @@ class ForumController extends Controller
 
             $post->comment = trim($data['content']);
             $post->save();
-            
-            /*
-            $this->db->table('users')
-                ->where('username', Auth::user()->username)
-                ->update([
-                    'post_cooldown' => DB::raw('CURRENT_TIMESTAMP()')
-                ]);
 
-            */
             $user = User::find(Auth::user()->id);
             $user->post_cooldown = now();
             $user->save();
-            
+
             Session::put('success', 'Successfully edited.');
             return redirect('/forum/post?id=' . $data['id']);
         }
@@ -291,7 +282,7 @@ class ForumController extends Controller
         if(isset($data['edit']) && (!Auth::check() || $post['author'] != Auth::user()->username)) {
             return redirect('/forum/post?id=' . $data['id']);
         }
-        
+
         $title = htmlspecialchars($post['title']);
         $pageData['editing'] = isset($data['edit']);
         $post['title'] = htmlspecialchars($post['title']);
@@ -370,7 +361,7 @@ class ForumController extends Controller
                 ->where('sticked', 'y')
                 ->first()
                 ->toArray();
-            
+
             $sticked['author'] = htmlspecialchars($sticked['author']);
             $sticked['date'] = date('m/d/Y h:i A', strtotime($sticked['date']));
             $sticked['edited_date'] = date('m/d/Y h:i A', strtotime($sticked['edited_date']));
@@ -433,7 +424,7 @@ class ForumController extends Controller
         }
 
         $replies = Reply::where('toid', $post['id'])->count();
-        
+
         $pages_to_show = 10;
         $results_per_page = 10;
         $number_of_pages = ceil($replies / $results_per_page);
@@ -447,7 +438,7 @@ class ForumController extends Controller
             ->limit($results_per_page)
             ->get()
             ->map(fn($item) => $item->toArray());
-        
+
         $pageData['replies'] = [
             'data' => [],
             'pages' => [
@@ -581,12 +572,12 @@ class ForumController extends Controller
             }
 
             $post = Thread::find($data['id']);
-            
+
             if($post->locked == 'y') {
                 Session::put('error', 'This post is locked');
                 return redirect('/forum/home');
             }
-            
+
             if(Carbon::parse($post->lastreplied)->lt(now()->subWeeks(3)) && Auth::user()->status == 'normal') {
                 if(Warning::where('username', Auth::user()->username)->where('date', '>=', DB::raw('DATE_SUB(NOW(), INTERVAL 1 MONTH)'))->count() >= 2) {
                     Ban::create([
@@ -623,7 +614,7 @@ class ForumController extends Controller
             }
 
             $subscriptions = Subscription::where('forumId', $data['id'])->get()->map(fn($item) => $item->toArray());
-            
+
             foreach($subscriptions as $subscription) {
                 Notification::create([
                     'owner' => Auth::user()->id,
@@ -637,7 +628,7 @@ class ForumController extends Controller
             if(isset($data['reply']) && Reply::where('id', $data['reply'])->exists()) {
                 Notification::create([
                     'owner' => Auth::user()->id,
-                    'touser' => User::where('username', Reply::select('author')->where('id', $data['reply'])->value('author'))->value('id'), // place with inner query grabs id of user instead of this when forum userid rewrite
+                    'touser' => User::where('username', Reply::select('author')->where('id', $data['reply'])->value('author'))->value('id'),
                     'message' => Auth::user()->username . ' replied to your reply on ' . $post->title,
                     'forum_id' => $data['id']
                 ]);
@@ -645,15 +636,15 @@ class ForumController extends Controller
                 $reply->replyTo = $data['reply'];
                 $reply->save();
             }
-            
+
             $user = User::find(Auth::user()->id);
             $user->post_cooldown = now();
             $user->save();
-            
+
             $post = Thread::find($data['id']);
             $post->lastreplied = now();
             $post->save();
-            
+
             $results_per_page = 10;
             $position_in_list = Reply::where('id', '<=', $reply->id)->where('toid', $data['id'])->count();
             $page_of_reply = ceil($position_in_list / $results_per_page);
@@ -663,7 +654,7 @@ class ForumController extends Controller
         }
 
         $post = Thread::find($data['id'])->toArray();
-        
+
         if($post['locked'] == 'y') {
             Session::put('error', 'This post is locked');
             return redirect('/forum/post?id=' . $data['id']);
@@ -698,14 +689,14 @@ class ForumController extends Controller
             }
 
             $reply = Reply::find($data['id']);
-        
+
             if($reply->author != Auth::user()->username) {
                 Session::put('error', 'You do not own this reply');
                 return redirect('/forum/home');
             }
 
             $post = Thread::find($reply->toid);
-            
+
             if($post->locked == 'y') {
                 Session::put('error', 'This post is locked');
                 return redirect('/forum/edit?id=' . $data['id']);
@@ -715,7 +706,7 @@ class ForumController extends Controller
             $reply->edited = 'y';
             $reply->edited_date = now();
             $reply->save();
-            
+
             $results_per_page = 10;
             $position_in_list = Reply::where('id', '<=', $data['id'])->where('toid', $data['postId'])->count();
             $page_of_reply = ceil($position_in_list / $results_per_page);
@@ -734,7 +725,7 @@ class ForumController extends Controller
         }
 
         $reply = Reply::find($data['id']);
-        
+
         if($reply['author'] != Auth::user()->username) {
             Session::put('error', 'You do not own this reply');
             return redirect('/forum/home');
@@ -770,14 +761,14 @@ class ForumController extends Controller
             }
 
             $reply = Reply::find($data['id']);
-        
+
             if($reply->author != Auth::user()->username) {
                 Session::put('error', 'You do not own this reply');
                 return redirect('/forum/home');
             }
 
             $post = Thread::find($reply['toid']);
-            
+
             if($post->locked == 'y') {
                 Session::put('error', 'This post is locked');
                 return redirect('/forum/edit?id=' . $data['id']);
@@ -808,7 +799,7 @@ class ForumController extends Controller
         }
 
         $reply = Reply::find($data['id'])->toArray();
-        
+
         if($reply['author'] != Auth::user()->username) {
             Session::put('error', 'You do not own this reply');
             return redirect('/forum/home');
@@ -961,7 +952,7 @@ class ForumController extends Controller
             Subscription::where('username', Auth::user()->username)
                 ->where('forumId', $data['id'])
                 ->delete();
-            
+
             Session::put('success', 'Successfully removed subscription.');
         } else {
             Subscription::create([

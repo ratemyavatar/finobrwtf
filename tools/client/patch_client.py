@@ -1,45 +1,23 @@
 #!/usr/bin/env python3
-"""
-Patch a stock Roblox Windows player (RobloxPlayerBeta.exe: 2016 0.257, 2017 0.285) for Finobe.
-
-  * roblox.com -> finobe.wtf everywhere in the exe (www., assetgame., api hosts...; same length,
-    so nothing moves)
-  * embeds Finobe's script-signing public key (default: the one in tools/rcc/patch_rcc.py) or one
-    derived from --key, so the client runs join scripts the site signs
-  * AppSettings.xml BaseUrl -> http://www.finobe.wtf
-  * per-user player-list badges: the PlayerlistModule CoreScript (compiled into the exe as an
-    "RSB1" blob, see rsb1.py) has a CUSTOM_ICONS table of Roblox staff user IDs. Its strings are
-    rewritten so user 1 gets Finobe's duck and user 2 their own badge (the other two entries are
-    disabled). Users in that table skip the admin check, so every other admin keeps the normal
-    admin badge. Only string-table entries change; the script's code is untouched.
-      user 1 -> rbxasset://textures/ui/icon_finobe1.png   (tools/client/icon_duck.png)
-      user 2 -> rbxasset://textures/ui/icon_finobe2.png   (tools/client/icon_user2.png, if present)
-
-Usage:  python3 patch_client.py <client folder> [--key privateKey1024.pem | --blob <base64>]
-"""
 import argparse, codecs, re, shutil, struct, sys
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent / "rcc"))
 sys.path.insert(0, str(HERE))
-from patch_rcc import FINOBE_PUBLIC_KEY_BLOB, public_key_blob  # noqa: E402
+from patch_rcc import FINOBE_PUBLIC_KEY_BLOB, public_key_blob
 
 DOMAIN = b"finobe.wtf"
 REPLACEMENTS = [(b"roblox.com", DOMAIN)]
 
-# CUSTOM_ICONS in the 2016 PlayerlistModule: original user-ID strings -> (new user ID, new icon)
 CUSTOM_ICONS = {
-    b"7210880": (b"1", b"rbxasset://textures/ui/icon_finobe1.png"),   # was Jeditkacheff
-    b"13268404": (b"2", b"rbxasset://textures/ui/icon_finobe2.png"),  # was Sorcus
-    b"261": (b"-1", None),                                            # was shedlestky: disabled
-    b"20396599": (b"-2", None),                                       # was Robloxsai: disabled
+    b"7210880": (b"1", b"rbxasset://textures/ui/icon_finobe1.png"),
+    b"13268404": (b"2", b"rbxasset://textures/ui/icon_finobe2.png"),
+    b"261": (b"-1", None),
+    b"20396599": (b"-2", None),
 }
 
 
-# The client builds API hosts as "<service>." + "api." + domain (clientsettings.api.finobe.wtf), a name
-# finobe.wtf doesn't have; the site serves them as <service>.finobe.wtf. Drop the "api." (NUL-padded,
-# so nothing else in the file moves). Without this the client never gets its FFlags.
 API_HOST_FORMATS = [
     (b"%s://%sapi.finobe.wtf/%s/?apiKey=%s\0", b"%s://%sfinobe.wtf/%s/?apiKey=%s\0"),
     (b"%s://%sapi.%s%s/%s/?apiKey=%s\0", b"%s://%s%s%s/%s/?apiKey=%s\0"),
@@ -56,14 +34,9 @@ def fix_api_hosts(b: bytearray) -> None:
     print(f"API hosts: {n} format string(s) -> <service>.finobe.wtf")
 
 
-# WinInet's Http::doHttp checks the subject of every HTTPS response's certificate: it has to be
-# multi-line and mention ".finobe.wtf", otherwise it throws "mc" / "ud" / "mi" (a leftover Roblox
-# anti-tamper check written for Roblox's own certificates). Cloudflare's certificate subject is just
-# "CN=finobe.wtf", so every HTTPS reply failed and the client said "Failed to request game".
-# Make the `if (isSecure)` around that check always skip it (TLS itself is still verified by WinInet).
 CERT_SUBJECT_CHECK = (
-    bytes.fromhex("807ddb00" "0f84e4030000" "8d4520508d85f8feffff506a2057"),   # cmp [ebp-25h],0 / je +3e4
-    bytes.fromhex("807ddb00" "90e9e4030000" "8d4520508d85f8feffff506a2057"),   # cmp [ebp-25h],0 / nop; jmp +3e4
+    bytes.fromhex("807ddb00" "0f84e4030000" "8d4520508d85f8feffff506a2057"),
+    bytes.fromhex("807ddb00" "90e9e4030000" "8d4520508d85f8feffff506a2057"),
 )
 
 
@@ -82,8 +55,6 @@ def skip_cert_subject_check(b: bytearray) -> None:
 
 
 def set_base_url(settings_path, url: str) -> None:
-    """Change only the <BaseUrl> value, keeping the file byte-for-byte otherwise (the 2016 player's
-    settings reader breaks if line endings change: it then reads the content folder as 'er>content')."""
     raw = settings_path.read_bytes()
     new = re.sub(rb"(<BaseUrl>)[^<]*(</BaseUrl>)", lambda m: m.group(1) + url.encode() + m.group(2), raw, count=1)
     if new == raw and b"<BaseUrl>" not in raw:
@@ -93,7 +64,6 @@ def set_base_url(settings_path, url: str) -> None:
 
 
 def patch_player_list(b: bytearray) -> None:
-    """Rewrite CUSTOM_ICONS inside the compiled PlayerlistModule, in place."""
     import pefile
     import rsb1
 
@@ -115,7 +85,7 @@ def patch_player_list(b: bytearray) -> None:
     if name_off < 0:
         sys.exit("PlayerlistModule not found in the CoreScript table")
     ptr = struct.pack("<I", off2va(name_off))
-    entry = next(i for i in range(0, len(b) - 12, 4) if b[i:i + 4] == ptr)   # {name*, data*, size}
+    entry = next(i for i in range(0, len(b) - 12, 4) if b[i:i + 4] == ptr)
     _, data_va, size = struct.unpack_from("<III", b, entry)
     _, next_va, _ = struct.unpack_from("<III", b, entry + 12)
     data_off, room = va2off(data_va), next_va - data_va
@@ -127,7 +97,7 @@ def patch_player_list(b: bytearray) -> None:
             new_id, new_icon = CUSTOM_ICONS[s]
             strings[i] = new_id
             if new_icon:
-                strings[i + 1] = new_icon   # the icon string follows its key in the table
+                strings[i + 1] = new_icon
     blob = rsb1.encode(rsb1.join_strings(prefix, strings))
     if len(blob) > room:
         sys.exit(f"patched PlayerlistModule is {len(blob)} bytes, only {room} fit")

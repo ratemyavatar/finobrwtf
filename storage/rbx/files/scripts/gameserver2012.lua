@@ -1,8 +1,3 @@
--- Finobe 2012 game server
---  - run by the 2012 client itself (there's no 2012 RCC): RobloxApp.exe -script <gameserver2012.ashx URL>,
---    started by tools/gameserver2012/host2012.ps1 on the game server machine
---  - the site fills in the {placeholders} and signs it (Game/GameServer2012.ashx)
---  - talks to the same /api/gameserver endpoints as the 2016 script (register, alive, verify, visit, update, shutdown)
 
 local placeId = {placeId}
 local port = {port}
@@ -18,7 +13,6 @@ local function get(path)
 	return game:HttpGet(url .. path .. auth, true)
 end
 
--- the 2012 engine has no HttpService, so the player list JSON is built by hand
 local function reportPlayers()
 	pcall(function()
 		local ids = {}
@@ -71,7 +65,7 @@ local everyoneLeftAt = nil
 Players.PlayerAdded:connect(function(player)
 	print("Player " .. player.userId .. " added")
 	everyoneLeftAt = nil
-	-- the site only says yes for a user it just handed this server's join script to
+
 	local ok, allowed = pcall(function() return get("/api/gameserver/verify/" .. jobId .. "/" .. player.userId) end)
 	if ok and allowed ~= "1" then
 		print("Player " .. player.userId .. " couldn't be verified, removing")
@@ -103,12 +97,11 @@ local closed = false
 local function shutdown()
 	if closed then return end
 	closed = true
-	-- the site also tells host2012 to end this process
+
 	pcall(function() get("/api/gameserver/shutdown/" .. jobId) end)
 end
 pcall(function() game.OnClose = shutdown end)
 
--- heartbeat; an empty server closes 3 minutes after starting, or 60s after the last player left
 delay(0, function()
 	local startedAt = tick()
 	while wait(30) do
@@ -124,6 +117,5 @@ delay(0, function()
 	end
 end)
 
--- players polling PlaceLauncher get the join script from now on
 get("/api/gameserver/register/" .. jobId)
 print("Finobe 2012 server " .. jobId .. " running place " .. placeId .. " on port " .. port)

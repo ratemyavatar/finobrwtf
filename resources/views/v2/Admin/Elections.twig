@@ -8,7 +8,7 @@
         .form-group {
             margin-bottom: 15px;
         }
-    </style>
+</style>
   </head>
   <body>
     <div id="app">
@@ -30,11 +30,11 @@
                     <label for="css" class="custom-label"><small>css style for what the election page should look like</small></label>
                     <script>
                         var editor = CodeMirror.fromTextArea(document.getElementById("css-editor"), {
-                          mode: "css",  // Set mode to CSS
-                          lineNumbers: true,  // Enable line numbers
-                          theme: "default"  // Choose a theme (optional)
+                          mode: "css",
+                          lineNumbers: true,
+                          theme: "default"
                         });
-                    </script>
+</script>
                 </div>
             </div>
             <div class="form-group row">
@@ -72,7 +72,7 @@
                 document.addEventListener("DOMContentLoaded", function () {
                     const optionsContainer = document.getElementById("options-container");
                     const addOptionButton = document.getElementById("add-option");
-            
+
                     addOptionButton.addEventListener("click", function () {
                         const newOption = document.createElement("div");
                         newOption.className = "form-group row mt-3";
@@ -85,18 +85,18 @@
                                 </div>
                             </div>
                         `;
-            
+
                         optionsContainer.appendChild(newOption);
                         count++;
                     });
-            
+
                     optionsContainer.addEventListener("click", function (event) {
                         if (event.target.classList.contains("remove-option")) {
                             event.target.closest(".form-group").remove();
                         }
                     });
                 });
-            </script>
+</script>
         </form>
 	  </div>
     </div>

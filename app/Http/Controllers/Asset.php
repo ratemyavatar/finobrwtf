@@ -15,10 +15,6 @@ class Asset extends Controller
         $this->db = DB::connection('finobe');
     }
 
-    /*
-        ensureDirectory
-         - creates a folder the asset pipeline writes into if it doesn't exist yet
-    */
     public static function ensureDirectory(string $path): string
     {
         if (!is_dir($path)) {
@@ -28,10 +24,6 @@ class Asset extends Controller
         return $path;
     }
 
-    /*
-        grantToCreator
-         - the person who makes an item owns it (so it's in their inventory and avatar editor)
-    */
     public static function grantToCreator(int $assetId, int $authorId): void
     {
         $username = \App\Models\User::where('id', $authorId)->value('username');
@@ -60,7 +52,6 @@ class Asset extends Controller
         $fileHash = uniqid();
 
         if($isEncodable) {
-            // PHP's temp folder is always writable by the web server, unlike storage/ after a root-owned deploy
             $tmp = tempnam(sys_get_temp_dir(), 'finobe_asset_');
             $ffmpeg = FFMpeg::create();
             file_put_contents($tmp, $file);
@@ -164,10 +155,6 @@ class Asset extends Controller
         return "";
     }
 
-    /**
-     * The 2016 client/RCC XML parser rejects self-closing tags ("Unknown tag 'null/'"),
-     * so an item saved with them renders blank and can't be worn. Expand empty tags to paired form.
-     */
     public static function normalizeItemXml(string $xml): string
     {
         if (!str_contains($xml, '/>')) {
@@ -181,7 +168,6 @@ class Asset extends Controller
             return $xml;
         }
 
-        // the 2016 loader doesn't expect an XML declaration
         return preg_replace('/^<\?xml[^>]*>\s*/', '', $doc->saveXML(null, LIBXML_NOEMPTYTAG));
     }
 
@@ -190,14 +176,13 @@ class Asset extends Controller
         if(is_array($texture)) {
             $textureId = self::createAsset("{$name} Texture", 1, $author, file_get_contents($texture['tmp_name']), "", "n", [], true);
         }
-        
+
         if(is_array($mesh)) {
             $meshId = self::createAsset("{$name} Mesh", 4, $author, file_get_contents($mesh['tmp_name']), "", "n", []);
         }
 
         $xmltemplate = file_get_contents($xml['tmp_name']);
 
-        // finds and replaces roblox links with MESHURLPLACEHOLDER or TEXTUREURLPLACEHOLDER automatically EDIT: also check rbxassetid format
         if(is_array($mesh)) {
             $xmltemplate = preg_replace_callback(
                 '/<Content name="MeshId">\s*<url>(https?:\/\/www\.roblox\.com\/asset\/\?id=\d+|rbxassetid:\/\/\d+|https?:\/\/assetdelivery\.roblox\.com\/v1\/asset\/\?id=\d+)<\/url>\s*<\/Content>/i',
@@ -207,7 +192,7 @@ class Asset extends Controller
                 $xmltemplate
             );
         }
-        
+
         if(is_array($texture)) {
             $xmltemplate = preg_replace_callback(
                 '/<Content name="TextureId">\s*<url>(https?:\/\/www\.roblox\.com\/asset\/\?id=\d+|rbxassetid:\/\/\d+|https?:\/\/assetdelivery\.roblox\.com\/v1\/asset\/\?id=\d+)<\/url>\s*<\/Content>/i',
@@ -239,7 +224,6 @@ class Asset extends Controller
 
         self::grantToCreator($assetId, $author);
 
-        // a failed render (arbiter down) shouldn't undo the upload
         try {
             if($type == 8) {
                 self::renderHat($assetId);
@@ -253,7 +237,7 @@ class Asset extends Controller
         return $assetId;
     }
 
-    public static function createAccessory(string $name, array $texture, int $author, string $description, int $price, bool $onSale = false, bool $isLimited = false, string $type = "face"): int //type: shirt/pants/tshirt/face
+    public static function createAccessory(string $name, array $texture, int $author, string $description, int $price, bool $onSale = false, bool $isLimited = false, string $type = "face"): int
     {
         $textureId = self::createAsset("{$name} Texture", 1, $author, file_get_contents($texture['tmp_name']), '', "r", [], true);
         $assetType = 18;
@@ -337,7 +321,7 @@ class Asset extends Controller
             } else {
                 $thumb = self::getImage($accessoryId);
             }
-            
+
             $instance = new self();
             $hatData = self::getAssetData($accessoryId);
             $additional = json_decode($hatData->additional);
@@ -351,7 +335,6 @@ class Asset extends Controller
         }
         self::grantToCreator($accessoryId, $author);
 
-        // a failed render (arbiter down) shouldn't undo the upload
         if ($assetType != 18) {
             try {
                 self::render($accessoryId, $assetType);
@@ -373,7 +356,7 @@ class Asset extends Controller
                 $textureData = self::getAssetData($textureId);
                 return "https://cdn.finobe.wtf/assets/{$textureData->file}";
             }
-            
+
             return $additional->media->thumbnail ?? "";
         }
 
@@ -399,7 +382,7 @@ class Asset extends Controller
     {
         If (self::isAssetExist($assetId)) {
             $assetinfo = (object)self::getAssetData($assetId);
-            //return "http://cdn.finobe.wtf/assets/{$assetinfo->file}"; why?
+
             return config('finobe.cdn_path') . "/assets/{$assetinfo->file}";
         }
         return "http://cdn.finobe.wtf/";
@@ -645,10 +628,6 @@ class Asset extends Controller
         return "";
     }
 
-    /*
-        renderHead
-         - a custom head is a bare SpecialMesh; put it on a grey head part and click
-    */
     public static function renderHead(int $id) : string
     {
         if (self::isAssetExist($id)) {
@@ -706,11 +685,6 @@ class Asset extends Controller
         return "";
     }
 
-    /*
-        renderPackage
-         - a package (bundle) has no file of its own: show a character wearing everything
-           it contains, so the catalog thumbnail matches what buying it gives you
-    */
     public static function renderPackage(int $id) : string
     {
         if (!self::isAssetExist($id)) {
@@ -788,10 +762,6 @@ class Asset extends Controller
         return "https://cdn.finobe.wtf/thumbnails/{$filename}";
     }
 
-    /*
-        createPackage
-         - a package is a catalog item that hands out the assets it lists when bought
-    */
     public static function createPackage(string $name, array $assetIds, int $author, string $description, int $price, bool $onSale = false, bool $isLimited = false): int
     {
         $assetId = self::createAsset($name, 32, $author, '', $description, 'n', [
@@ -805,7 +775,6 @@ class Asset extends Controller
         self::setPackageAssets($assetId, $assetIds);
         self::grantToCreator($assetId, $author);
 
-        // a failed render (arbiter down) shouldn't undo the upload
         try {
             self::renderPackage($assetId);
         } catch (\Throwable $e) {
@@ -815,7 +784,6 @@ class Asset extends Controller
         return $assetId;
     }
 
-    /** @return int[] the asset ids a package contains */
     public static function getPackageAssets(int $assetId): array
     {
         $instance = new self();
@@ -826,7 +794,6 @@ class Asset extends Controller
             ->all();
     }
 
-    /** replace the contents of a package (only items that actually exist) */
     public static function setPackageAssets(int $assetId, array $assetIds): void
     {
         $instance = new self();

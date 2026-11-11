@@ -4,14 +4,10 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 
-/*
-    SecurityNotary (Signing) Class
-     - Ported from ROBLOX 2019 Web Assemblies (backend) leak.
-*/
 enum FormatVersion
 {
-    case V1; //Arseny: V1 used for 2009-2013M (%{signature}%{script})
-    case V2; //Arseny: V2 used for 2013L-2018E (--rbxsig%{signature}%{script})
+    case V1;
+    case V2;
 }
 class SecurityNotary extends Controller
 {

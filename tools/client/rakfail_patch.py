@@ -1,16 +1,4 @@
 #!/usr/bin/env python3
-"""
-RakFail fix for 2012-2018 clients and RCCService (https://my-thos.github.io/rakwrite/patcher).
-
-RakNet copies each piece of a split packet into the reassembly buffer without checking that
-the piece fits, so a crafted packet writes past the buffer and crashes the game server.
-This finds that copy (three known code layouts), adds a small `.rknpch` section with the
-missing bounds check and jumps to it; a piece that doesn't fit is skipped instead of copied.
-Same byte patterns and check as the published patcher.
-
-  python3 tools/client/rakfail_patch.py RCCService.exe [more.exe ...]      patches in place (keeps a .bak)
-  python3 tools/client/rakfail_patch.py --check RobloxApp.exe              only says whether it's vulnerable
-"""
 import struct, sys, shutil
 
 def align(v, a):
@@ -111,7 +99,7 @@ def patch(data):
 
     struct.pack_into('<8sIIIIIIHHI', buf, new_sec, SECTION, len(cave), cave_rva, raw_cave, cave_foff, 0, 0, 0, 0, 0xE0000020)
     struct.pack_into('<H', buf, e_lfanew + 6, nsec + 1)
-    struct.pack_into('<I', buf, opt + 56, align(cave_rva + len(cave), sect_align))   # SizeOfImage
+    struct.pack_into('<I', buf, opt + 56, align(cave_rva + len(cave), sect_align))
 
     p = sig_off + v['patch_off']
     buf[p] = 0xE9
@@ -127,7 +115,7 @@ def main(argv):
     check = '--check' in argv
     files = [a for a in argv if a != '--check']
     if not files:
-        print(__doc__)
+        print("usage: rakfail_patch.py [--check] file.exe [more.exe ...]")
         return 2
     rc = 0
     for f in files:

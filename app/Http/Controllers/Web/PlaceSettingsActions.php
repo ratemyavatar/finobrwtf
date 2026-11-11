@@ -13,11 +13,6 @@ use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Validator;
 use App\Services\Discord;
 
-/*
-    PlaceSettingsActions
-     - everything on the place settings page besides the "General" form:
-       place file, custom thumbnail, badges, user restrictions
-*/
 class PlaceSettingsActions
 {
     const MAX_BADGES = 50;
@@ -83,8 +78,6 @@ class PlaceSettingsActions
         };
     }
 
-    // ---------- place file ----------
-
     private function uploadPlace(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -99,7 +92,6 @@ class PlaceSettingsActions
         $extension = strtolower($file->getClientOriginalExtension());
         $contents = file_get_contents($file->getPathname());
 
-        // binary places start with "<roblox!", XML ones with "<roblox "
         if (!in_array($extension, ['rbxl', 'rbxlx'], true) || !preg_match('/^\s*<roblox[!\s]/', substr($contents, 0, 64))) {
             return $this->back('general', null, "That doesn't look like a place file (.rbxl or .rbxlx).");
         }
@@ -129,8 +121,6 @@ class PlaceSettingsActions
         return $this->back('general', 'Place reset to a fresh baseplate.');
     }
 
-    // ---------- thumbnail ----------
-
     private function uploadThumbnail(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -148,7 +138,6 @@ class PlaceSettingsActions
 
         $additional = $this->place->additional;
 
-        // replace an earlier upload that's still waiting for review
         if (!empty($additional['media']['pendingThumbnail'])) {
             $this->discardPending((int) $additional['media']['pendingThumbnail']);
         }
@@ -184,8 +173,6 @@ class PlaceSettingsActions
             $asset->delete();
         }
     }
-
-    // ---------- badges ----------
 
     private function createBadge(Request $request)
     {
@@ -252,8 +239,6 @@ class PlaceSettingsActions
             ->filter(fn($b) => (int) ($b->additional['placeId'] ?? 0) === $placeId)
             ->values();
     }
-
-    // ---------- user restrictions ----------
 
     private function saveRestrictions(Request $request)
     {

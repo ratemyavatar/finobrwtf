@@ -1,4 +1,4 @@
-{#<meta name="viewport" content="width=device-width, initial-scale=1">#}
+
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <title>{{ data.embeds.title|raw }}</title>
 <meta property="og:title" content="{{ data.embeds.title }}">
@@ -7,11 +7,11 @@
 <meta property="og:image" content="{{ data.embeds.image }}">
 <link rel="shortcut icon" type="image/png" href="{{ data.embeds.image }}">
 {% set theme_css = (data.user.theme == 1 or data.user.gary == 1) ? "night" : "light" %}<link rel="stylesheet" href="/s/css/{{ theme_css }}.css?v={{ filemtime(public_path("s/css/" ~ theme_css ~ ".css")) }}">
-{# <link rel="stylesheet" href="https://pro.fontawesome.com/releases/v5.15.3/css/all.css" integrity="..."> #}
+
 <link rel="stylesheet" href="https://pro.fontawesome.com/releases/v5.10.0/css/all.css" integrity="" crossorigin="anonymous">
 <link rel="stylesheet" href="https://pro.fontawesome.com/releases/v5.10.0/css/fontawesome.css" integrity="" crossorigin="anonymous">
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<!-- Google tag (gtag.js) -->
+
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-PVJB8ZM445"></script>
 <script>
   window.dataLayer = window.dataLayer || [];
@@ -65,7 +65,7 @@
     window.location.href = uri;
   }
 </script>
-<!-- begin masthead -->
+
 <style>
 {% if data.user.upsidedown == 1 %}
 body {
@@ -114,17 +114,13 @@ body {
   }
 
   .home-main-content {
-    /*
-    background: url(/s/img/background.png) no-repeat center center;
-    background: url(/s/img/background.png) no-repeat center center, -webkit-linear-gradient(top left, #312a6c, #852d91);
-    background: url(/s/img/background.png) no-repeat center center, -moz-linear-gradient(top left, #312a6c, #852d91);
-    */
+
     background: url(/s/img/bannerlate2019-2.jpg) no-repeat center center;
     background: url(/s/img/bannerlate2019-2.jpg) no-repeat center center, -webkit-linear-gradient(top left, #312a6c, #852d91);
     background: url(/s/img/bannerlate2019-2.jpg) no-repeat center center, -moz-linear-gradient(top left, #312a6c, #852d91);
-    {#background: url(https://cdn.finobe.wtf/forum/media/chinese.jpg) no-repeat center center, #fff;#}
+
     background-size: cover;
-    {#background-size: contain;#}
+
     margin: 0;
     padding: 0;
     height: 300px;
@@ -133,7 +129,7 @@ body {
   }
 
   .home-main-content>.container {
-	{#text-align: left;#}
+
     display: flex;
     flex-direction: column;
     align-self: center;
@@ -181,14 +177,13 @@ body {
     width: 100%;
     min-height: 250px;
     z-index: 9999;
-    /* :thinking:; */
+
     flex-direction: column;
     justify-content: center;
     align-items: center;
   }
 </style>
 <style type="text/css">
-  /* Fat */
   .page-input[data-v-e236382e] {
     max-width: 2.5rem;
     display: inline;
@@ -196,7 +191,6 @@ body {
     text-align: center;
   }
 
-  /* Number up/down thing is ugly */
   input[type='number'][data-v-e236382e] {
     -webkit-appearance: textfield;
     -moz-appearance: textfield;

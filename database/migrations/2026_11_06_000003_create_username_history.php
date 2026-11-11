@@ -6,7 +6,6 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    // every name change (Settings > User Details), for the cooldown and for admins
     public function up(): void
     {
         if (Schema::connection('finobe')->hasTable('username_history')) {

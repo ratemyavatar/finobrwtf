@@ -41,7 +41,7 @@ class rbxAPIs extends Controller
             ->first();
 
         $additional = json_decode($asset->additional);
-        
+
         if (!User::find($asset->author)) {
             $this->response = [
                 "code" => 404,
@@ -59,7 +59,7 @@ class rbxAPIs extends Controller
             "Name" => $asset->title,
             "Description" => $asset->description,
             "AssetTypeId" => $asset->asset_type,
-            "ProductType" => "User Product", //idk
+            "ProductType" => "User Product",
             "Creator" => [
                 "Id" => $user->id,
                 "Name" => $user->username,
@@ -88,8 +88,6 @@ class rbxAPIs extends Controller
     }
 
     public function getScriptStateAshx() {
-        // the 2012 client caches this in WinINet; a cached 404 from before the route existed
-        // stopped the core gui from ever initialising, so never let it be cached
         return response("0 0 0 00 0 1 0", 200)
             ->header("Cache-Control", "no-store, no-cache, must-revalidate")
             ->header("Pragma", "no-cache")
@@ -103,14 +101,11 @@ class rbxAPIs extends Controller
         if (file_exists(storage_path("rbx/files/2012CoreGui/{$assetId}.lua")))
         {
             $script = "%{$assetId}%\r\n".file_get_contents(storage_path("rbx/files/2012CoreGui/{$assetId}.lua"));
-            // core gui scripts load their images/assets through www.finobe.wtf, which 301-redirects
-            // to https and the 2012 client can't follow it (menu images etc. then never load)
+
             $script = preg_replace('#https?://www\.' . preg_quote(config('finobe.domain'), '#') . '#i', 'http://assetgame.' . config('finobe.domain'), $script);
             return response(SecurityNotary::SignScript($script, FormatVersion::V1, false));
         }
 
-        // Roblox's default character animations and the 2014 test ones, kept here so they don't depend
-        // on assetdelivery.roblox.com (which fails or rate-limits often enough to break every character)
         $animation = storage_path("rbx/files/animations/{$assetId}");
         if ($assetId > 0 && is_file($animation)) {
             return response()->file($animation, ['Content-Type' => 'application/octet-stream']);
@@ -118,7 +113,6 @@ class rbxAPIs extends Controller
 
         if (Asset::isAssetExist($assetId))
         {
-            // one-time token issued by PlaceThumbnail so the arbiter can download a private place to render it
             $renderToken = (string) ($data['rendertoken'] ?? '');
             $renderAllowed = $renderToken !== '' && (int) Cache::get("place_render_token_{$renderToken}") === $assetId;
 
@@ -145,13 +139,11 @@ class rbxAPIs extends Controller
 
                 if($assetinfo->asset_type != 3) {
                     $body = file_get_contents(Asset::getCdnLink($assetId));
-                    // the 2012 client can't follow the www->https 301, so asset files (hats, faces,
-                    // shirts) that reference their textures through www.finobe.wtf never load
+
                     if (is_string($body)) {
                         $body = preg_replace('#https?://www\\.' . preg_quote(config('finobe.domain'), '#') . '#i', 'http://assetgame.' . config('finobe.domain'), $body);
                     }
-                    // the 2012 client only reads XML place files (the binary format is from 2013), so a binary
-                    // place of a 2012 game (Studio saves binary, older baseplates were binary) is converted
+
                     if ((int) $assetinfo->asset_type === 9 && is_string($body) && str_starts_with($body, '<roblox!')
                         && \App\Services\ClientVersions::of($assetinfo) === '2012') {
                         try {
@@ -164,7 +156,6 @@ class rbxAPIs extends Controller
                         ->header('Content-Type', 'application/octet-stream')
                         ->header('Content-Length', (string) strlen((string) $body));
                 } else {
-                    // SUPER complicated, its so audio player can skim through a range
                     $filepath = config('finobe.cdn_path') . '/audios/' . $assetinfo->file;
 
                     if (!file_exists($filepath)) {
@@ -225,7 +216,6 @@ class rbxAPIs extends Controller
                 }
             }
         } else {
-            // not a Finobe asset: get it from Roblox (see RobloxAssetProxy for the image/decal fallback)
             $versionId = (int) ($data['assetversionid'] ?? $data['assetVersionId'] ?? $data['AssetVersionId'] ?? 0);
             if ($assetId <= 0 && $versionId <= 0) {
                 abort(404);
@@ -233,7 +223,6 @@ class rbxAPIs extends Controller
 
             [$body, $status] = \App\Services\RobloxAssetProxy::fetch($assetId, $versionId);
             if ($body === '') {
-                // keep 4xx as-is (missing/private asset), anything else is "try again later"
                 abort($status >= 400 && $status < 500 && $status !== 429 ? $status : 503, 'Asset fetch failed: ' . $status);
             }
 
@@ -242,7 +231,6 @@ class rbxAPIs extends Controller
         }
     }
 
-    /* Thumbs/Asset.ashx?assetId=&width=&height= and asset-thumbnail/image?assetId=: old places use these for GUI images */
     public function assetThumbnail(Request $request) {
         $assetId = (int) ($request->query('assetId') ?? $request->query('assetid') ?? $request->query('aid') ?? $request->query('id') ?? 0);
         $width = (int) ($request->query('width') ?? $request->query('x') ?? 420);
@@ -259,11 +247,6 @@ class rbxAPIs extends Controller
         return $url !== '' ? redirect($url) : abort(404);
     }
 
-    /*
-        Thumbs/Avatar.ashx?userId=1&x=100&y=100
-         - the 2016 corescripts (in-game player list, player dropdown, friend notifications) load player pictures from here
-         - answers with the user's rendered avatar PNG (the default picture until it's rendered)
-    */
     public function avatarThumbnail(Request $request) {
         $userId = (int) ($request->query('userId') ?? $request->query('userid') ?? $request->query('id') ?? 0);
         $user = $userId > 0 ? \App\Models\User::find($userId) : null;
@@ -282,7 +265,6 @@ class rbxAPIs extends Controller
             abort(404);
         }
 
-        // explicit length and no redirect: the client's image loader is happiest with a plain PNG
         return response(file_get_contents($file), 200)
             ->header('Content-Type', 'image/png')
             ->header('Content-Length', (string) filesize($file))
@@ -292,7 +274,6 @@ class rbxAPIs extends Controller
     public function registerJobId($jobId) {
         if (RobloxUtilities::IsFinobeCloudAuthorized())
         {
-            // the game server finished loading: PlaceLauncher hands it out from now on
             $this->db->table('servers')
                 ->where('jobId', $jobId)
                 ->update([
@@ -303,7 +284,6 @@ class rbxAPIs extends Controller
         return response('', 200);
     }
 
-    /* the game server asks whether a player that just connected really got a join script for it */
     public function verifyPlayer($jobId, $userId) {
         if (!RobloxUtilities::IsFinobeCloudAuthorized()) {
             return response('', 403);
@@ -311,7 +291,6 @@ class rbxAPIs extends Controller
         return response(\Illuminate\Support\Facades\Cache::has("gameserver_join_{$jobId}_" . (int) $userId) ? '1' : '0', 200);
     }
 
-    /** The movement animations a player picked on the Character page (see AnimationPacks). */
     public function playerAnimations($userId) {
         if (!RobloxUtilities::IsFinobeCloudAuthorized()) {
             return response('', 403);
@@ -341,7 +320,7 @@ class rbxAPIs extends Controller
                 $asset = $this->db->table('assets')
                     ->where('id', $assetId)
                     ->first();
-                
+
                 if ($asset->asset_type == 9) {
                     $additional = json_decode($asset->additional);
                     $additional->visits++;
@@ -355,7 +334,7 @@ class rbxAPIs extends Controller
                 }
             }
         }
-        return response('', 200); //this return nothing i guess
+        return response('', 200);
     }
 
     public function shutdownJobId($jobId) {
@@ -371,7 +350,6 @@ class rbxAPIs extends Controller
                 ->where('jobId', $jobId)
                 ->delete();
 
-            // close the RCC job (or the 2012 server process) after answering: the game server is waiting on this very request
             if ($deleted) {
                 app()->terminating(function () use ($jobId, $is2012, $rccHost, $rccPort, $server) {
                     try {
@@ -504,7 +482,7 @@ class rbxAPIs extends Controller
         if not result then
           pcall(function() game:GetService("ScriptContext"):AddCoreScript(37801172,game:GetService("ScriptContext"),"StarterScript") end)
         end';
-        // the 2012 client can't follow the www->https 301, so hand it assetgame URLs
+
         $src = preg_replace('#https?://www\.' . preg_quote($domain, '#') . '#i', 'http://assetgame.' . $domain, $src);
         return response(SecurityNotary::SignScript($src, FormatVersion::V1), 200)
             ->header("Cache-Control", "no-store, no-cache, must-revalidate")
@@ -585,22 +563,6 @@ class rbxAPIs extends Controller
 
         try
         {
-            /*this code may be unnecesary (accounts never get deleted, only marked perm banned for "deleted") 
-            $db = new databaseController(conf::get()['project']['database']['db']);
-
-            $userInformationQuery = $db->prepare("SELECT * FROM `users` WHERE `username` = :username LIMIT 1");
-            $userInformationQuery->bindParam(":username", $_SESSION['siteusername'], PDO::PARAM_STR);
-            $userInformationQuery->execute();
-
-            if (!User::user()) {
-                http_response_code(404);
-                return json_encode([
-                    "code" => 404,
-                    "message" => "User does not exist."
-                ]);
-            }
-            */
-
             $userInformation = Auth::user();
 
             if (!isset($data["jobId"])) {
@@ -653,7 +615,7 @@ class rbxAPIs extends Controller
 
                 return response()->json($this->response, 403);
             }
-            //what the actual fuck
+
             $joinScript = RobloxUtilities::ConstructJoinScript($userInformation, $placeInformation, $serverInformation, $additionalInfo);
 
             if (\App\Services\ClientVersions::joinFormat((string) $additionalInfo->version) === 'lua2012') {
@@ -661,11 +623,9 @@ class rbxAPIs extends Controller
             }
 
             return response(SecurityNotary::SignScript($joinScript, FormatVersion::V2), 200);
-
         }
         catch (exception $e)
         {
-            //I hope this won't happen :pray:
             $this->response = [
                 "code" => 500,
                 "message" => "Something went wrong!",

@@ -28,7 +28,7 @@
 		<li class="nav-item dropdown">
 						<a class="nav-link dropdown-toggle" href="#" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><strong>More</strong></a>
 						<div class="navbar-nobelium-dropdown dropdown-menu">
-							<a class="dropdown-item" href="{#https://wiki.finobe.com#}javascript:void(0);">Wiki</a>
+							<a class="dropdown-item" href="javascript:void(0);">Wiki</a>
 							<a class="dropdown-item" href="/videos">Videos</a>
 						</div>
 					</li>
@@ -100,17 +100,17 @@
                 <script>
                   $(document).ready(function() {
                     var time = '{{ data.user.lastdiu }}';
-                
+
                     var userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
                     var userLocalTime = new Date(time);
                     var userLocalOffset = userLocalTime.getTimezoneOffset();
                     userLocalTime = new Date(userLocalTime.getTime() - userLocalOffset);
-                
+
                     function updateCountdown() {
                       var targetDate = userLocalTime.getTime();
                       var now = new Date().getTime();
                       var distance = targetDate - now;
-                
+
                       if (distance <= 0) {
                         clearInterval(interval);
 						if($('[x-placement="bottom"]').find('.tooltip-inner').text().includes(' left')) {
@@ -119,24 +119,24 @@
 						$('[title="Diu"]').attr('data-original-title', '{{ data.user.Dius|number_format }} - 0 hr(s) 0 min(s) 0 sec(s) left');
                         return;
                       }
-                      
+
                       var hours = Math.abs(Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)));
                       var minutes = Math.abs(Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60)));
                       var seconds = Math.abs(Math.floor((distance % (1000 * 60)) / 1000));
-                
+
                       var countdownText = hours + ' hr(s) ' + minutes + ' min(s) ' + seconds + ' sec(s) left';
-                      
+
 					  if($('[x-placement="bottom"]').find('.tooltip-inner').text().includes(' left')) {
                       	$('[x-placement="bottom"]').find('.tooltip-inner').text("{{ data.user.Dius|number_format }} - " + countdownText);
 					  }
 					  $('[data-original-title="Diu"]').attr('data-original-title', '{{ data.user.Dius|number_format }} - ' + countdownText);
 					  $('#test[data-toggle="tooltip"]').attr('data-original-title', '{{ data.user.Dius|number_format }} - ' + countdownText);
                     }
-                
+
                     var interval = setInterval(updateCountdown, 1000);
                     updateCountdown();
                   });
-                </script>
+</script>
 				<li id="test" data-animation="false" data-toggle="tooltip" data-placement="bottom" title="Diu" data-original-title="{{ data.user.Dius|number_format }} - 0 hr(s) 0 min(s) 0 sec(s) left" class="nav-item n-money-text" ><a href="/user/transaction-log" class="nav-link"><img src="/s/img/diu_16.png" "alt="Diu" title="Diu" class="img-responsive align-middle "> {{ data.user.formattedDius }}</a></li>
 							<li class="nav-item dropdown">
 							<a class="nav-link dropdown-toggle" href="#" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"
@@ -209,18 +209,7 @@
 {% endif %}
 {% if data.siteusername and data.page != '/' and data.notifications.ads %}
 <div class="mt-3 mb-3 d-flex justify-content-center">
-    {#
-    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2537513323123758"
-     crossorigin="anonymous"></script>
-    <!-- Finobe -->
-    <ins class="adsbygoogle"
-         style="display:inline-block;width:970px;height:90px"
-         data-ad-client="ca-pub-2537513323123758"
-         data-ad-slot="8094585543"></ins>
-    <script>
-     (adsbygoogle = window.adsbygoogle || []).push({});
-</script>
-    #}
+
     <iframe data-aa='2314227' src='//ad.a-ads.com/2314227?size=728x90' style='width:728px; height:90px; border:0px; padding:0; overflow:hidden; background-color: transparent;'></iframe>
 </div>
 {% endif %}

@@ -1,27 +1,9 @@
 #!/usr/bin/env python3
-"""
-Patch a 2016 (0.257) RCCService.exe for Finobe.
-
-What it does (all in-place, same-length byte replacements, so no offsets move):
-  * every old site domain (bbblox.org, roblox.com) -> finobe.wtf   (10 chars each)
-  * bbgame.zawg.ca (a third-party trusted domain left by bubbablox) -> cdn.finobe.wtf
-  * optionally swaps the embedded script-signing public key (the "BgIAA..." blob)
-    for one derived from YOUR private key, so RCC trusts scripts Finobe signs
-  * checks that the 10-minute job-expiry patch is present (applies it if not)
-  * rewrites AppSettings.xml BaseUrl
-
-Usage:
-  python3 patch_rcc.py <RCCService folder> [--key storage/rbx/files/privateKey1024.pem]
-
-The --key file is the same 1024-bit RSA key Finobe signs scripts with
-(app/Http/Controllers/SecurityNotary.php). Needs: pip install cryptography (only for --key).
-"""
 import argparse, base64, re, struct, sys
 from pathlib import Path
 
 DOMAIN = b"finobe.wtf"
 
-# Finobe's script-signing public key, from Base/rbx/Crypt.cpp in ThugShaker3D/Karma-2016-Client
 FINOBE_PUBLIC_KEY_BLOB = (
     "BgIAAACkAABSU0ExAAQAAAEAAQAphSpUVOk+A75OmYA+sa2I0DXyXZhvM5dha2/31i5BiJZsWmvIwAmWgo9jhG8W"
     "fNvGOZnGFwz6JnrRmcy9WP19a3xElt4c1zr4GNw8Y88HZg+6i5NWZ/fp2lS4cV+gnH4ewAcrRbKJZGF+EuhX0bzM"
@@ -32,13 +14,11 @@ REPLACEMENTS = [
     (b"roblox.com", DOMAIN),
     (b"bbgame.zawg.ca", b"cdn.finobe.wtf"),
 ]
-EXPIRY_OLD = bytes.fromhex("0000000000c08240")   # 600.0 seconds
-EXPIRY_NEW = bytes.fromhex("0000f81f5fa00242")   # effectively never
+EXPIRY_OLD = bytes.fromhex("0000000000c08240")
+EXPIRY_NEW = bytes.fromhex("0000f81f5fa00242")
 
 
 def set_base_url(settings_path, url: str) -> None:
-    """Change only the <BaseUrl> value, keeping the file byte-for-byte otherwise (the 2016 player's
-    settings reader breaks if line endings change: it then reads the content folder as 'er>content')."""
     raw = settings_path.read_bytes()
     new = re.sub(rb"(<BaseUrl>)[^<]*(</BaseUrl>)", lambda m: m.group(1) + url.encode() + m.group(2), raw, count=1)
     if new == raw and b"<BaseUrl>" not in raw:
@@ -48,7 +28,6 @@ def set_base_url(settings_path, url: str) -> None:
 
 
 def public_key_blob(pem_path: Path) -> bytes:
-    """Build a Windows CryptoAPI PUBLICKEYBLOB (base64) from an RSA private or public key PEM."""
     from cryptography.hazmat.primitives import serialization
     data = pem_path.read_bytes()
     try:
@@ -60,7 +39,6 @@ def public_key_blob(pem_path: Path) -> bytes:
     if bits != 1024:
         sys.exit(f"key is {bits}-bit; this RCC expects a 1024-bit key")
     modulus = nums.n.to_bytes(bits // 8, "little")
-    # BLOBHEADER: PUBLICKEYBLOB(6), CUR_BLOB_VERSION(2), reserved, CALG_RSA_KEYX(0xA400)
     header = struct.pack("<BBHI", 6, 2, 0, 0x0000A400)
     rsapubkey = struct.pack("<4sII", b"RSA1", bits, nums.e)
     return base64.b64encode(header + rsapubkey + modulus)

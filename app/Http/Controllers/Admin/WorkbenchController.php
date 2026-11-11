@@ -90,7 +90,7 @@ final class WorkbenchController extends Controller
         $data=$this->userPageData($request,$id,$request->input('section'));
         $action=collect($data['actions'])->firstWhere('id',$request->input('action'));
         abort_unless($action,403,'This action is not available on this user page.');
-        // Bind the write to the URL's user, never to a target supplied by the form.
+
         $input=array_merge($request->all(),['target'=>(string)$data['subject']->id]);
         $result=$workbench->run($action,$input,$request->user());
         return redirect('/admin/users/'.$id.'/'. $request->input('section'))->with('admin_success',$result['message']);

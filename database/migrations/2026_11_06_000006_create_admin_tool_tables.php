@@ -4,7 +4,6 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-/* admin panel: IP Bans and the Asset Approval Log */
 return new class extends Migration
 {
     protected $connection = 'finobe';
@@ -26,7 +25,7 @@ return new class extends Migration
                 $table->id();
                 $table->unsignedBigInteger('asset_id')->index();
                 $table->unsignedBigInteger('moderator_id')->nullable();
-                $table->string('action', 16); // approved / denied
+                $table->string('action', 16);
                 $table->timestamp('created_at')->useCurrent();
             });
         }

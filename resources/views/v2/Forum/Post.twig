@@ -9,7 +9,7 @@
         .down.vote-selected {
             color: var(--purple)!important
         }
-    </style>
+</style>
   </head>
   <body>
     <div id="app">
@@ -141,14 +141,14 @@
                                                 data: data.toString(),
                                                 success: function(data) {
                                                     number.text(data.rating);
-                                                    //console.log(data);
+
                                                 },
                                                 error: function(error) {
                                                     console.error('Error:', error);
                                                 }
                                             });
                                         }
-                                        
+
                                         document.addEventListener('DOMContentLoaded', function() {
                                             document.getElementById('post-up-main').addEventListener('click', function () {
                                                 var post = document.getElementById('post-up-main');
@@ -182,7 +182,7 @@
                                                         postdown.innerHTML = '<i data-v-73be696c="" class="far fa-arrow-down"></i>' + (parseInt(postdown.innerText, 10) - 1);
                                                         postdown.classList.toggle('vote-selected');
                                                     }
-                                                    
+
                                                     post.classList.toggle('vote-selected');
                                                 });
                                             });
@@ -219,12 +219,12 @@
                                                         postup.innerHTML = '<i data-v-73be696c="" class="far fa-arrow-up"></i>' + (parseInt(postup.innerText, 10) - 1);
                                                         postup.classList.remove('vote-selected');
                                                     }
-                                                    
+
                                                     post.classList.toggle('vote-selected');
                                                 });
                                             });
                                         });
-                                    </script>
+</script>
                                     {% endif %}
                                 </div>
                             </div>
@@ -272,7 +272,7 @@
                                                 </div>
                                                 <div data-v-73be696c="" id="sticked-down-{{ loop.index }}" class="down{{ (not data.siteusername) ? " disabled" : "" }}{{ (data.sticked.userRating == "d") ? " vote-selected" : "" }}" data-type="down">
                                                     <div data-v-73be696c="" class="total">
-                                                        <i class="far fa-arrow-down"></i> 
+                                                        <i class="far fa-arrow-down"></i>
                                                         {{ data.sticked.downvotes }}
                                                     </div>
                                                 </div>
@@ -325,7 +325,7 @@
                                                             replydown{{ loop.index }}.innerHTML = '<div data-v-73be696c="" class="total"><i data-v-73be696c="" class="far fa-arrow-down"></i> ' + (parseInt(replydown{{ loop.index }}.innerText, 10) - 1) + '</div>';
                                                             replydown{{ loop.index }}.classList.toggle('vote-selected');
                                                         }
-                                                        
+
                                                         replyup{{ loop.index }}.classList.toggle('vote-selected');
                                                     });
                                                 });
@@ -368,12 +368,12 @@
                                                             replyup{{ loop.index }}.innerHTML = '<div data-v-73be696c="" class="total"><i data-v-73be696c="" class="far fa-arrow-up"></i> ' + (parseInt(replyup{{ loop.index }}.innerText, 10) - 1) + '</div>';
                                                             replyup{{ loop.index }}.classList.remove('vote-selected');
                                                         }
-                                                        
+
                                                         replydown{{ loop.index }}.classList.toggle('vote-selected');
                                                     });
                                                 });
                                             });
-                                        </script>
+</script>
                                     </div>
                                 </div>
                             </div>
@@ -422,7 +422,7 @@
                                                 </div>
                                                 <div data-v-73be696c="" id="reply-down-{{ loop.index }}" class="down{{ (not data.siteusername) ? " disabled" : "" }}{{ (reply.userRating == "d") ? " vote-selected" : "" }}" data-type="down">
                                                     <div data-v-73be696c="" class="total">
-                                                        <i class="far fa-arrow-down"></i> 
+                                                        <i class="far fa-arrow-down"></i>
                                                         {{ reply.downvotes }}
                                                     </div>
                                                 </div>
@@ -476,7 +476,7 @@
                                                             replydown{{ loop.index }}.innerHTML = '<div data-v-73be696c="" class="total"><i data-v-73be696c="" class="far fa-arrow-down"></i> ' + (parseInt(replydown{{ loop.index }}.innerText, 10) - 1) + '</div>';
                                                             replydown{{ loop.index }}.classList.toggle('vote-selected');
                                                         }
-                                                        
+
                                                         replyup{{ loop.index }}.classList.toggle('vote-selected');
                                                     });
                                                 });
@@ -519,12 +519,12 @@
                                                             replyup{{ loop.index }}.innerHTML = '<div data-v-73be696c="" class="total"><i data-v-73be696c="" class="far fa-arrow-up"></i> ' + (parseInt(replyup{{ loop.index }}.innerText, 10) - 1) + '</div>';
                                                             replyup{{ loop.index }}.classList.remove('vote-selected');
                                                         }
-                                                        
+
                                                         replydown{{ loop.index }}.classList.toggle('vote-selected');
                                                     });
                                                 })
                                             });
-                                        </script>
+</script>
                                         {% endif %}
                                     </div>
                                 </div>
@@ -618,7 +618,7 @@
 														img.src = imageUrl;
 													}
 												}
-												
+
 												function addVideo() {
                                                     var videoUrl = prompt("Please enter the video URL:", "/s/img/user/video.mp4");
 
@@ -627,7 +627,7 @@
                                                         video.controls = true;
                                                         video.style.maxWidth = "100%";
                                                         video.style.height = "auto";
-                                                        
+
                                                         var source = document.createElement("source");
                                                         source.src = videoUrl;
                                                         source.type = "video/mp4";
@@ -638,7 +638,7 @@
                                                         textarea.value += video.outerHTML;
                                                     }
                                                 }
-												</script>
+</script>
 												{% endif %}
                                                 <textarea rows="10" minlength="3" type="text" id="content" name="content" value="" placeholder="Enter your reply here (minimum 3 characters)." class="form-control">{{ data.post.comment|raw }}</textarea>
                                             </div>

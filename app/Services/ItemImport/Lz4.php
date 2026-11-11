@@ -2,7 +2,6 @@
 
 namespace App\Services\ItemImport;
 
-/** LZ4 block decompression (what binary .rbxm chunks use), so the site doesn't need the lz4 extension. */
 class Lz4
 {
     public static function decompressBlock(string $in, int $size): string
@@ -23,7 +22,7 @@ class Lz4
             $out .= substr($in, $i, $lit);
             $i += $lit;
             if ($i >= $n) {
-                break; // last sequence has literals only
+                break;
             }
 
             $offset = ord($in[$i]) | (ord($in[$i + 1]) << 8);

@@ -5,16 +5,6 @@ namespace App\Console\Commands;
 use App\Models\GameNode;
 use Illuminate\Console\Command;
 
-/*
-    finobe:nodes — manage the game-server node pool (see App\Services\GameNodes).
-
-      php artisan finobe:nodes list
-      php artisan finobe:nodes add --name=box1 --client=2012 --public-ip=203.0.113.10 \
-          --control-url=http://127.0.0.1:64990 --port-min=53640 --port-max=53699
-      php artisan finobe:nodes enable  --id=2
-      php artisan finobe:nodes disable --id=2
-      php artisan finobe:nodes remove  --id=2
-*/
 class NodesCommand extends Command
 {
     protected $signature = 'finobe:nodes

@@ -6,13 +6,6 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * purchases.serial is NOT NULL with no default, but only some insert sites
-     * pass it - every one that does uses 0, and nothing reads it except
-     * `where('serial', 0)`. The asset-creation path omits it, so buying or
-     * uploading an item failed with "Field 'serial' doesn't have a default
-     * value". Give the column the default the code already assumes.
-     */
     public function up(): void
     {
         $schema = Schema::connection('finobe');
@@ -28,6 +21,5 @@ return new class extends Migration
 
     public function down(): void
     {
-        // intentionally left empty: live rows may rely on the default
     }
 };

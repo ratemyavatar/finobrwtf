@@ -15,7 +15,7 @@ final class ServerManagementController extends Controller
     private function authorizeStaff(Request $request): void
     {
         Access::authorize($request->user());
-        // The original server administration pages were reserved for full admins.
+
         abort_unless($request->user()->status === 'admin', 403, 'Administrator access required.');
     }
 

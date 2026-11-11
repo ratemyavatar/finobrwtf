@@ -12,8 +12,6 @@ use App\Http\Controllers\Controller;
 
 class TradesController extends Controller
 {
-
-    /* /trades: every trade you sent or got, newest first (15 a page, like the real site) */
     public function trades(Request $request) {
         $title = 'Trades';
 
@@ -51,7 +49,6 @@ class TradesController extends Controller
         return $this->page('Trades', $pageData ?? [], $title ?? null);
     }
 
-    /* /trade/info/{id}: Trade Details, with accept / decline (incoming) or revoke (outgoing) */
     public function info(Request $request, $id) {
         if(!Auth::check()) {
             return redirect('/');
@@ -80,7 +77,6 @@ class TradesController extends Controller
         return $this->page('Trade/Info', $pageData ?? [], $title ?? null);
     }
 
-    /* /trade/new/{userId}: pick what to give and what you want back */
     public function create(Request $request, $userId) {
         if(!Auth::check()) {
             return redirect('/');

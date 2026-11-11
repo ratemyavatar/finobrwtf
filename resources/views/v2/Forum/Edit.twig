@@ -64,7 +64,7 @@
 														img.src = imageUrl;
 													}
 												}
-												
+
 												function addVideo() {
                                                     var videoUrl = prompt("Please enter the video URL:", "/s/img/user/video.mp4");
 
@@ -73,7 +73,7 @@
                                                         video.controls = true;
                                                         video.style.maxWidth = "100%";
                                                         video.style.height = "auto";
-                                                        
+
                                                         var source = document.createElement("source");
                                                         source.src = videoUrl;
                                                         source.type = "video/mp4";
@@ -84,7 +84,7 @@
                                                         textarea.value += video.outerHTML;
                                                     }
                                                 }
-												</script>
+</script>
 												{% endif %}
                                                 <textarea rows="10" minlength="3" type="text" id="content" name="content" value="" placeholder="Enter your reply here (minimum 3 characters)." class="form-control">{{ data.reply.comment }}</textarea>
                                             </div>

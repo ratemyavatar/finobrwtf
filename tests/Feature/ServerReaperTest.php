@@ -6,12 +6,6 @@ use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
-/**
- * A game server that dies without calling /shutdown leaves its `servers` row and its RCC job
- * (or 2012 RobloxApp) running. cleanup() used to run only when a player launched a game, so with
- * no games starting the leaks piled up and pinned the arbiter's CPU. The scheduled
- * `finobe:reap-servers` command now reaps them every minute.
- */
 class ServerReaperTest extends TestCase
 {
     protected function setUp(): void
@@ -22,8 +16,7 @@ class ServerReaperTest extends TestCase
             'app.key' => 'base64:' . base64_encode(str_repeat('t', 32)),
             'session.driver' => 'array',
             'cache.default' => 'array',
-            // an unreachable arbiter: the reaper's CloseJob fails fast and is swallowed, so the test never
-            // touches a real RCCService (which lives on 127.0.0.1:64989 on the box running this suite)
+
             'finobe.arbiter.host' => '127.0.0.1',
             'finobe.arbiter.port' => 1,
         ]);
@@ -31,7 +24,7 @@ class ServerReaperTest extends TestCase
         Artisan::call('migrate', ['--database' => 'finobe', '--force' => true]);
 
         $db = DB::connection('finobe');
-        // a 2016 place, so the reaper takes the RCC branch
+
         $db->table('assets')->insert([
             'id' => 15, 'asset_type' => '9', 'title' => 'Test place', 'author' => 1,
             'file' => 'reaper-test.bin', 'visibility' => 'r', 'additional' => json_encode(['version' => '2016']),

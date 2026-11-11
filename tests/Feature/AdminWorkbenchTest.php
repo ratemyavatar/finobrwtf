@@ -201,8 +201,6 @@ class AdminWorkbenchTest extends TestCase
         $this->postJson('/admin/users/2/actions',['section'=>'account','action'=>'accounts-edit-email','value'=>'other@example.test','reason'=>'Outside permission','request_id'=>(string)Str::uuid()])->assertForbidden();
     }
     public function test_all_catalog_controls_execute_against_the_schema():void {
-        // Exercise every registered control against real migrated tables. Each is isolated,
-        // so test presets cannot hide missing handlers, invalid columns, or malformed inputs.
         $seen=[];$failures=[];$db=DB::connection('finobe');
         foreach(Catalog::all() as $action) {
             $this->assertNotContains($action['id'],$seen);$seen[]=$action['id'];

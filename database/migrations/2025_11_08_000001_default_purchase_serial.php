@@ -6,8 +6,6 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    // purchases.serial had no default, so any record written without one (upload fees,
-    // place slots) failed under strict mode and crashed the page
     public function up(): void
     {
         if (Schema::connection('finobe')->hasColumn('purchases', 'serial')) {

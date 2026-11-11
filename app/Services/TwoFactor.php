@@ -6,13 +6,6 @@ use App\Models\User;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Hash;
 
-/*
-    TwoFactor
-     - Settings > Security > Two-Factor Authentication: authenticator app codes (TOTP, RFC 6238:
-       6 digits, 30 seconds, SHA-1, which every authenticator app supports) plus 8 one-time backup codes
-       (16 hex characters each, like the real site)
-     - the secret is stored encrypted with APP_KEY; backup codes are stored hashed
-*/
 class TwoFactor
 {
     const BASE32 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
@@ -77,7 +70,6 @@ class TwoFactor
         return str_pad((string) ($value % 1000000), 6, '0', STR_PAD_LEFT);
     }
 
-    /** a code from the app, allowing 30 seconds of clock drift either way; each code works once */
     public static function verifyCode(User $user, string $secret, string $code): bool
     {
         $code = preg_replace('/\s+/', '', $code);
@@ -87,14 +79,12 @@ class TwoFactor
         $now = intdiv(time(), 30);
         foreach ([-1, 0, 1] as $drift) {
             if (hash_equals(self::codeAt($secret, $now + $drift), $code)) {
-                // stop the same code being replayed within its window
                 return \Illuminate\Support\Facades\Cache::add("2fa_used_{$user->id}_" . ($now + $drift), true, 120);
             }
         }
         return false;
     }
 
-    /** a code from the app, or one of the backup codes (which is then used up) */
     public static function verify(User $user, string $code): bool
     {
         $secret = self::secret($user);
@@ -115,7 +105,6 @@ class TwoFactor
         return false;
     }
 
-    /** makes 8 new backup codes, stores their hashes and returns them (shown once) */
     public static function regenerateBackupCodes(User $user): array
     {
         $codes = [];

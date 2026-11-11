@@ -5,25 +5,14 @@ namespace App\Services;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 
-/**
- * Fetches assets that aren't on Finobe from Roblox for the clients (textures, meshes, models, sounds).
- *
- * assetdelivery.roblox.com refuses a lot of assets now: 401 without a cookie, and 403/409 ("User is
- * not authorized to access Asset") for images and decals under Roblox's asset privacy rules, even
- * with one. Those used to come back as an error, so the texture just didn't show in game. For images
- * and decals the public thumbnails API still has the picture, so that's used instead.
- */
 class RobloxAssetProxy
 {
-    private const IMAGE_TYPES = [1, 13];          // Image, Decal
-    private const CACHE_OK = 2592000;              // 30 days
-    private const CACHE_MISS = 600;                // a refused/missing asset is retried after 10 minutes
+    private const IMAGE_TYPES = [1, 13];
+    private const CACHE_OK = 2592000;
+    private const CACHE_MISS = 600;
 
-    /** @return array{0: string, 1: int} [body, http status]; body is '' when it couldn't be fetched */
     public static function fetch(int $assetId, int $versionId = 0): array
     {
-        // bodies are cached base64-encoded: the MySQL `cache` table is utf8mb4 text and rejects binary
-        // (Laravel's database store only encodes for Postgres/SQLite), so a PNG would fail to cache
         $key = $versionId > 0 ? "roblox_assetversion_b64_{$versionId}" : "roblox_asset_b64_{$assetId}";
         $cached = self::cacheGet($key);
         if (is_string($cached) && $cached !== '' && ($decoded = base64_decode($cached, true)) !== false) {
@@ -50,7 +39,6 @@ class RobloxAssetProxy
         return [$body, $status];
     }
 
-    /** the cache is only a speed-up: a cache store error (e.g. a too-large row) never fails the asset request */
     private static function cacheGet(string $key)
     {
         try {
@@ -70,11 +58,10 @@ class RobloxAssetProxy
         }
     }
 
-    /** the client and the site treat XML models as text: Roblox's asset URLs are pointed back at us */
     public static function rewrite(string $body): string
     {
         if (!self::isXml($body)) {
-            return $body; // images, meshes, binary models (rewriting those would corrupt them)
+            return $body;
         }
         $domain = config('finobe.domain');
         return str_ireplace(['roblox.com/asset', 'Accessory'], ["{$domain}/asset", 'Hat'], $body);
@@ -92,7 +79,6 @@ class RobloxAssetProxy
         };
     }
 
-    /** imageUrl of a Roblox asset's thumbnail (what Thumbs/Asset.ashx and asset-thumbnail redirect to) */
     public static function thumbnailUrl(int $assetId, int $width = 420, int $height = 420): string
     {
         $size = self::thumbnailSize($width, $height);
@@ -133,7 +119,6 @@ class RobloxAssetProxy
         });
     }
 
-    /** @return array{0: string, 1: int} */
     private static function assetDelivery(array $query): array
     {
         $headers = ['User-Agent' => 'Roblox/WinInet', 'requester' => 'server'];
@@ -143,7 +128,7 @@ class RobloxAssetProxy
         }
 
         $status = 502;
-        // a place loading dozens of textures at once gets rate limited (429); back off and try again
+
         for ($try = 0; $try < 4; $try++) {
             $r = self::get('https://assetdelivery.roblox.com/v1/asset/', $query, $headers);
             $status = $r?->status() ?: 502;

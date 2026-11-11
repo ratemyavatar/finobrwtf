@@ -6,7 +6,6 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    // Settings > User Details > Gender: m, f or n (don't show); empty shows as male like before
     public function up(): void
     {
         if (!Schema::connection('finobe')->hasColumn('users', 'gender')) {

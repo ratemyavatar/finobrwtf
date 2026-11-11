@@ -6,17 +6,10 @@ use App\Http\Controllers\Asset as AssetHelper;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 
-/*
-    AssetCopier
-     - copies a Roblox catalog item onto the site from its link (or id)
-     - name, description and type come from Roblox; hats/accessories and gear go through
-       ItemImporter, faces / shirts / pants / t-shirts are rebuilt from their image
-*/
 class AssetCopier
 {
-    const HAT_TYPES = [8, 41, 42, 43, 44, 45, 46, 47]; // hat + the accessory types (hair, face, neck, ...)
+    const HAT_TYPES = [8, 41, 42, 43, 44, 45, 46, 47];
 
-    /** @return array{id: int, name: string} */
     public static function copy(string $link, int $author, int $price, bool $onSale, ?string $title = null, ?string $description = null): array
     {
         if (($bundleId = self::bundleIdFromLink($link)) !== null) {
@@ -57,11 +50,6 @@ class AssetCopier
         return ['id' => $siteId, 'name' => $name];
     }
 
-    /**
-     * a Roblox bundle (a character's parts, e.g. a head or a whole avatar) becomes a package
-     * holding the items this site can use; body shapes and animations are skipped
-     * @return array{id: int, name: string}
-     */
     private static function copyBundle(int $bundleId, int $author, int $price, bool $onSale, ?string $title, ?string $description): array
     {
         $bundle = self::bundleDetails($bundleId);
@@ -78,7 +66,7 @@ class AssetCopier
             try {
                 $ids[] = self::importItem($robloxId, $type, (string) ($item['name'] ?? $name), $author);
             } catch (\Throwable $e) {
-                report($e); // one bad item shouldn't sink the whole bundle
+                report($e);
             }
         }
 
@@ -90,7 +78,6 @@ class AssetCopier
         return ['id' => $packageId, 'name' => $name];
     }
 
-    /** the site's type for a Roblox asset type, or null for parts this site can't hold (body shapes, animations) */
     private static function finobeType(int $robloxType): ?string
     {
         return match (true) {
@@ -105,7 +92,6 @@ class AssetCopier
         };
     }
 
-    /** import one Roblox asset as the given site type and return its new site id */
     private static function importItem(int $robloxId, string $type, string $name, int $author): int
     {
         if (in_array($type, ['hat', 'gear', 'head'], true)) {
@@ -117,7 +103,7 @@ class AssetCopier
                 if ($type !== 'head') {
                     throw $e;
                 }
-                // a classic head arrives wrapped as an accessory, keep it as a hat
+
                 return ItemImporter::import($file, $name, $author, '', 0, false);
             }
         }
@@ -132,7 +118,6 @@ class AssetCopier
         return self::fromImage(ItemImporter::download($imageId), $kind[0], $name, $author, '', 0, false);
     }
 
-    /** Face / shirt / pants / t-shirt from an image (also used for plain PNG uploads); approved straight away. */
     public static function fromImage(string $image, string $kind, string $name, int $author, string $description, int $price, bool $onSale): int
     {
         if (!str_starts_with($image, "\x89PNG") && !str_starts_with($image, "\xFF\xD8")) {
@@ -146,7 +131,6 @@ class AssetCopier
             @unlink($tmp);
         }
 
-        // createAccessory queues user uploads for review; staff uploads are live right away
         $db = DB::connection('finobe');
         $additional = json_decode((string) $db->table('assets')->where('id', $siteId)->value('additional'), true) ?: [];
         $db->table('assets')->whereIn('id', array_filter([$siteId, (int) ($additional['media']['textureAssetId'] ?? 0)]))->update(['visibility' => 'n']);
@@ -154,7 +138,6 @@ class AssetCopier
         return $siteId;
     }
 
-    /** roblox.com/catalog/123/Name, /library/123, create.roblox.com/store/asset/123, item.aspx?id=123 or just 123 */
     public static function idFromLink(string $link): int
     {
         $link = trim($link);
@@ -180,7 +163,6 @@ class AssetCopier
         return $r->json();
     }
 
-    /** the Roblox bundle id a /bundles/<id> link points at (null for anything else) */
     public static function bundleIdFromLink(string $link): ?int
     {
         if (preg_match('#roblox\.com/(?:[a-z-]+/)?bundles/(\d+)#i', trim($link), $m)) {

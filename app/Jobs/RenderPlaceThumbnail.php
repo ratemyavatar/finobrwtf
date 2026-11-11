@@ -7,11 +7,6 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Support\Facades\Cache;
 
-/*
-    RenderPlaceThumbnail
-     - renders a place's thumbnail through the arbiter after the response is sent (no queue worker needed)
-     - one render per place at a time
-*/
 class RenderPlaceThumbnail
 {
     use Dispatchable, Queueable;

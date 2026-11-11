@@ -14,7 +14,7 @@
                                 <h4 style="margin:2.5px 0 0 5px"><strong>New Post</strong></h4>
                             </div>
                             <form role="form" method="POST" action="" enctype="multipart/form-data">
-                                <input type="hidden" name="_token" value="{{ data.csrf_token }}">    
+                                <input type="hidden" name="_token" value="{{ data.csrf_token }}">
                                 <div class="form-group row">
                                     <label for="type" class="col-form-label text-md-right" style="margin-left:15px;">Type</label>
                                     <div class="col-md-12">
@@ -90,7 +90,7 @@
                                                         video.controls = true;
                                                         video.style.maxWidth = "100%";
                                                         video.style.height = "auto";
-                                                        
+
                                                         var source = document.createElement("source");
                                                         source.src = videoUrl;
                                                         source.type = "video/mp4";
@@ -101,7 +101,7 @@
                                                         textarea.value += video.outerHTML;
                                                     }
                                                 }
-												</script>
+</script>
 												{% endif %}
                                             </div>
                                         </div>

@@ -15,9 +15,9 @@
 				<div class="card-body">
 				    {% if data.reset %}
 				   <form role="form" method="POST" action="">
-				   	  <input type="hidden" name="_token" value="{{ data.csrf_token }}"> 
+				   	  <input type="hidden" name="_token" value="{{ data.csrf_token }}">
 					  <div class="form-group row">
-						 <label for="password" class="col-md-3 col-form-label">New Password</label> 
+						 <label for="password" class="col-md-3 col-form-label">New Password</label>
 						 <div class="col-md-9"><input type="password" id="password" name="password" value="" required="required" autofocus="autofocus" class="form-control"></div>
 					  </div>
 					  <div class="form-group row">
@@ -26,9 +26,9 @@
 				   </form>
 				    {% else %}
 				   <form role="form" method="POST" action="/password/email">
-					  <input type="hidden" name="_token" value="{{ data.csrf_token }}"> 
+					  <input type="hidden" name="_token" value="{{ data.csrf_token }}">
 					  <div class="form-group row">
-						 <label for="email" class="col-md-3 col-form-label">E-mail Address</label> 
+						 <label for="email" class="col-md-3 col-form-label">E-mail Address</label>
 						 <div class="col-md-9"><input type="email" id="email" name="email" value="" required="required" autofocus="autofocus" class="form-control"></div>
 					  </div>
 					  <div class="form-group row">

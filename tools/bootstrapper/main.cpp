@@ -1,18 +1,3 @@
-// Finobe bootstrapper (FinobeLauncher.exe)
-//
-// - asks https://prod1-setup.<domain>/version which client build is current
-// - downloads <version>-FinobePlayer.zip and unpacks it into %LOCALAPPDATA%\Finobe\Versions\<version>
-//   (skipped when that build is already installed)
-// - copies itself to %LOCALAPPDATA%\Finobe\FinobeLauncher.exe and registers finobe-launcher://
-// - when started from a Play button (finobe-launcher:///1+launchmode:play+gameinfo:<token>+
-//   placelauncherurl:<url>+clientversion:<year>), installs that year's client and starts it:
-//     2016 and newer: RobloxPlayerBeta.exe --play -a <negotiate> -t <token> -j <url>
-//     2012: waits for a server through PlaceLauncher, then RobloxApp.exe -Script "loadfile('<join>')()"
-//   Each year is its own build: /version?year=<year> on the setup server, installed in
-//   Versions\<year>\<version> (2016 stays in Versions\<version>, where older launchers put it).
-//   Links without clientversion ask the site (Game/ClientVersion.ashx?placeId=) which year the place uses.
-//
-// Build: ./build.sh (MinGW-w64, i686). Plain Win32 + GDI+ + WinINet, no runtime DLLs.
 
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
@@ -34,15 +19,11 @@
 
 #define IDR_LOGO 101
 
-// ---------------------------------------------------------------- settings
-
 static const wchar_t* kDomain = L"finobe.wtf";
 static const wchar_t* kProtocol = L"finobe-launcher";
 static const wchar_t* kTitle = L"Finobe";
-// bump with every launcher release: a launcher older than the setup server's /launcher-build updates itself
-static const int kLauncherBuild = 8;
 
-// ---------------------------------------------------------------- UI state
+static const int kLauncherBuild = 8;
 
 enum { WM_APP_STATUS = WM_APP + 1, WM_APP_PROGRESS, WM_APP_DONE, WM_APP_FAIL };
 
@@ -53,17 +34,15 @@ static Gdiplus::Image* gLogo;
 static float gAngle;
 static std::wstring gStatus = L"Connecting to Finobe...";
 static std::wstring gSubStatus;
-static int gProgress = -1;            // -1 = no bar, 0..1000
+static int gProgress = -1;
 static bool gCancelHover, gCancelDown;
 static volatile LONG gCancelled;
-static DWORD gStepStarted;            // when the current slow step began
+static DWORD gStepStarted;
 static RECT gCancelRect = { kWidth / 2 - 60, 245, kWidth / 2 + 60, 279 };
 
 static void setStatus(const std::wstring& s) { PostMessageW(gWnd, WM_APP_STATUS, 0, (LPARAM) new std::wstring(s)); }
 static void setProgress(int permille) { PostMessageW(gWnd, WM_APP_PROGRESS, (WPARAM) permille, 0); }
 static bool cancelled() { return InterlockedCompareExchange(&gCancelled, 0, 0) != 0; }
-
-// ---------------------------------------------------------------- helpers
 
 static std::wstring widen(const std::string& s)
 {
@@ -107,8 +86,6 @@ static std::wstring urlDecode(const std::wstring& s)
     return widen(bytes);
 }
 
-// ---------------------------------------------------------------- HTTP
-
 struct Inet {
     HINTERNET h = nullptr;
     Inet() { h = InternetOpenW(L"FinobeLauncher/2", INTERNET_OPEN_TYPE_PRECONFIG, nullptr, nullptr, 0); }
@@ -137,7 +114,6 @@ static bool httpGetString(const std::wstring& url, std::string& out, std::wstrin
     return true;
 }
 
-// download to a file; reports progress 0..1000
 static bool httpDownload(const std::wstring& url, const std::wstring& dest, std::wstring& err)
 {
     Inet net;
@@ -170,8 +146,6 @@ static bool httpDownload(const std::wstring& url, const std::wstring& dest, std:
     if (ok && total && done != total) { ok = false; err = L"The download was incomplete. Please try again."; }
     return ok;
 }
-
-// ---------------------------------------------------------------- unzip
 
 static size_t writeToFile(void* opaque, mz_uint64, const void* buf, size_t n) { return fwrite(buf, 1, n, (FILE*) opaque); }
 
@@ -210,8 +184,6 @@ static bool unzipTo(const std::wstring& zipPath, const std::wstring& dir, std::w
     return ok;
 }
 
-// ---------------------------------------------------------------- install / launch
-
 static void registerProtocol(const std::wstring& launcherPath)
 {
     std::wstring base = std::wstring(L"Software\\Classes\\") + kProtocol;
@@ -234,7 +206,6 @@ static void registerProtocol(const std::wstring& launcherPath)
     }
 }
 
-// finobe-launcher:///1+launchmode:play+gameinfo:<token>+placelauncherurl:<url>+k:l
 struct LaunchArgs { bool present = false; std::wstring mode, token, placeLauncher, year; };
 
 static LaunchArgs parseLaunchUri(const std::wstring& raw)
@@ -266,10 +237,8 @@ static LaunchArgs parseLaunchUri(const std::wstring& raw)
 
 static bool isYear(const std::wstring& y) { return y.size() == 4 && y.find_first_not_of(L"0123456789") == std::wstring::npos; }
 
-// the client exe each year's build starts
 static std::wstring clientExe(const std::wstring& year) { return year == L"2012" ? L"RobloxApp.exe" : L"RobloxPlayerBeta.exe"; }
 
-// value of "key": in a flat JSON object (enough for PlaceLauncher's reply); numbers come back as text
 static std::string jsonValue(const std::string& json, const std::string& key)
 {
     size_t p = json.find("\"" + key + "\"");
@@ -307,19 +276,11 @@ static std::wstring queryParam(const std::wstring& url, const std::wstring& name
     return L"";
 }
 
-// ---------------------------------------------------------------- udp relay
-
-// The 2012 client only completes PlayerConnect against a local address: any remote
-// IP or hostname makes it throw "Unknown exception" and it never opens the socket.
-// So the join script hands it localhost, and this relays that UDP to the real game
-// server (serverAddress/serverPort from PlaceLauncher).
 static std::string gRelayAddr;
 static int gRelayPort = 0;
 
 static SOCKET gRelaySock = INVALID_SOCKET;
 
-// bind synchronously: the 2012 client binds its local socket to the server port, so the
-// relay has to own the port first, otherwise the client takes it and talks to itself
 static bool bindRelay()
 {
     char logp[MAX_PATH] = {0};
@@ -382,7 +343,6 @@ static DWORD WINAPI relayThread(LPVOID)
     }
 }
 
-// 2012: the 2012 client doesn't talk to PlaceLauncher itself, so wait for the server here
 static bool launch2012(const std::wstring& dir, const LaunchArgs& a, std::wstring& err)
 {
     std::wstring joinUrl;
@@ -409,14 +369,12 @@ static bool launch2012(const std::wstring& dir, const LaunchArgs& a, std::wstrin
     if (joinUrl.rfind(prefix1, 0) != 0 && joinUrl.rfind(prefix2, 0) != 0) { err = L"The server took too long to start. Try again in a bit."; return false; }
     if (joinUrl.find_first_of(L"'\\\" \t\r\n") != std::wstring::npos) { err = L"Bad join script URL."; return false; }
 
-    // the join script connects to localhost; forward that UDP to the real server.
-    // bind before starting the client so the client doesn't grab the port itself
     if (!gRelayAddr.empty() && gRelayPort > 0) {
         if (bindRelay()) CloseHandle(CreateThread(nullptr, 0, relayThread, nullptr, 0, nullptr));
     }
 
     setStatus(L"Starting Finobe...");
-    // loadfile checks the site's signature on the join script before running it
+
     std::wstring exe = dir + L"\\RobloxApp.exe";
     std::wstring cmd = L"\"" + exe + L"\" -Script \"loadfile('" + joinUrl + L"')()\"";
     STARTUPINFOW si = { sizeof si }; PROCESS_INFORMATION pi;
@@ -426,7 +384,7 @@ static bool launch2012(const std::wstring& dir, const LaunchArgs& a, std::wstrin
         return false;
     }
     CloseHandle(pi.hThread);
-    // the relay thread lives and dies with this process, so stay alive while the client runs
+
     ShowWindow(gWnd, SW_HIDE);
     WaitForSingleObject(pi.hProcess, INFINITE);
     CloseHandle(pi.hProcess);
@@ -458,10 +416,10 @@ static void removeOtherVersions(const std::wstring& versionsDir, const std::wstr
     do {
         if ((fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) && keep != fd.cFileName) {
             std::wstring path = versionsDir + L"\\" + fd.cFileName;
-            path.push_back(0); path.push_back(0);   // SHFileOperation wants a double-null list
+            path.push_back(0); path.push_back(0);
             SHFILEOPSTRUCTW op = {}; op.wFunc = FO_DELETE; op.pFrom = path.c_str();
             op.fFlags = FOF_NO_UI;
-            SHFileOperationW(&op);   // best effort; a running old build stays until next time
+            SHFileOperationW(&op);
         }
     } while (FindNextFileW(h, &fd));
     FindClose(h);
@@ -469,9 +427,6 @@ static void removeOtherVersions(const std::wstring& versionsDir, const std::wstr
 
 static std::wstring gLaunchUri;
 
-// the 2012 client caches asset/script responses in WinINet; a stale entry (e.g. a 404
-// from before a route existed) survives restarts and stops the core gui from loading.
-// clear it once per launcher build, so a fix ships without asking anyone to clear anything.
 static void clearHttpCacheIfUpdated()
 {
     std::wstring root = localAppData() + L"\\Finobe";
@@ -486,7 +441,7 @@ static void clearHttpCacheIfUpdated()
         const wchar_t* subs[] = { L"Content.IE5", L"IE" };
         for (int i = 0; i < 2; i++) {
             std::wstring path = base + L"\\" + subs[i];
-            path.push_back(0); path.push_back(0);   // SHFileOperation wants a double-null list
+            path.push_back(0); path.push_back(0);
             SHFILEOPSTRUCTW op = {}; op.wFunc = FO_DELETE; op.pFrom = path.c_str();
             op.fFlags = FOF_NO_UI | FOF_NOCONFIRMATION;
             SHFileOperationW(&op);
@@ -503,12 +458,11 @@ static DWORD WINAPI worker(LPVOID)
     std::wstring root = localAppData() + L"\\Finobe";
     std::wstring versionsDir = root + L"\\Versions";
     std::wstring setup = std::wstring(L"https://prod1-setup.") + kDomain;
-    wchar_t over[512];   // FINOBE_SETUP_URL overrides the setup server (testing)
+    wchar_t over[512];
     if (GetEnvironmentVariableW(L"FINOBE_SETUP_URL", over, 512)) setup = over;
 
     setStatus(L"Connecting to Finobe...");
 
-    // self-update: fetch the newer launcher and hand it the same link (it then installs itself over this one)
     if (!GetEnvironmentVariableW(L"FINOBE_LAUNCHER_UPDATED", nullptr, 0)) {
         std::string buildRaw; std::wstring e;
         if (httpGetString(setup + L"/launcher-build", buildRaw, e) && _wtoi(trim(widen(buildRaw)).c_str()) > kLauncherBuild) {
@@ -516,7 +470,7 @@ static DWORD WINAPI worker(LPVOID)
             makeDirs(root);
             std::wstring fresh = root + L"\\FinobeLauncher.update.exe";
             if (httpDownload(setup + L"/FinobeLauncher.exe", fresh, e)) {
-                SetEnvironmentVariableW(L"FINOBE_LAUNCHER_UPDATED", L"1");   // the new one doesn't check again
+                SetEnvironmentVariableW(L"FINOBE_LAUNCHER_UPDATED", L"1");
                 std::wstring cmd = L"\"" + fresh + L"\"" + (gLaunchUri.empty() ? L"" : L" \"" + gLaunchUri + L"\"");
                 std::vector<wchar_t> buf(cmd.begin(), cmd.end()); buf.push_back(0);
                 STARTUPINFOW si = { sizeof si }; PROCESS_INFORMATION pi;
@@ -527,10 +481,10 @@ static DWORD WINAPI worker(LPVOID)
                 }
                 SetEnvironmentVariableW(L"FINOBE_LAUNCHER_UPDATED", nullptr);
             }
-            setStatus(L"Connecting to Finobe...");   // couldn't update: carry on with this one
+            setStatus(L"Connecting to Finobe...");
         }
     }
-    // which year's client: from the link, else ask the site which one the place uses
+
     if (args.present && !isYear(args.year) && !args.placeLauncher.empty()) {
         std::wstring placeId = queryParam(args.placeLauncher, L"placeId");
         std::string y; std::wstring e;
@@ -595,14 +549,12 @@ static DWORD WINAPI worker(LPVOID)
         Sleep(1500);
     } else {
         setStatus(L"Finobe is installed! Press Play on a game to join.");
-        setProgress(1000);   // done: a full bar, not the "working" animation
+        setProgress(1000);
         Sleep(2500);
     }
     PostMessageW(gWnd, WM_APP_DONE, 0, 0);
     return 0;
 }
-
-// ---------------------------------------------------------------- drawing
 
 static Gdiplus::Image* loadPngResource(int id)
 {
@@ -629,11 +581,9 @@ static void paint(HDC hdc)
     g.SetTextRenderingHint(TextRenderingHintClearTypeGridFit);
     g.Clear(Color(255, 255, 255, 255));
 
-    // thin border so the white window doesn't blend into a white desktop
     Pen border(Color(255, 205, 205, 205), 1);
     g.DrawRectangle(&border, 0, 0, kWidth - 1, kHeight - 1);
 
-    // spinning logo
     if (gLogo) {
         const float size = 96, cx = kWidth / 2.0f, cy = 92;
         g.TranslateTransform(cx, cy);
@@ -642,7 +592,7 @@ static void paint(HDC hdc)
         g.ResetTransform();
     }
 
-    FontFamily segoe(L"Segoe UI");   // fall back if the font isn't installed
+    FontFamily segoe(L"Segoe UI");
     const FontFamily* family = segoe.GetLastStatus() == Ok ? &segoe : FontFamily::GenericSansSerif();
     StringFormat center; center.SetAlignment(StringAlignmentCenter); center.SetLineAlignment(StringAlignmentCenter);
 
@@ -656,18 +606,17 @@ static void paint(HDC hdc)
         g.DrawString(gSubStatus.c_str(), -1, &small, RectF(10, 176, kWidth - 20, 20), &center, &grey);
     }
 
-    // progress bar
     const float bx = 40, by = 202, bw = kWidth - 80, bh = 18;
     SolidBrush track(Color(255, 227, 227, 227));
     g.FillRectangle(&track, bx, by, bw, bh);
     if (gProgress >= 0) {
         float w = bw * gProgress / 1000.0f;
         if (w > 0) {
-            SolidBrush fill(Color(255, 10, 176, 58));   // plain green, same as the sliding block
+            SolidBrush fill(Color(255, 10, 176, 58));
             g.FillRectangle(&fill, bx, by, w, bh);
         }
     } else {
-        // indeterminate: a green block sliding along the track
+
         float t = fmodf(GetTickCount() / 1400.0f, 1.0f), seg = bw * 0.25f, x = bx - seg + (bw + seg) * t;
         float x0 = x < bx ? bx : x, x1 = x + seg > bx + bw ? bx + bw : x + seg;
         if (x1 > x0) {
@@ -676,7 +625,6 @@ static void paint(HDC hdc)
         }
     }
 
-    // Cancel button (square corners, crisp 1px border)
     RECT& c = gCancelRect;
     g.SetSmoothingMode(SmoothingModeNone);
     SolidBrush btnFill(gCancelDown ? Color(255, 225, 225, 225) : gCancelHover ? Color(255, 242, 242, 242) : Color(255, 255, 255, 255));
@@ -692,15 +640,13 @@ static void paint(HDC hdc)
     screen.DrawImage(&back, 0, 0);
 }
 
-// ---------------------------------------------------------------- window
-
 static LRESULT CALLBACK wndProc(HWND h, UINT msg, WPARAM wp, LPARAM lp)
 {
     switch (msg) {
     case WM_TIMER:
         gAngle += 4.0f;
         if (gAngle >= 360) gAngle -= 360;
-        // after 20s on one slow step, reassure the user
+
         if (gStepStarted && GetTickCount() - gStepStarted > 20000 && gSubStatus.empty())
             gSubStatus = L"This is taking a while, hang tight!";
         InvalidateRect(h, nullptr, FALSE);
@@ -747,7 +693,7 @@ static LRESULT CALLBACK wndProc(HWND h, UINT msg, WPARAM wp, LPARAM lp)
     case WM_LBUTTONDOWN: {
         POINT p = { GET_X_LPARAM(lp), GET_Y_LPARAM(lp) };
         if (PtInRect(&gCancelRect, p)) { gCancelDown = true; SetCapture(h); }
-        else { ReleaseCapture(); SendMessageW(h, WM_NCLBUTTONDOWN, HTCAPTION, 0); }   // drag the window
+        else { ReleaseCapture(); SendMessageW(h, WM_NCLBUTTONDOWN, HTCAPTION, 0); }
         return 0;
     }
     case WM_LBUTTONUP: {

@@ -15,9 +15,9 @@ return new class extends Migration
                 $table->id();
                 $table->unsignedBigInteger('sender_id')->index();
                 $table->unsignedBigInteger('receiver_id')->index();
-                // pending, accepted, declined, revoked, inactive (an item in it changed hands)
+
                 $table->string('status', 16)->default('pending')->index();
-                // purchases row ids: the exact copies (and serials) on each side
+
                 $table->text('sender_items');
                 $table->text('receiver_items');
                 $table->timestamp('completed_at')->nullable();

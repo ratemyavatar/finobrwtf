@@ -1,21 +1,12 @@
 #!/usr/bin/env python3
-"""
-Put the site's signing key into an already-patched client (or RCC), so it accepts the join
-scripts the site signs. Run it on the web server, where the private key lives:
-
-    python3 tools/client/set_key.py RobloxPlayer /path/to/site/storage/rbx/files/privateKey1024.pem
-
-Takes a client folder or an .exe. Only the 200-char PUBLICKEYBLOB is swapped (same length, so
-nothing else moves). Then repackage with package_client.py and update FINOBE_CLIENT_VERSION.
-"""
 import re, sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "rcc"))
-from patch_rcc import public_key_blob  # noqa: E402
+from patch_rcc import public_key_blob
 
 if len(sys.argv) != 3:
-    sys.exit(__doc__)
+    sys.exit("usage: set_key.py <client folder or exe> <private key pem>")
 
 target, pem = Path(sys.argv[1]), Path(sys.argv[2])
 exes = [target] if target.is_file() else [p for p in (target / "RobloxPlayerBeta.exe", target / "RCCService.exe") if p.is_file()]

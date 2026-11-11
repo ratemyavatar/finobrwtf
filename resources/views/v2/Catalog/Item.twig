@@ -29,7 +29,7 @@
                 opacity: 0.6;
                 animation: purchaserFadeIn 0.25s ease;
             }
-            
+
             .purchase-success, .purchase-error {
                 position: absolute;
                 left: 40%;
@@ -46,7 +46,7 @@
                 -webkit-animation: fa-spin 1s linear infinite;
                 animation: fa-spin 1s linear infinite
             }
-        </style>
+</style>
   </head>
   <body>
     <div class="btn-success purchase-success text-center" id="purchase-complete" style="display: none;"><p class="mt-2">You've successfully purchased this.</p></div>
@@ -203,7 +203,7 @@
                 copy('#ID');
                 });
             });
-            </script>
+</script>
             <script>
                                                 document.addEventListener('DOMContentLoaded', function () {
                                                     var purchase_btn = document.getElementById('btn-purchase');
@@ -217,7 +217,7 @@
                                                         const data = new URLSearchParams();
                                                         data.append('assetid', '{{ data.item.id }}');
                                                         data.append('_token', '{{ data.csrf_token }}');
-                                                        
+
                                                         fetch("/api/purchase", {
                                                             method: "POST",
                                                             headers: {
@@ -236,15 +236,15 @@
                                                                 }, 2500);
                                                             } else {
                                                                 purchaseComplete.style.display = "";
-                                                                
+
                                                                 setTimeout(function () {
                                                                     window.location.href = "/item/{{ data.item.id }}";
                                                                 }, 2500);
                                                             }
-                                                            
+
                                                         });
                                                     });
-                                                    
+
                                                     purchaseClose.addEventListener('click', function() {
                                                         purchaser.style.display = "none";
                                                         purchaser.classList.remove('purchaser');
@@ -255,10 +255,10 @@
                                                         purchaser.style.display = "flex";
                                                         purchase_btn.disabled = true;
 	                                                    purchaser.classList.add('purchaser');
-                                                        
+
                                                     });
                                                 });
-                                            </script>
+</script>
     </div>
     {% include ('v2/Modules/footer.twig') %}
   </body>

@@ -7,20 +7,12 @@ use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
 {
-    /**
-     * Register any application services.
-     */
     public function register(): void
     {
-        //
     }
 
-    /**
-     * Bootstrap any application services.
-     */
     public function boot(): void
     {
-        // the client years a place can use (place creation/settings, the place page's Play button)
         \Illuminate\Support\Facades\View::share('client_versions', \App\Services\ClientVersions::names());
 
         if (!app()->environment('local')) {

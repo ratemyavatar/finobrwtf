@@ -6,12 +6,6 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * ForumController rate-limits posting by reading users.post_cooldown, but
-     * the source schema dump never created the column. Its sibling
-     * render_cooldown is added by the admin workbench migration; this one was
-     * missed, so every new post/reply threw "Undefined array key post_cooldown".
-     */
     public function up(): void
     {
         $schema = Schema::connection('finobe');
@@ -25,6 +19,5 @@ return new class extends Migration
 
     public function down(): void
     {
-        // intentionally left empty: live data may depend on the column
     }
 };

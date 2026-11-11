@@ -14,13 +14,12 @@ use Illuminate\Support\Facades\Auth;
 
 class VideoController extends Controller
 {
-
     public function index(Request $request) {
         $title = 'Videos';
         $data = $request->all();
 
         $videos = Video::count();
-        
+
         $pages_to_show = 10;
         $results_per_page = 20;
         $number_of_pages = ceil($videos / $results_per_page);
@@ -33,13 +32,13 @@ class VideoController extends Controller
             ->limit($results_per_page)
             ->get()
             ->map(fn($item) => $item->toArray());
-        
+
         foreach($videos as $key => $video) {
             if(Redis::exists("video_processing:{$video['filename']}")) {
                 unset($videos[$key]);
             }
         }
-        
+
         $pageData['videos'] = [
             'data' => $videos,
             'pages' => [
@@ -75,7 +74,7 @@ class VideoController extends Controller
         }
 
         $video = Video::find($id)->toArray();
-        
+
         $video['title'] = strip_tags(htmlspecialchars($video['title']));
         $video['description'] = nl2br(strip_tags(htmlspecialchars($video['description'])));
         $video['uuid'] = User::where('username', $video['author'])->value('id');
@@ -112,9 +111,8 @@ class VideoController extends Controller
             return $this->page('404', $pageData ?? [], $title ?? null, 404);
         }
 
-        //return redirect('https://cdn.finobe.wtf/videos/data/' . $this->db->table('videos')->select('filename')->where('id', $id)->value('filename'));
         $video = Video::find($id)->toArray();
-        
+
         if(!file_exists(config('finobe.cdn_path') . '/videos/data/' . $video['filename'])) {
             abort(404, 'Video not found');
         }
@@ -195,11 +193,11 @@ class VideoController extends Controller
 
         if(VideoRating::where('sender', Auth::user()->username)->where('toid', $data['videoId'])->exists()) {
             $ratingData = VideoRating::where('sender', Auth::user()->username)
-                //->where('rate_type', $data['rating'])
+
                 ->where('toid', $data['videoId'])
                 ->first()
                 ->toArray();
-            
+
             if($ratingData['rate_type'] != $data['rating']) {
                 VideoRating::where('id', $ratingData['id'])
                     ->update([
@@ -252,11 +250,11 @@ class VideoController extends Controller
         $rating = VideoRating::where('toid', $data['videoId'])
             ->where('rate_type', 'l')
             ->count();
-        
+
         $rating -= VideoRating::where('toid', $data['videoId'])
             ->where('rate_type', 'd')
             ->count();
-        
+
         $response['rating'] = $rating;
         return response()->json($response, 200);
     }

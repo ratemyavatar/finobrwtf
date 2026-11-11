@@ -8,26 +8,16 @@ use DOMElement;
 use DOMXPath;
 use Illuminate\Support\Facades\Http;
 
-/*
-    ItemImporter
-     - makes a hat or gear from one .rbxm/.rbxmx (what Studio's "Save to File" gives you)
-     - the model's meshes and textures are downloaded from Roblox (through assetdelivery.roproxy.com,
-       or FINOBE_ASSETDELIVERY) and stored on the site
-       (meshes converted to a version the 2016 client reads), then the item is saved like
-       the old mesh + xml + texture upload did
-     - modern parts are turned into their 2016 versions: Accessory -> Hat, MeshPart -> Part + SpecialMesh
-*/
 class ItemImporter
 {
     const HAT = 8;
     const HEAD = 17;
     const GEAR = 19;
 
-    /** classes a 2016 client doesn't have (dropped with everything under them) */
     const DROP_CLASSES = ['SurfaceAppearance', 'WrapLayer', 'WrapTarget', 'WeldConstraint', 'NoCollisionConstraint',
         'HumanoidDescription', 'BodyPartDescription', 'AccessoryDescription', 'MaterialVariant', 'Animator'];
 
-    private array $meshes = [];   // roblox id => site id
+    private array $meshes = [];
     private array $textures = [];
     private array $meshCenters = [];
 
@@ -35,10 +25,6 @@ class ItemImporter
     {
     }
 
-    /**
-     * @param int|null $expectType self::HAT / self::HEAD / self::GEAR, or null to go by what the model is
-     * @return int the new asset id
-     */
     public static function import(string $file, string $title, int $author, string $description, int $price, bool $onSale, ?int $expectType = null): int
     {
         $importer = new self($author, $title);
@@ -53,7 +39,6 @@ class ItemImporter
         ]);
         AssetHelper::grantToCreator($assetId, $author);
 
-        // a failed render (arbiter down) shouldn't undo the upload
         try {
             match ($type) {
                 self::HAT => AssetHelper::renderHat($assetId),
@@ -67,7 +52,6 @@ class ItemImporter
         return $assetId;
     }
 
-    /** @return array{0: string, 1: int} the item's 2016 XML and its asset type */
     public function convert(string $file, ?int $expectType = null): array
     {
         $doc = new DOMDocument();
@@ -77,8 +61,6 @@ class ItemImporter
         }
         $xp = new DOMXPath($doc);
 
-        // A head is a bare SpecialMesh (MeshType "Head") saved from Studio, with no
-        // Hat/Accessory/Tool wrapper around it.
         $root = $xp->query('//Item[@class="Hat" or @class="Accessory" or @class="Accoutrement" or @class="Tool" or @class="HopperBin"]')->item(0);
         if (!$root instanceof DOMElement) {
             $mesh = $xp->query('//Item[@class="SpecialMesh" or @class="FileMesh"]')->item(0);
@@ -97,9 +79,8 @@ class ItemImporter
         }
 
         foreach (iterator_to_array($xp->query('.//Item', $root)) as $item) {
-            /** @var DOMElement $item */
             if (!$item->parentNode) {
-                continue; // under something already dropped
+                continue;
             }
             $class = $item->getAttribute('class');
             if (in_array($class, self::DROP_CLASSES, true)
@@ -114,7 +95,6 @@ class ItemImporter
             throw new ImportException('The accessory has no part named "Handle".');
         }
 
-        // references to things that were dropped or are outside the item
         $kept = [];
         foreach ($xp->query('descendant-or-self::Item', $root) as $item) {
             $kept[$item->getAttribute('referent')] = true;
@@ -125,9 +105,7 @@ class ItemImporter
             }
         }
 
-        // meshes and textures: download from Roblox, store on the site
         foreach ($xp->query('.//Content', $root) as $content) {
-            /** @var DOMElement $content */
             $url = $xp->query('./url', $content)->item(0);
             $id = $url ? self::robloxAssetId($url->textContent) : null;
             if ($id === null) {
@@ -139,7 +117,7 @@ class ItemImporter
                 $url->textContent = $this->siteUrl($this->mesh($id));
                 $owner = $content->parentNode->parentNode;
                 if ($owner->getAttribute('data-from-meshpart') && ($c = $this->meshCenters[$id] ?? null)) {
-                    $this->recenter($doc, $xp, $owner, $c); // a MeshPart shows its mesh centred, a SpecialMesh doesn't
+                    $this->recenter($doc, $xp, $owner, $c);
                 }
             } elseif (in_array($name, ['TextureId', 'TextureID', 'Texture'], true) && in_array($class, ['SpecialMesh', 'FileMesh', 'Decal', 'Texture', 'Tool', 'HopperBin'], true)) {
                 $url->textContent = $this->siteUrl($this->texture($id));
@@ -161,18 +139,15 @@ class ItemImporter
         $robloxEl->appendChild($out->createElement('External', 'nil'));
         $robloxEl->appendChild($out->importNode($root, true));
 
-        // the 2016 loader doesn't expect an XML declaration
         return [preg_replace('/^<\?xml[^>]*>\s*/', '', $out->saveXML(null, LIBXML_NOEMPTYTAG)), $type];
     }
 
-    /** MeshPart (2016 has none that loads from a file) -> Part with a SpecialMesh scaled to the part's size */
     private function meshPartToPart(DOMDocument $doc, DOMXPath $xp, DOMElement $item): void
     {
         $props = $xp->query('./Properties', $item)->item(0);
         $meshId = $this->contentUrl($xp, $props, 'MeshId');
         $textureId = $this->contentUrl($xp, $props, 'TextureID');
 
-        // a SurfaceAppearance's colour map is the texture when TextureID is empty
         $sa = $xp->query('./Item[@class="SurfaceAppearance"]', $item)->item(0);
         if ($textureId === '' && $sa) {
             $textureId = $this->contentUrl($xp, $xp->query('./Properties', $sa)->item(0), 'ColorMap');
@@ -214,11 +189,6 @@ class ItemImporter
         return $n?->textContent;
     }
 
-    /*
-        head
-         - the model is just a SpecialMesh (a custom head): store the mesh on the site
-           and hand back a 2016-style XML holding the mesh with its MeshType/Scale kept
-    */
     private function head(DOMXPath $xp, DOMElement $mesh, ?int $expectType): array
     {
         if ($expectType !== null && $expectType !== self::HEAD) {
@@ -248,8 +218,7 @@ class ItemImporter
             $f->appendXML("<{$tag} name=\"{$name}\">{$inner}</{$tag}>");
             $mp->appendChild($f);
         };
-        // keep the source MeshType (a custom head is usually a FileMesh); a mesh with no
-        // id falls back to "Head" so the client still swaps the default head shape
+
         $meshType = $this->prop($xp, $mesh, 'MeshType');
         $add('token', 'MeshType', $meshType !== null && $meshType !== '' ? $meshType : ($meshId === null ? '0' : '5'));
         $add('Content', 'MeshId', $meshId === null ? '<null></null>' : '<url>' . $this->siteUrl($this->mesh($meshId)) . '</url>');
@@ -277,7 +246,6 @@ class ItemImporter
         return array_map(fn($k) => (float) ($xp->query("./{$k}", $n)->item(0)?->textContent ?? 1), ['X', 'Y', 'Z']);
     }
 
-    /** the Roblox asset id an rbxassetid:// or roblox.com asset URL points at (null for anything else) */
     public static function robloxAssetId(string $url): ?int
     {
         $url = trim($url);
@@ -319,7 +287,6 @@ class ItemImporter
         }
         $data = self::download($robloxId);
 
-        // a Decal's id instead of its image's: follow it to the image
         if (str_starts_with(ltrim($data), '<roblox') && preg_match('#<Content name="Texture">\s*<url>([^<]+)</url>#', RbxmReader::toXml($data), $m)
             && ($inner = self::robloxAssetId($m[1])) !== null) {
             $data = self::download($inner);

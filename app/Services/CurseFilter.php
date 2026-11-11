@@ -2,11 +2,6 @@
 
 namespace App\Services;
 
-/*
-    CurseFilter
-     - Settings > Security > Curse Filter: when a user turns it on, swear words in forum posts,
-       private messages and profile blurbs show as #### for them (nothing is changed for anyone else)
-*/
 class CurseFilter
 {
     const WORDS = [
@@ -30,7 +25,6 @@ class CurseFilter
         return preg_replace_callback($pattern, fn ($m) => str_repeat('#', mb_strlen($m[0])), $text);
     }
 
-    /** clean() only for users who turned the filter on */
     public static function forViewer(?string $text): string
     {
         return self::on() ? self::clean($text) : (string) $text;

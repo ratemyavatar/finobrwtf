@@ -13,7 +13,6 @@ use Illuminate\Support\Facades\Auth;
 
 class ProfileController extends Controller
 {
-
     public function index(Request $request, $id) {
         if(!Auth::check()) {
             return redirect('/');
@@ -25,7 +24,6 @@ class ProfileController extends Controller
 
         $user = User::find($id)->toArray();
 
-        // render the profile owner's avatar if they don't have one yet
         \App\Services\AvatarRenderer::renderIfMissing((int) $user['id'], $user['pfp'] ?? null);
 
         $title = htmlspecialchars($user['username']);
@@ -38,7 +36,7 @@ class ProfileController extends Controller
         $user['CurrentFriends'] = array_reverse(array_filter($user['friends'], fn($friend) => $friend['status'] == 'friends'));
 
         $servers = Server::get()->map(fn($item) => $item->toArray());
-        
+
         foreach($servers as $server) {
             $placeid = 0;
             $jobId = '';

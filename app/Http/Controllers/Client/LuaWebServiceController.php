@@ -29,7 +29,6 @@ class LuaWebServiceController extends Controller
                     $user = User::where('id', $valid['playerid'])->first();
 
                     if ($user) {
-                        // admin badge in the player list (users with a special badge keep theirs instead)
                         $isAdmin = \App\Services\PlayerBadges::showsAdminIcon((int) $user->id, $user->status);
                         return response('<Value Type="boolean">'.($isAdmin ? 'true' : 'false').'</Value>')
                             ->header('Content-Type', 'text/xml');

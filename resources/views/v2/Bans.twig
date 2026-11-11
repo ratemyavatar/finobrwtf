@@ -17,7 +17,7 @@
 		background-color: rgba(0, 0, 0, 0.05);
 		{% endif %}
     }
-	</style>
+</style>
 	<style>
             @keyframes fadeInban {
                 0% {
@@ -56,7 +56,7 @@
                 -webkit-animation: fa-spin 1s linear infinite;
                 animation: fa-spin 1s linear infinite
             }
-        </style>
+</style>
   </head>
   <body>
 	<div style="display: none;" id="ban-card" class="">
@@ -130,22 +130,22 @@
 			var card = document.getElementById('ban-card');
 			var user = document.getElementById('ban-username');
 			var reas = document.getElementById('ban-reason');
-			
+
 			function opend(username, reason) {
 				user.textContent = username;
 				reas.textContent = reason;
-				
+
 				card.style.display = "";
 				card.classList.add('fadeInto-ban');
 			}
-			
+
 			document.querySelectorAll('#btn-close-ban').forEach(function(button) {
 				button.addEventListener('click', function() {
 					card.style.display = "none";
 					card.classList.remove('fadeInto-ban');
 				});
 			});
-		</script>
+</script>
     </div>
     {% include ('v2/Modules/footer.twig') %}
   </body>

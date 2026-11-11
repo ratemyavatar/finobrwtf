@@ -1,32 +1,17 @@
 #!/usr/bin/env python3
-"""
-Finobe branding for the patched 2016 player: logo and the text players see. Internal names stay
-(RobloxGui, RobloxLocked, <roblox> place XML tags, Roblox/WinInet user agent, registry keys...),
-since the client, CoreScripts, places and the site rely on them.
-
-    python3 tools/client/rebrand.py RobloxPlayer
-
-Run after patch_client.py (any order with set_key.py). Safe to run again.
-
-- exe: the app icon (all 6 sizes, overwritten in place), the window title and player-facing
-  messages, the file's version info (what Windows shows as the app's name/company)
-- CoreScripts inside the exe: purchase prompt (ROBUX -> Dius), developer console title, help menu text
-- content/textures: the Roblox logo images
-"""
 import codecs, io, re, struct, sys
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
-import rsb1  # noqa: E402
+import rsb1
 
-LOGO = HERE / "finobe_logo.png"           # the round F logo (site/launcher logo)
-WORDMARK = HERE / "finobe_wordmark.png"   # the FINOBE wordmark (site's public/s/img/fatnobe.png)
+LOGO = HERE / "finobe_logo.png"
+WORDMARK = HERE / "finobe_wordmark.png"
 PINK, GREY, WHITE = (248, 40, 96, 255), (112, 112, 112, 255), (255, 255, 255, 255)
 
-# whole strings (ASCII, NUL-terminated in the exe) that players can see
 EXE_TEXT = [
-    "ROBLOX",                                   # window title
+    "ROBLOX",
     "ROBLOX Crash",
     "An unexpected error occurred and ROBLOX needs to quit.  We're sorry!",
     "Your graphics drivers seem to be too old for Roblox to use.\n\nVisit http://www.finobe.wtf/drivers for info on how to perform a driver upgrade.",
@@ -47,36 +32,30 @@ EXE_TEXT = [
     "Sorry, badges can only be queried by the Roblox game servers",
     "Sorry, badges can only be awarded by Roblox game servers",
 ]
-# UTF-16 strings: version info and the window caption resource
 EXE_TEXT_W = [
     "ROBLOX", "ROBLOX Game Client", "ROBLOX Corporation", "Roblox Application",
     " 2013, ROBLOX Corporation.  All rights reserved.", "RobloxApp.exe",
 ]
-# CoreScript string constants players can see
 CORESCRIPT_TEXT = {
     "CoreScripts/PurchasePromptScript2", "CoreScripts/PurchasePromptScript3",
     "DeveloperConsoleModule", "Settings/Pages/Help",
 }
-# the Roblox logo images in content/textures
 IMAGES = {
-    "content/textures/loading/robloxlogo.png": "wordmark",   # artwork is the strip (0, 95)-(256, 160)
+    "content/textures/loading/robloxlogo.png": "wordmark",
     "content/textures/roblox-logo.png": "wordmark",
     "content/textures/Roblox-loading.png": "logo",
     "content/textures/Roblox-loading@2x.png": "logo",
     "content/textures/Roblox.bmp": "logo-white",
-    "content/textures/ui/RobuxIcon.png": "dius",            # purchase prompt currency icon
+    "content/textures/ui/RobuxIcon.png": "dius",
 }
-DIUS = HERE / "diu_icon.png"                              # the site's Dius icon (public/s/img/diu_256.png)
+DIUS = HERE / "diu_icon.png"
 WORDMARK_BOX = {"content/textures/loading/robloxlogo.png": (0, 95, 256, 160)}
 
 
 def finobe(s: str) -> str:
-    """Same length: ROBLOX/Roblox -> Finobe, roblox -> finobe, www.roblox.com -> www.finobe.wtf."""
     return (s.replace("www.roblox.com", "www.finobe.wtf").replace("ROBLOX", "Finobe")
              .replace("Roblox", "Finobe").replace("roblox", "finobe"))
 
-
-# ---------------------------------------------------------------- images
 
 def _font(size):
     from PIL import ImageFont
@@ -99,7 +78,6 @@ def logo(size: int):
 
 
 def wordmark(w: int, h: int):
-    """The FINOBE wordmark (site's fatnobe.png), fitted to w x h and centred, proportions kept."""
     from PIL import Image
     im = Image.open(WORDMARK).convert("RGBA")
     im = im.crop(im.getchannel("A").getbbox())
@@ -121,7 +99,6 @@ def replace_images(folder: Path):
         if kind == "dius":
             new = Image.open(DIUS).convert("RGBA").resize((w, h), Image.LANCZOS)
         elif kind == "wordmark":
-            # draw where the Roblox wordmark's artwork is (fixed, so re-running gives the same image)
             box = WORDMARK_BOX.get(rel, (0, 0, w, h))
             new = Image.new("RGBA", (w, h), (0, 0, 0, 0))
             mark = wordmark(box[2] - box[0], box[3] - box[1])
@@ -136,8 +113,6 @@ def replace_images(folder: Path):
         print(f"  {rel}: {kind} {w}x{h}")
 
 
-# ---------------------------------------------------------------- exe
-
 def replace_text(b: bytearray):
     n = 0
     for s in EXE_TEXT:
@@ -145,7 +120,6 @@ def replace_text(b: bytearray):
         c = b.count(old)
         b[:] = b.replace(old, new); n += c
     for s in EXE_TEXT_W:
-        # UTF-16 strings sit on 2-byte boundaries, NUL (00 00) on both sides
         old, new = s.encode("utf-16-le"), finobe(s).encode("utf-16-le")
         i = 0
         while (i := b.find(old, i)) >= 0:
@@ -156,7 +130,6 @@ def replace_text(b: bytearray):
 
 
 def _dib(img, size):
-    """32-bit icon DIB: BITMAPINFOHEADER + bottom-up BGRA + empty AND mask."""
     img = img.resize((size, size))
     px = img.tobytes("raw", "BGRA")
     rows = [px[y * size * 4:(y + 1) * size * 4] for y in range(size)][::-1]
@@ -171,7 +144,7 @@ def replace_icon(b: bytearray):
     src = logo(256)
     done = 0
     for t in pe.DIRECTORY_ENTRY_RESOURCE.entries:
-        if t.id != 3:  # RT_ICON
+        if t.id != 3:
             continue
         for e in t.directory.entries:
             for l in e.directory.entries:
@@ -190,11 +163,7 @@ def replace_icon(b: bytearray):
     print(f"  exe icon: {done} size(s)")
 
 
-# the main window's title comes from a protected LoadString stub that always returns "ROBLOX", so
-# CreateWindowExA is pointed at a "Finobe" string in .rdata instead: `lea eax,[ebp-0x280]` becomes
-# `mov eax,<"Finobe">; nop`, with a base relocation for the new address (the exe is ASLR-enabled)
 TITLE_SITE = bytes.fromhex("8d8580fdffff" "6a00" "57" "6a00" "6a00" "6858020000" "6820030000")
-# the stack offset of the title buffer differs per build (2016: ebp-0x280, 2017: ebp-0x290)
 TITLE_TAIL = TITLE_SITE[6:]
 
 
@@ -204,7 +173,7 @@ def _find_title_site(b):
         i = b.find(TITLE_TAIL, i + 1)
         if i == -1:
             return -1, None
-        if b[i - 6:i - 4] == b"\x8d\x85" and b[i - 2:i] == b"\xff\xff":   # lea eax,[ebp-x]
+        if b[i - 6:i - 4] == b"\x8d\x85" and b[i - 2:i] == b"\xff\xff":
             return i - 6, "lea"
         if b[i - 6] == 0xB8:
             return i - 6, "done"
@@ -242,7 +211,6 @@ def replace_window_title(b: bytearray):
     imm_rva = to_rva(i + 1)
     b[i:i + 6] = b"\xB8" + struct.pack("<I", base + to_rva(s)) + b"\x90"
 
-    # append a relocation block for the new immediate
     name, va, vsize, raw, rsize, hdr = next(x for x in secs if x[0] == b".reloc")
     dd = opt + 96 + 5 * 8
     rva_dir, size_dir = struct.unpack_from("<II", b, dd)
@@ -304,15 +272,12 @@ def replace_corescript_text(b: bytearray):
         changed = 0
         for i, s in enumerate(strings):
             t = s.decode("latin1")
-            # player thumbnails (in-game menu, player dropdown, friend notifications) would load from roblox.com
             if "www.roblox.com/thumbs/" in t.lower():
                 strings[i] = re.sub("www.roblox.com", "www.finobe.wtf", t, flags=re.I).encode("latin1"); changed += 1
                 continue
             if name not in CORESCRIPT_TEXT:
                 continue
-            # sentences/titles only: identifiers (RobloxGui, com.roblox.client.) and asset URLs stay
             if " " in t and ("roblox" in t.lower() or "ROBUX" in t):
-                # sentences only: Robux/PriceInRobux/ROBUX_ICON are keys and names the scripts use
                 strings[i] = finobe(t).replace("ROBUX", "Dius").encode("latin1"); changed += 1
         if not changed:
             if name in CORESCRIPT_TEXT:
@@ -329,7 +294,7 @@ def replace_corescript_text(b: bytearray):
 
 def main():
     if len(sys.argv) != 2:
-        sys.exit(__doc__)
+        sys.exit("usage: rebrand.py <client folder>")
     folder = Path(sys.argv[1])
     exe = folder / "RobloxPlayerBeta.exe"
     if not exe.is_file():

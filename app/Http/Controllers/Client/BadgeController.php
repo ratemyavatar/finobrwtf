@@ -9,12 +9,6 @@ use App\Models\PlaceBadgeAward;
 use App\Models\User;
 use Illuminate\Http\Request;
 
-/*
-    BadgeController
-     - BadgeService endpoints the game server (RCC) calls; formats match the 2016 engine:
-       HasBadge -> "Success"/"Failure", IsBadgeDisabled/IsBadgeLegal -> "1"/"0",
-       AwardBadge -> the "X won Y's Z award!" message, or "0"
-*/
 class BadgeController extends Controller
 {
     private function badge(int $badgeId): ?Asset
@@ -44,7 +38,6 @@ class BadgeController extends Controller
 
     public function isLegal(Request $request)
     {
-        // a badge can only be awarded in the game it was made for
         $badge = $this->badge((int) $request->query('BadgeID'));
         return response($this->belongsToPlace($badge, (int) $request->query('PlaceID')) ? '1' : '0');
     }
@@ -67,7 +60,7 @@ class BadgeController extends Controller
         $award = PlaceBadgeAward::firstOrCreate(['badge_id' => $badge->id, 'user_id' => $userId]);
 
         if (!$award->wasRecentlyCreated) {
-            return response('0'); // already has it
+            return response('0');
         }
 
         $creator = User::where('id', $badge->author)->value('username') ?? 'someone';

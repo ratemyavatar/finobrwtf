@@ -8,7 +8,6 @@ use Illuminate\Http\Request;
 
 class VersionCompatibilityController extends Controller
 {
-    //TODO(Karma): Finish this controller, use web configuration table?
     function getVersions(Request $request)
 	{
 		return Response()->json([
@@ -17,9 +16,9 @@ class VersionCompatibilityController extends Controller
 			]
 		]);
 	}
-	
+
 	function getMD5Hashes(Request $request)
-	{		
+	{
 		return Response()->json([
 			'data' => [
 				Configuration::where('type', 'client-md5')->value('data')

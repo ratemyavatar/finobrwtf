@@ -26,7 +26,6 @@ use App\Services\Discord;
 
 class CatalogController extends Controller
 {
-
     public function index(Request $request, $section) {
         $title = 'Catalog';
         $data = $request->all();
@@ -56,19 +55,17 @@ class CatalogController extends Controller
         $pages_to_show = 10;
         $results_per_page = 12;
 
-        // the Filters box, like the real catalog: sort, price range and tradables
         $filters = [
             'sort' => in_array($data['sort'] ?? '', ['price_asc', 'price_desc'], true) ? $data['sort'] : 'unsorted',
             'min' => isset($data['min']) && $data['min'] !== '' ? max(0, (int) $data['min']) : null,
             'max' => isset($data['max']) && $data['max'] !== '' ? max(0, (int) $data['max']) : null,
             'tradables' => in_array($data['tradables'] ?? '', ['hide', 'only'], true) ? $data['tradables'] : 'all',
         ];
-        // "Price sorting sorts using the original price for limiteds and uniques."
+
         $price = DB::connection('finobe')->getDriverName() === 'sqlite'
             ? "CAST(json_extract(additional, '$.price') AS INTEGER)"
             : "CAST(JSON_UNQUOTE(JSON_EXTRACT(additional, '$.price')) AS SIGNED)";
 
-        // approved, and on sale or tradable (items without an onSale flag, like old audio, count as on sale)
         $listed = function () use ($data, $sections, $section, $filters, $price) {
             $query = Asset::where('asset_type', $sections[$section])
                 ->where('visibility', 'n')
@@ -115,7 +112,7 @@ class CatalogController extends Controller
             }
 
             $user = User::find($result['author']);
-            
+
             $result['uuid'] = $user ? $user->toArray()['id'] : false;
             $result['author'] = htmlspecialchars($user['username'] ?? $result['additional']['oldUser']);
             $items[] = $result;
@@ -157,7 +154,7 @@ class CatalogController extends Controller
         $pageData['section'] = $section;
         $pageData['search'] = isset($data['q']) ? $data['q'] : false;
         $pageData['filters'] = $filters;
-        // search + filters carried over by the page links
+
         $keep = array_filter([
             'q' => $data['q'] ?? null,
             'sort' => $filters['sort'] !== 'unsorted' ? $filters['sort'] : null,
@@ -181,7 +178,7 @@ class CatalogController extends Controller
         }
 
         $item = Asset::find($id)->toArray();
-        
+
         if($item['asset_type'] == 9) {
             return redirect('/place/' . $id);
         }
@@ -191,7 +188,7 @@ class CatalogController extends Controller
         }
 
         $item['title'] = htmlspecialchars(WordFilter::apply($item['title']));
-        
+
         if(User::find($item['author'])) {
             $item['uuid'] = $item['author'];
         }
@@ -208,7 +205,6 @@ class CatalogController extends Controller
         $item['isOwned'] = Purchases::where('username', Auth::user()->username)->where('assetid', $id)->where('type', 1)->exists();
         $item['sales'] = number_format(Purchases::where('assetid', $id)->count());
 
-        // a package has no thumbnail of its own; show what it contains on the item page
         $item['contents'] = [];
         if((int) $item['asset_type'] === 32) {
             $item['contents'] = Asset::whereIn('id', AssetHelper::getPackageAssets((int) $id))
@@ -232,11 +228,6 @@ class CatalogController extends Controller
         return $this->page('Catalog/Item', $pageData ?? [], $title ?? null);
     }
 
-    /*
-        POST /item/{id}/delete
-         - admins can delete any catalog item, everyone else only items they uploaded
-         - removes the item, the mesh/texture assets made for it, everyone's copy of it and it from outfits
-    */
     public function delete(Request $request, $id) {
         if(!Auth::check()) {
             return redirect('/');
@@ -257,12 +248,10 @@ class CatalogController extends Controller
         $ids = [(int) $asset->id];
         $additional = is_array($asset->additional) ? $asset->additional : [];
 
-        // texture made for a face / shirt / pants / t-shirt
         if(!empty($additional['media']['textureAssetId'])) {
             $ids[] = (int) $additional['media']['textureAssetId'];
         }
 
-        // meshes / textures a hat, gear or head points at, if they were uploaded with it (same author, mesh/image)
         if(in_array($asset->asset_type, [8, 17, 19])) {
             $file = config('finobe.cdn_path') . '/assets/' . $asset->file;
             $domain = preg_quote(config('finobe.domain'), '#');
@@ -281,7 +270,6 @@ class CatalogController extends Controller
             }
         }
 
-        // take it off anyone wearing it
         $wearing = User::where('avatar', 'like', '%' . (int) $asset->id . '%')->get();
         foreach($wearing as $wearer) {
             $avatar = $wearer->avatar;
@@ -320,7 +308,7 @@ class CatalogController extends Controller
         }
 
         $item = Asset::find($id)->toArray();
-        
+
         $isAdmin = (Auth::user()->status ?? '') === 'admin';
         if($item['author'] != Auth::user()->id && !$isAdmin) {
             Session::put('error', 'You do not own this item');
@@ -354,7 +342,6 @@ class CatalogController extends Controller
             $item['additional']['onSale'] = isset($data['onsale']);
             $item['additional']['price'] = intval($data['price']);
 
-            // only admins decide what's Limited / Unique (tradable) and what it's worth
             if($isAdmin && isset($data['limited'])) {
                 $kind = in_array($data['limited'], ['none', 'limited', 'unique'], true) ? $data['limited'] : 'none';
                 $item['additional']['isLimited'] = $kind !== 'none';
@@ -388,7 +375,7 @@ class CatalogController extends Controller
         if(!Auth::check()) {
             return redirect('/');
         }
-        
+
         if($request->isMethod('post')) {
             if(!config('finobe.features.create_assets')) {
                 Session::put('Creating assets is currently disabled');
@@ -445,25 +432,9 @@ class CatalogController extends Controller
 
                 $file = $request->file('file')->store('videos');
 
-                /*
-                $ffmpeg = FFmpeg::create();
-                $video = $ffmpeg->open(storage_path('app/private/' . $file));
-                $format = new X264('aac', 'libx264');
-                //$format->setAdditionalParameters(['-movflags', '+faststart']);
-                $video->save($format, config('finobe.cdn_path') . '/videos/data/' . $filename);
-                $video->frame(TimeCode::fromSeconds(1))
-                    ->save(config('finobe.cdn_path') . '/videos/thumbs/' . $thumbnail);
-                */
-
                 Redis::set("video_processing:{$filename}", true);
                 ProcessVideo::dispatch($file, $filename, $thumbnail);
 
-                /*
-                if(empty(trim(shell_exec("ps aux | grep 'php artisan queue:work' | grep -v grep")))) {
-                    exec('cd /var/www/Finobe && php artisan queue:work --timeout=21600 --sleep=3 --tries=3 > /dev/null 2>&1 &');
-                }
-                */
-                
                 Video::create([
                     'title' => $data['title'],
                     'author' => Auth::user()->username,
@@ -524,8 +495,8 @@ class CatalogController extends Controller
                         $format->setAudioKiloBitrate(96);
                         $audio->save($format, public_path('dynamic/temp/' . $filename . '.mp3'));
                     }
-                    
-                    rename(public_path('dynamic/temp/' . $filename . '.mp3'), public_path('dynamic/reviewing/' . $filename)); //ffmpeg is fucking me in the ass without the .mp3 extention
+
+                    rename(public_path('dynamic/temp/' . $filename . '.mp3'), public_path('dynamic/reviewing/' . $filename));
                 } catch(ProcessFailedException $e) {
                     Session::put('error', $e->getProcess()->getErrorOutput());
                     return redirect('/catalog/new');
@@ -574,7 +545,6 @@ class CatalogController extends Controller
                     Session::put('error', $validator->errors()->first());
                     return redirect('/catalog/new');
                 }
-
 
                 if(Auth::user()->Dius - 5 < 0) {
                     Session::put('error', 'Not enough dius');
@@ -631,7 +601,6 @@ class CatalogController extends Controller
                     Session::put('error', $validator->errors()->first());
                     return redirect('/catalog/new');
                 }
-
 
                 if(Auth::user()->Dius - 5 < 0) {
                     Session::put('error', 'Not enough dius');
@@ -749,7 +718,6 @@ class CatalogController extends Controller
                     Session::put('error', $validator->errors()->first());
                     return redirect('/catalog/new');
                 }
-
 
                 if(Auth::user()->Dius - 5 < 0) {
                     Session::put('error', 'Not enough dius');

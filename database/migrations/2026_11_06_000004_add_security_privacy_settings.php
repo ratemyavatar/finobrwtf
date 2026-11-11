@@ -6,8 +6,6 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    // Settings > Security (two-factor, curse filter), Privacy and Language, and the restrictions
-    // Security > Restrictions shows (set by admins on the user's moderation page)
     public function up(): void
     {
         $columns = [
@@ -30,10 +28,10 @@ return new class extends Migration
             Schema::connection('finobe')->create('user_restrictions', function (Blueprint $table) {
                 $table->id();
                 $table->unsignedBigInteger('user_id')->index();
-                $table->string('type', 10);                 // chat, forum, play
+                $table->string('type', 10);
                 $table->string('reason', 1000);
                 $table->unsignedBigInteger('moderator_id')->nullable();
-                $table->timestamp('expires_at')->nullable(); // null = until lifted
+                $table->timestamp('expires_at')->nullable();
                 $table->timestamp('lifted_at')->nullable();
                 $table->timestamps();
             });

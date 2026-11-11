@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration {
     public function up(): void {
         $schema = Schema::connection('finobe');
-        // The source dump's users migration omits fields its existing controllers use.
+
         $fields = ['status'=>['string','member'],'Dius'=>['bigInteger',0],'verified'=>['string','n'],'diubanned'=>['string','n'],'slots'=>['integer',1],'blurb'=>['text',''],'pfp'=>['string','avatar/682b8bd6cbc48.png'],'version'=>['string','v2'],'branding'=>['string','finobe'],'logo'=>['string','v3'],'theme'=>['string','0'],'gary'=>['integer',0],'lastlogin'=>['timestamp',null],'lastdiu'=>['timestamp',null],'created'=>['timestamp',null],'ip'=>['string',null],'render_cooldown'=>['timestamp',null]];
         foreach ($fields as $name => [$type,$default]) {
             if (!$schema->hasColumn('users',$name)) $schema->table('users', function(Blueprint $t) use($name,$type,$default) {
@@ -42,6 +42,5 @@ return new class extends Migration {
     }
     public function down(): void {
         foreach (['admin_flair','admin_staff','admin_settings','admin_restrictions','admin_notes','admin_audit'] as $table) Schema::connection('finobe')->dropIfExists($table);
-        // Preserve legacy user columns: live installations may have depended on them before this migration.
     }
 };

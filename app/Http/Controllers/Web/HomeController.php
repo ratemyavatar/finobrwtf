@@ -16,7 +16,6 @@ use Illuminate\Support\Facades\Auth;
 
 class HomeController extends Controller
 {
-
     public function index(Request $request) {
         $title = 'Home';
 
@@ -24,7 +23,6 @@ class HomeController extends Controller
             $pageData['games'] = [];
 
             $games = Cache::remember('latest_places', 60 * 10, function() {
-                // count live players per place in PHP (players is a JSON list), then take the busiest 6
                 $playerCounts = [];
 
                 foreach(Server::select('placeid', 'players')->get() as $server) {
@@ -43,7 +41,7 @@ class HomeController extends Controller
                     ->values()
                     ->all();
             });
-            
+
             foreach($games as $game) {
                 $players = 0;
 
@@ -51,14 +49,14 @@ class HomeController extends Controller
                     ->where('placeid', $game['id'])
                     ->get()
                     ->map(fn($item) => $item->toArray());
-                
+
                 foreach($servers as $server) {
                     $players += count($server['players']);
                 }
 
                 $thumbnail = \App\Services\PlaceThumbnail::url($game['additional']);
                 \App\Services\PlaceThumbnail::renderIfMissing((int) $game['id'], $game['additional']);
-                
+
                 $pageData['games'][] = [
                     'id' => $game['id'],
                     'title' => $game['title'],

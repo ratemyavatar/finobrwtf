@@ -53,7 +53,6 @@ class AdminStaffMessageTest extends TestCase
 
     private function endpoint(): string
     {
-        // The admin routes are registered on the website's APP_URL hostname.
         $host = parse_url((string) env('APP_URL', 'http://localhost'), PHP_URL_HOST) ?: 'localhost';
         return 'http://'.$host.'/admin/users/2/messages';
     }
@@ -65,7 +64,7 @@ class AdminStaffMessageTest extends TestCase
         $this->post($this->endpoint(), [
             'subject' => 'Please review your account',
             'body' => "Your account details need updating.\nContact us if you need help.",
-            'message' => 'Send staff message', // A legacy button field must never become the body.
+            'message' => 'Send staff message',
         ])->assertRedirect('/admin/users/2/messages');
 
         $saved = DB::connection('finobe')->table('messages')->first();

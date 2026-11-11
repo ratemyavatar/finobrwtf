@@ -58,7 +58,6 @@ final class Workbench
         Validator::make($input,$rules)->validate();
         if($read) return $this->read($a,$input,$actor);
         return $this->db()->transaction(function()use($a,$input,$actor){
-            // Re-fetch and lock actor: permission revocation takes effect before the write.
             $fresh=\App\Models\User::where('id',$actor->id)->lockForUpdate()->first();
             Access::authorize($fresh,$a);
             $prior=$this->db()->table('admin_audit')->where('request_id',$input['request_id'])->first();
@@ -138,7 +137,7 @@ final class Workbench
             $field=$a['field'];
             if($field==='username') {
                 abort_if($row->username!==$value && $db->table('users')->where('username',$value)->exists(),422,'That username is taken.');
-                // Legacy relations are keyed by username, not user ID.
+
                 foreach(['bans','warning','purchases','verify_email','reset_password'] as $related) $db->table($related)->where('username',$row->username)->update(['username'=>$value]);
             }
             if($field==='email') {
@@ -228,7 +227,7 @@ final class Workbench
         }
         if($kind==='invite_revoke') {
             abort_if(in_array($row->used,[true,1,'1','y'],true),422,'Used invites cannot be revoked.');
-            // Retain the record for attribution; a revoked invite cannot pass the registration lookup.
+
             return $save(['used'=>self::flag('invitekeys','used',true),'dateUsed'=>now()]);
         }
         if($kind==='announcement')return ['announcement_id'=>$db->table('announcements')->insertGetId(['author'=>$actor->id,'message'=>$in['reason'],'date'=>now(),'expire'=>now()->addDay(),'color'=>'info'])];

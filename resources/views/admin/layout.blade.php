@@ -6,8 +6,7 @@
 <title>@yield('title', 'Administration') - Finobe</title>
 <link rel="icon" href="/s/img/finnobe3logo.png">
 <link rel="stylesheet" href="/s/css/{{ in_array($actor->theme, ['1', 1, 'night'], true) ? 'night' : 'light' }}.css">
-{{-- The classic dashboard and asset queue use only the original Finobe theme.
-     Legacy user management keeps its layout-only stylesheet. --}}
+
 @if(request()->is('admin/users*'))
 <link rel="stylesheet" href="/s/admin/workbench.css">
 @endif

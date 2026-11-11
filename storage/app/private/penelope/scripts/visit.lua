@@ -17,8 +17,8 @@ message.archivable = false
 
 game:GetService("ScriptInformationProvider"):SetAssetUrl("http://www.finobe.wtf/asset/")
 game:GetService("ContentProvider"):SetThreadPool(16)
-pcall(function() game:GetService("InsertService"):SetFreeModelUrl("http://www.finobe.wtf/game/Tools/InsertAsset.ashx?type=fm&q=%s&pg=%d&rs=%d") end) -- Used for free model search (insert tool)
-pcall(function() game:GetService("InsertService"):SetFreeDecalUrl("http://www.finobe.wtf/game/Tools/InsertAsset.ashx?type=fd&q=%s&pg=%d&rs=%d") end) -- Used for free decal search (insert tool)
+pcall(function() game:GetService("InsertService"):SetFreeModelUrl("http://www.finobe.wtf/game/Tools/InsertAsset.ashx?type=fm&q=%s&pg=%d&rs=%d") end)
+pcall(function() game:GetService("InsertService"):SetFreeDecalUrl("http://www.finobe.wtf/game/Tools/InsertAsset.ashx?type=fd&q=%s&pg=%d&rs=%d") end)
 
 ifSeleniumThenSetCookie("SeleniumTest2", "Set URL service")
 
@@ -57,7 +57,7 @@ pcall(function()
 	delay(60*5, function() registerPlay("rbx_evt_fmp") end)
 end)
 
-ifSeleniumThenSetCookie("SeleniumTest4", "Exiting SingleplayerSharedScript")-- SingleplayerSharedScript.lua inserted here --
+ifSeleniumThenSetCookie("SeleniumTest4", "Exiting SingleplayerSharedScript")
 
 pcall(function() settings().Rendering.EnableFRM = true end)
 pcall(function() settings()["Task Scheduler"].PriorityMethod = Enum.PriorityMethod.AccumulatedError end)
@@ -110,13 +110,13 @@ function doVisit()
 	if (propExists and canAutoLoadChar) or (not propExists) then
 		player:LoadCharacter()
 	end
-	
+
 	message.Text = "Setting GUI"
 	player:SetSuperSafeChat(false)
 	pcall(function() player:SetUnder13(false) end)
 	pcall(function() player:SetMembershipType("None") end)
 	pcall(function() player:SetAccountAge(0) end)
-	
+
 	if not inStudio and false then
 		message.Text = "Setting Ping"
 		visit:SetPing("http://www.finobe.wtf/game/ClientPresence.ashx?version=old&PlaceID=0", 120)
@@ -124,7 +124,7 @@ function doVisit()
 		message.Text = "Sending Stats"
 		game:HttpGet("")
 	end
-	
+
 end
 
 success, err = pcall(doVisit)
@@ -135,7 +135,7 @@ if not inStudio and not addedBuildTools then
 	playerName.Value = player.Name
 	playerName.RobloxLocked = true
 	playerName.Parent = screenGui
-				
+
 	pcall(function() game:GetService("ScriptContext"):AddCoreScript(59431535,screenGui,"BuildToolsScript") end)
 	addedBuildTools = true
 end

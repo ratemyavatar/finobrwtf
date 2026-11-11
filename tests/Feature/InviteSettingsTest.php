@@ -10,15 +10,6 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
-/*
-    The "Require invite keys" toggle on /admin/invite-keys decides whether
-    registration demands a valid key. When it is off the invite field is hidden
-    and anyone may sign up without one.
-
-    The register endpoint talks to Cloudflare Turnstile, the Discord webhook and
-    the avatar renderer, so external HTTP and queued jobs are faked here to keep
-    the test off the network. Everything else runs against the real code.
-*/
 class InviteSettingsTest extends TestCase
 {
     private User $admin;
@@ -32,7 +23,7 @@ class InviteSettingsTest extends TestCase
             'session.driver' => 'array', 'cache.default' => 'array',
             'admin.owner_ids' => [1],
             'admin.invites_enabled' => true,
-            // register() hashes with password_hash() at PHP's default cost (12), so match it
+
             'hashing.bcrypt.rounds' => 12,
         ]);
         DB::purge('finobe');

@@ -1,129 +1,99 @@
-# Finobe arbiter (RCC) setup
+# finobe arbiter (rcc)
 
-The website renders thumbnails and starts game servers by calling **RCCService** over SOAP
-(`app/Http/Controllers/RobloxArbiterUtilities.php`). The "arbiter" is just a Windows machine
-running the patched RCC from the `rcc` branch of this repo.
+the site makes thumbnails and starts game servers by talking to rccservice over soap. the "arbiter" is just a windows machine running the patched rcc from the `rcc` branch.
 
-RCC build: **0.257 (2016)** from `harryzawg/bubbablox-v2/RCCService`, matching
-`storage/rbx/files/scripts/gameserver2016.lua`. Already patched in that build: sysstats,
-"invalid request", analytics, 10-minute job expiry. `patch_rcc.py` additionally:
+the rcc build is 0.257 from 2016. `patch_rcc.py` changes its domains to `finobe.wtf`, sets the base url and puts in finobe's script signing key. the `rcc` branch already has all of that.
 
-- `bbblox.org` / `roblox.com` -> `finobe.wtf` (incl. the SOAP namespace, which must match `storage/rbx/files/RCCService.wsdl`)
-- `bbgame.zawg.ca` (third-party trusted domain) -> `cdn.finobe.wtf`
-- `AppSettings.xml` BaseUrl -> `http://www.finobe.wtf`
-- embeds Finobe's script-signing public key (`--blob finobe`, taken from `Base/rbx/Crypt.cpp`
-  in `ThugShaker3D/Karma-2016-Client`). The `rcc` branch already has it.
+## 1. machine
 
-`ThugShaker3D/Karma-2016-Client` is Finobe's own 2016 engine source, including an `RCCService`
-project. It has no prebuilt `RCCService.exe` and needs Windows + MSVC 2019, Boost, Qt 5.15,
-the DirectX SDK and VMProtect to build, so this patched binary is what to run until then.
-That source is compiled for `finobe.net`; change the domain checks in
-`App/util/Shared/Http.cpp` and `ClientShared/RobloxServicesTools.cpp` before building it for `finobe.wtf`.
+- windows 10, 11 or server 2016 or newer. rcc is 32 bit but a 64 bit windows is fine
+- install the visual c++ 2012 x86 and 2015 to 2022 x86 redistributables
+- a public ip players can reach over udp
 
-## 1. Machine
-
-- Windows 10/11 or Server 2016+ (64-bit is fine; RCC is 32-bit).
-- Install the **Visual C++ 2012 x86** and **2015-2022 x86** redistributables.
-- A public IP that players can reach over UDP. It can be the same box as the site
-  only if that box runs Windows; otherwise use a separate VPS.
-
-## 2. Get the patched RCC
+## 2. get rcc
 
 ```bat
 git clone --branch rcc --depth 1 https://github.com/yewtubes/finobewtf C:\Finobe\rcc
 ```
 
-The binary already trusts Finobe's signing key. If you ever generate a new key pair, re-run the
-patcher with the new private key (needs Python + `pip install cryptography`):
+## signing key
 
-```bat
-python tools\rcc\patch_rcc.py C:\Finobe\rcc\RCCService --key C:\path\privateKey1024.pem
-```
+the site signs join scripts and tickets with `storage/rbx/files/privateKey1024.pem`. never commit that file. rcc and the client check the signature with the public key built into them, so all three need the same key pair.
 
-## Signing key (needed for joins)
-
-The site signs join scripts, CoreGui scripts and join tickets with
-`storage/rbx/files/privateKey1024.pem` (gitignored, never commit it). RCC and the game client
-check those signatures with the matching public key built into them, so all three must use the
-same keypair.
-
-On the **web server**, from the site folder:
+on the web server, from the site folder:
 
 ```bash
 openssl genrsa -traditional -out storage/rbx/files/privateKey1024.pem 1024
+```
+
+```bash
 chmod 640 storage/rbx/files/privateKey1024.pem
-pip install cryptography
+```
+
+```bash
 python3 tools/rcc/patch_rcc.py --key storage/rbx/files/privateKey1024.pem --print-blob
 ```
 
-The last command prints the public blob (safe to copy; it's the public half). On the
-**arbiter**, embed it:
+the last one prints the public half, which is safe to copy. on the arbiter, put it in:
 
 ```bat
 python tools\rcc\patch_rcc.py C:\Finobe\rcc\RCCService --blob <the printed blob>
 ```
 
-Restart RCC afterwards. When the client is rebuilt from `ThugShaker3D/Karma-2016-Client`, put
-the same blob in `Base/rbx/Crypt.cpp` (`keyB64`). The current client builds are VMProtect-packed
-and can't be byte-patched; they also only trust `finobe.net`, so they need that rebuild anyway.
+then restart rcc.
 
-## 3. Firewall (do not skip)
+## 3. firewall (don't skip this)
 
-RCC's SOAP port executes whatever Lua it is sent. If it is reachable from the internet,
-anyone can run code on the machine. In an elevated PowerShell:
+rcc's soap port runs any lua it gets. if the internet can reach it, anyone can run code on the machine. in an admin powershell:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File C:\Finobe\rcc\RCCService\firewall.ps1 -WebServerIp <site server IP>
+powershell -ExecutionPolicy Bypass -File C:\Finobe\rcc\RCCService\firewall.ps1 -WebServerIp <site server ip>
 ```
 
-## 4. Run it
+## 4. run it
 
-Double-click `RCCService\start-rcc.bat` (it restarts RCC if it crashes). To run it as a
-service, use NSSM: `nssm install FinobeRCC C:\Finobe\rcc\RCCService\start-rcc.bat`.
+double click `RCCService\start-rcc.bat`. it restarts rcc if it crashes. to run it as a service, use nssm:
 
-## 5. Point the site at it (`.env` on the web server)
+```bat
+nssm install FinobeRCC C:\Finobe\rcc\RCCService\start-rcc.bat
+```
+
+## 5. point the site at it
+
+in `.env` on the web server:
 
 ```
-FINOBE_ARBITER_HOST=<arbiter IP the web server connects to>
+FINOBE_ARBITER_HOST=<arbiter ip the web server uses>
 FINOBE_ARBITER_PORT=64989
-FINOBE_GAMESERVER_HOST=<arbiter public IP players connect to>
+FINOBE_GAMESERVER_HOST=<arbiter public ip players use>
 FINOBE_GAMESERVER_PORT_MIN=53640
 FINOBE_GAMESERVER_PORT_MAX=53740
 FINOBE_CLOUD_AUTHORIZATION=<long random string>
 ```
 
-Then `php artisan config:clear`. `FINOBE_CLOUD_AUTHORIZATION` authenticates the game
-server's callbacks (`/api/gameserver/*`); generate one with `openssl rand -hex 32`.
+then run `php artisan config:clear`. make the key with `openssl rand -hex 32`. the web server needs php's soap extension.
 
-The web server needs PHP's `soap` extension (`php8.3-soap`).
+## 6. test
 
-## 6. Test
-
-From the web server:
+from the web server:
 
 ```bash
 php artisan tinker --execute="dump((new App\Http\Controllers\RobloxArbiterUtilities(config('finobe.arbiter.host'), config('finobe.arbiter.port')))->HelloWorld());"
 ```
 
-It should print `Hello World`. Then upload a hat or shirt and check the thumbnail renders.
+it should print `Hello World`. then upload a hat or shirt and check that the thumbnail shows up.
 
-## Joining a game (how it works / what to check)
+## how joining works
 
-1. Play → the launcher opens the client, which polls `Game/PlaceLauncher.ashx`.
-2. No server running → the site adds a `servers` row (status 1) and, after answering, opens a
-   `gameserver2016.lua` job on RCC. The client is told "Starting a server..." and keeps polling.
-3. The game server loads the place, starts on its UDP port and calls `/api/gameserver/register/<job>`
-   → status 2. The next poll hands the client `Game/Join.ashx` (signed join script).
-4. When a player connects, the game server checks them with `/api/gameserver/verify/<job>/<user>`
-   and kicks anyone the site didn't give that server's join script to.
+1. play opens the client, which keeps asking `Game/PlaceLauncher.ashx`
+2. if no server is running, the site adds a `servers` row and starts a `gameserver2016.lua` job on rcc. the client says "starting a server" and keeps asking
+3. the game server loads the place and calls `/api/gameserver/register/<job>`. the next ask gives the client its signed join script
+4. when a player connects, the game server checks them with `/api/gameserver/verify/<job>/<user>` and kicks anyone the site didn't send there
 
-If the client just keeps loading or says it couldn't start a server:
+if the client keeps loading or can't start a server:
 
-- `FINOBE_GAMESERVER_HOST` must be the RCC machine's **real public IP**. finobe.wtf is behind
-  Cloudflare, which does not carry the game's UDP traffic, so never put the domain here.
-- `FINOBE_CLOUD_AUTHORIZATION` must be set, otherwise `/register` is ignored and the server never
-  becomes joinable (it gets dropped after 2 minutes).
-- RCC's SOAP port must be reachable from the web server (`FINOBE_ARBITER_HOST`/`PORT`) and the UDP
-  range (`FINOBE_GAMESERVER_PORT_MIN`-`MAX`) open to players (`firewall.ps1`).
-- Run `php artisan migrate` (adds `servers.started_at` / `last_alive`) and `php artisan config:clear`.
-- Failed starts are logged in `storage/logs/laravel.log` ("Game server ... failed to start").
+- `FINOBE_GAMESERVER_HOST` has to be the rcc machine's real public ip. cloudflare doesn't carry game traffic, so never put the domain there
+- `FINOBE_CLOUD_AUTHORIZATION` has to be set, or the server never becomes joinable and gets dropped after 2 minutes
+- the web server has to reach rcc's soap port, and players have to reach the udp range
+- run `php artisan migrate` and `php artisan config:clear`
+- failed starts show up in `storage/logs/laravel.log`

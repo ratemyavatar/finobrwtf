@@ -3,13 +3,11 @@
 /public/build
 /public/hot
 /public/storage
-# /public/s
 /public/scss
 /public/sprites
 /public/svgs
 /public/webfonts
 /public/api
-#/public/fonts
 /public/dynamic
 /public/chiwawa.html
 /storage/*.key
@@ -37,6 +35,5 @@ yarn-error.log
 *.log
 storage/setup/*.zip
 
-# Python bytecode from tools/*
 __pycache__/
 dump.rdb

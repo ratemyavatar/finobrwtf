@@ -1,9 +1,8 @@
 local placeId, port, url, creatorid, accessKey = ...
--- the site authenticates game server callbacks with this key (FINOBE_CLOUD_AUTHORIZATION)
+
 local auth = "?accesskey=" .. tostring(accessKey or "")
--- also makes RCC send the key as an "accesskey" header on every request it makes
+
 pcall(function() game:GetService("ScriptInformationProvider"):SetAccessKey(tostring(accessKey or "")) end)
-------------------- UTILITY FUNCTIONS --------------------------
 
 local Players = game:GetService("Players")
 local HttpService = game:GetService("HttpService")
@@ -36,11 +35,7 @@ function reportPlayers()
     if not success then
         warn("Error reporting players: ".. tostring(message))
     end
-end	
-
------------------------------------END UTILITY FUNCTIONS -------------------------
-
------------------------------------"CUSTOM" SHARED CODE----------------------------------
+end
 
 pcall(function() settings().Network.UseInstancePacketCache = true end)
 pcall(function() settings().Network.UsePhysicsPacketCache = true end)
@@ -51,9 +46,7 @@ settings().Network.ExperimentalPhysicsEnabled = true
 settings().Network.WaitingForCharacterLogRate = 100
 pcall(function() settings().Diagnostics:LegacyScriptMode() end)
 
------------------------------------START GAME SHARED SCRIPT------------------------------
-
-local assetId = placeId -- might be able to remove this now
+local assetId = placeId
 
 local scriptContext = game:GetService('ScriptContext')
 pcall(function() scriptContext:AddStarterScript(37801172) end)
@@ -64,14 +57,12 @@ game:SetUniverseId(assetId)
 game:SetCreatorID(creatorid, Enum.CreatorType.User)
 game:GetService("ChangeHistoryService"):SetEnabled(false)
 
--- establish this peer as the Server
 local ns = game:GetService("NetworkServer")
 
 if url~=nil then
 	pcall(function() game:GetService("Players"):SetAbuseReportUrl(url .. "/AbuseReport/InGameChatHandler.ashx") end)
 	pcall(function() game:GetService("ScriptInformationProvider"):SetAssetUrl(url .. "/Asset/") end)
 	pcall(function() game:GetService("ContentProvider"):SetBaseUrl(url .. "/") end)
-	-- pcall(function() game:GetService("Players"):SetChatFilterUrl(url .. "/Game/ChatFilter.ashx") end)
 
 	game:GetService("BadgeService"):SetPlaceId(placeId)
     game:GetService("Players"):SetSysStatsUrl(url.. "/api/gameserver/sysstats-report?placeId=".. placeId)
@@ -85,21 +76,19 @@ if url~=nil then
 	game:GetService("InsertService"):SetCollectionUrl(url .. "/Game/Tools/InsertAsset.ashx?sid=%d")
 	game:GetService("InsertService"):SetAssetUrl(url .. "/Asset/?id=%d")
 	game:GetService("InsertService"):SetAssetVersionUrl(url .. "/Asset/?assetversionid=%d")
-	
+
 	pcall(function() loadfile(url .. "/Game/LoadPlaceInfo.ashx?PlaceId=" .. placeId)() end)
 end
 
--- client tickets are not checked by RCC (players are verified with the site in PlayerAdded instead)
 pcall(function() game:GetService("NetworkServer"):SetIsPlayerAuthenticationRequired(false) end)
 settings().Diagnostics.LuaRamLimit = 0
-
 
 local everyoneLeftAt = nil
 
 game:GetService("Players").PlayerAdded:connect(function(player)
 	print("Player " .. player.userId .. " added")
 	everyoneLeftAt = nil
-	-- the site only says yes for a user it just handed this server's join script to (stops spoofed user ids)
+
 	local ok, allowed = pcall(function()
 		return game:HttpGet(url .. "/api/gameserver/verify/" .. game.JobId .. "/" .. player.userId .. auth, true)
 	end)
@@ -110,8 +99,6 @@ game:GetService("Players").PlayerAdded:connect(function(player)
 	pcall(function() game:HttpGet(url .. "/api/gameserver/visit/" .. game.JobId .. auth) end)
 	reportPlayers()
 
-	-- movement animations picked on the Character page: lines of "<config> <Animation> <url>",
-	-- applied to the character's Animate script every spawn (empty = keep the default ones)
 	local animLines = ""
 	pcall(function() animLines = game:HttpGet(url .. "/api/gameserver/animations/" .. player.userId .. auth, true) end)
 	local function applyAnimations(character)
@@ -157,7 +144,7 @@ end)
 
 game:GetService("Players").PlayerRemoving:connect(function(player)
 	print("Player " .. player.userId .. " leaving")
-	-- PlayerRemoving fires before the player is gone, so report once it's out of the list
+
 	delay(1, function()
 		reportPlayers()
 		if Players.NumPlayers == 0 then everyoneLeftAt = tick() end
@@ -166,18 +153,15 @@ end)
 
 if placeId~=nil and url~=nil then
 	wait()
-	
+
 	game:Load(url .. "/asset/?id=" .. placeId .. "&accesskey=" .. tostring(accessKey or ""))
 end
 
-ns:Start(port) 
+ns:Start(port)
 
 scriptContext:SetTimeout(10)
 scriptContext.ScriptsDisabled = false
 
-------------------------------END START GAME SHARED SCRIPT--------------------------
-
--- StartGame -- 
 game:GetService("RunService"):Run()
 
 local function shutdown()
@@ -185,13 +169,12 @@ local function shutdown()
 end
 game.OnClose = shutdown
 
--- the heartbeat runs in its own thread so this script returns and the site's OpenJobEx call finishes
 spawn(function()
 	local startedAt = tick()
 	while wait(30) do
 		pcall(function() game:HttpGet(url .. "/api/gameserver/alive/" .. game.JobId .. auth) end)
 		if Players.NumPlayers == 0 then
-			-- empty: give the first player 3 minutes to load in, and close 60s after the last one left
+
 			local idleSince = everyoneLeftAt or startedAt
 			local grace = everyoneLeftAt and 60 or 180
 			if tick() - idleSince > grace then
@@ -202,5 +185,4 @@ spawn(function()
 	end
 end)
 
--- tells the site the server is up: players polling PlaceLauncher get the join script from now on
 game:HttpGet(url .. "/api/gameserver/register/" .. game.JobId .. auth)

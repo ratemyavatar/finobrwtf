@@ -6,7 +6,6 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    // matchmaking: drop servers that never finished starting or stopped calling /api/gameserver/alive
     public function up(): void
     {
         Schema::connection('finobe')->table('servers', function (Blueprint $table) {

@@ -4,11 +4,6 @@ namespace App\Services;
 
 use App\Models\User;
 
-/*
-    Privacy
-     - Settings > Privacy: who can send you messages, who can send you friend requests and who can
-       see your inventory on your profile, who can send you trades (you and admins always can)
-*/
 class Privacy
 {
     const SETTINGS = [
@@ -35,7 +30,6 @@ class Privacy
         return false;
     }
 
-    /** whether $viewer may do $what to/with $owner */
     public static function allows(User $owner, string $what, ?User $viewer): bool
     {
         if ($viewer && ((int) $viewer->id === (int) $owner->id || ($viewer->status ?? '') === 'admin')) {

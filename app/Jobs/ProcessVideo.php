@@ -20,9 +20,6 @@ class ProcessVideo implements ShouldQueue
     protected $filename;
     protected $thumbnail;
 
-    /**
-     * Create a new job instance.
-     */
     public function __construct($file, $filename, $thumbnail)
     {
         $this->file = $file;
@@ -30,9 +27,6 @@ class ProcessVideo implements ShouldQueue
         $this->thumbnail = $thumbnail;
     }
 
-    /**
-     * Execute the job.
-     */
     public function handle()
     {
         try {

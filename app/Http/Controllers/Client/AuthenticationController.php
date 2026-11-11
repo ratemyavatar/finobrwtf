@@ -33,12 +33,6 @@ class AuthenticationController extends Controller
             return response()->json(['code'=> 0,'message'=> 'Invalid authentication token'], 403);
         }
 
-        // NOTE: no Auth::login() here. Auth::login() migrates (migrate(true)) and destroys the
-        // shared .finobe.wtf session, so a game client carrying a web session cookie would log the
-        // browser out. The client-only identity lives in the finobe_client cookie below.
-
-        // a game-only login the client also sends over http:// (the session cookie is https-only).
-        // PlaceLauncher accepts it; nothing else on the site does.
         $clientSession = bin2hex(random_bytes(24));
         Cache::put("client_session_{$clientSession}", $authToken->id, self::CLIENT_COOKIE_MINUTES * 60);
 

@@ -15,7 +15,6 @@ use Illuminate\Support\Facades\Auth;
 
 class GamesController extends Controller
 {
-
     public function index() {
         $title = 'Places';
 
@@ -37,7 +36,6 @@ class GamesController extends Controller
 
         $place = Asset::find($id)->toArray();
 
-        // no thumbnail yet: have the arbiter render one
         \App\Services\PlaceThumbnail::renderIfMissing((int) $place['id'], $place['additional']);
 
         $title = strip_tags(htmlspecialchars($place['title']));
@@ -95,11 +93,9 @@ class GamesController extends Controller
         $place['username'] = User::where('id', $place['author'])->value('username');
 
         if($place['username'] != Auth::user()->username) {
-            // the real site answered with its 403 "Error" page here
             return $this->forbidden();
         }
 
-        // place file, custom thumbnail, badges and user restrictions
         if($request->isMethod('post') && isset($data['action'])) {
             return (new PlaceSettingsActions(Asset::find($id), Auth::user()->toArray()))->handle($request);
         }
@@ -155,13 +151,11 @@ class GamesController extends Controller
             $asset->description = $data['description'] ?? '';
             $asset->additional = $place['additional'];
             $asset->save();
-            
+
             Session::put('successv2', 'Place settings saved.');
             return redirect(\App\Support\Paths::placeEdit((int) $id));
         }
 
-        // normalise the on/off flags to real booleans: they can be true/false (JSON),
-        // or legacy 'y'/'n', and the settings form's checkboxes must reflect that exactly
         foreach (['allowplaying', 'uncopylocked', 'hidden'] as $flag) {
             $place['additional'][$flag] = filter_var($place['additional'][$flag] ?? false, FILTER_VALIDATE_BOOLEAN);
         }
@@ -187,7 +181,6 @@ class GamesController extends Controller
         $restrictions = \App\Services\PlaceAccess::restrictions($place['additional']);
         $restrictions['blocked_names'] = implode(', ', User::whereIn('id', $restrictions['blocked'])->pluck('username')->all());
         $place['restrictions'] = $restrictions;
-        //$place['description'] = nl2br(preg_replace('/\b((?:https?|ftp):\/\/\S+)/i', '<a href="$1" target="_blank">$1</a>', strip_tags(htmlspecialchars($place['description']))));
 
         $pageData['place'] = $place;
         $title = $place['title'];
@@ -220,7 +213,7 @@ class GamesController extends Controller
             $games = Asset::where('author', Auth::user()->id)
                 ->where('asset_type', 9)
                 ->count();
-            
+
             if(!config('finobe.features.create_places')) {
                 Session::put('error', 'Creating assets is currently disabled');
                 return redirect('/games/new');
@@ -231,35 +224,6 @@ class GamesController extends Controller
                 return redirect('/games/new');
             }
 
-            /*
-            $id = $this->db->table('assets')->insertGetId([
-                'asset_type' => 9,
-                'title' => trim($data['title']),
-                'description' => trim($data['description'] ?? ''),
-                'additional' => json_encode([
-                    'visits' => 0,
-                    'version' => '2012',
-                    'maxplayers' => 15,
-                    'category' => 'original',
-                    'featured' => false,
-                    'gears' => [
-                        'combat' => true,
-                        'social' => true,
-                        'building' => true,
-                        'musical' => true
-                    ],
-                    'uncopylocked' => false,
-                    'allowplaying' => true,
-                    'chat_type' => 'classic',
-                    'media' => [
-                        'imageAssetId' => 1
-                    ],
-                    'hidden' => false
-                ])
-            ]);
-            */
-            // each client version starts from its own baseplate: storage/rbx/files/places/<version>.rbxl
-            // (2012 uses the 2016 baseplate unless a dedicated 2012.rbxl is added)
             $template = storage_path("rbx/files/places/{$version}.rbxl");
             if (!is_readable($template)) {
                 $template = storage_path('rbx/files/places/2016.rbxl');
@@ -292,7 +256,6 @@ class GamesController extends Controller
                 'hidden' => false
             ]);
 
-            // render the new place's thumbnail through the arbiter once the response is sent
             \App\Jobs\RenderPlaceThumbnail::dispatchAfterResponse((int) $id);
 
             return redirect('/place/' . $id);

@@ -6,7 +6,6 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    // Packages (bundles): which assets a package contains
     public function up(): void
     {
         if (Schema::connection('finobe')->hasTable('asset_package')) {

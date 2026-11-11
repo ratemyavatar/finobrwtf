@@ -7,18 +7,9 @@ use App\Models\Purchases;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 
-/*
-    Trading
-     - Limited and Unique items can be traded; a trade lists the exact copies (purchases rows, so
-       serials travel with them) each side gives
-     - both people need two-factor authentication on, like the real site ("Enable 2FA to trade.")
-     - accepting moves every copy in one locked transaction: the old owner's purchases row becomes
-       type 6 (traded, kept for their transaction log) and the new owner gets a type 1 row (owned)
-     - any other pending trade with one of those copies in it can't happen any more: it's marked inactive
-*/
 class Trading
 {
-    const MAX_ITEMS = 6;          // per side
+    const MAX_ITEMS = 6;
     const TYPE_OWNED = 1;
     const TYPE_TRADED = 6;
 
@@ -33,7 +24,6 @@ class Trading
         }
     }
 
-    /** "limited", "unique" or null for an asset (row, model or its additional array) */
     public static function kind($additional): ?string
     {
         if ($additional instanceof Asset) {
@@ -46,7 +36,6 @@ class Trading
         return !empty($additional['isLimited']) ? 'limited' : null;
     }
 
-    /** what an item is worth: the value an admin set, or its price */
     public static function value($additional): int
     {
         if ($additional instanceof Asset) {
@@ -59,7 +48,6 @@ class Trading
         return max(0, (int) ($additional['price'] ?? 0));
     }
 
-    /** the card shown for one copy: title, thumbnail, Limited / Unique #serial, value */
     public static function card(Purchases $row, ?Asset $asset = null): ?array
     {
         $asset = $asset ?: Asset::find($row->assetid);
@@ -73,13 +61,12 @@ class Trading
             'title' => $asset->title,
             'thumbnail' => $additional['media']['thumbnail'] ?? '/s/img/finnobe3logo.png',
             'kind' => $kind,
-            // copies of a Unique handed out before it had serials show "N/A", like the real site
+
             'serial' => (int) $row->serial > 0 ? '#' . (int) $row->serial : 'N/A',
             'value' => self::value($asset),
         ];
     }
 
-    /** the copies of tradable items $user owns right now */
     public static function tradable(User $user): array
     {
         $rows = Purchases::where('username', $user->username)->where('type', self::TYPE_OWNED)->orderByDesc('id')->get();
@@ -93,7 +80,6 @@ class Trading
         return $cards;
     }
 
-    /** why $sender can't send $receiver a trade at all, or null */
     public static function cantTrade(User $sender, User $receiver): ?string
     {
         if ((int) $sender->id === (int) $receiver->id) {
@@ -117,7 +103,6 @@ class Trading
         return array_values(array_unique(array_filter(array_map('intval', $list))));
     }
 
-    /** sends a trade; returns the new trade id, or throws \RuntimeException with the reason */
     public static function send(User $sender, User $receiver, array $give, array $receive): int
     {
         if ($problem = self::cantTrade($sender, $receiver)) {
@@ -161,7 +146,6 @@ class Trading
         return DB::connection('finobe')->table('trades')->where('id', $id)->first();
     }
 
-    /** the trade as $viewer sees it: partner, what they give / receive and what they can do */
     public static function view(object $trade, User $viewer): array
     {
         $isSender = (int) $trade->sender_id === (int) $viewer->id;
@@ -187,7 +171,6 @@ class Trading
         ];
     }
 
-    /** the receiver accepts: every copy changes hands, or nothing does */
     public static function accept(int $tradeId, User $viewer): void
     {
         if (!TwoFactor::enabled($viewer)) {
@@ -210,7 +193,6 @@ class Trading
             $all = array_merge($sides[0][0], $sides[1][0]);
             $rows = Purchases::whereIn('id', $all)->lockForUpdate()->get()->keyBy('id');
 
-            // every copy must still belong to the side giving it and still be tradable
             foreach ($sides as [$ids, $from]) {
                 foreach ($ids as $id) {
                     $row = $rows[$id] ?? null;
@@ -240,7 +222,6 @@ class Trading
 
             $db->table('trades')->where('id', $trade->id)->update(['status' => 'accepted', 'completed_at' => now(), 'updated_at' => now()]);
 
-            // other pending trades with any of these copies in them can't happen now
             $others = $db->table('trades')->where('status', 'pending')->where('id', '!=', $trade->id)
                 ->where(fn ($q) => $q->whereIn('sender_id', [$sender->id, $receiver->id])->orWhereIn('receiver_id', [$sender->id, $receiver->id]))
                 ->get();
@@ -257,7 +238,6 @@ class Trading
             ]);
         });
 
-        // take traded-away items off avatars (unless they still own another copy)
         foreach ($moved as $userId => $assetIds) {
             self::unequipUnowned(User::find($userId), $assetIds);
         }
@@ -307,7 +287,6 @@ class Trading
         }
     }
 
-    /** incoming trades waiting on $userId (the red number next to Trades) */
     public static function pendingIncoming(int $userId): int
     {
         try {

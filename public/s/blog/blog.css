@@ -1,23 +1,19 @@
-/*
- * Finobe-specific corrections layered over the original Ghost Casper stylesheet.
- * Page structure is grounded in the supplied Finobe Blog.html.
- */
+
 :root { --ghost-accent-color: #070707; }
 html { font-size: 62.5%; }
 html.dark-mode { color-scheme: dark; }
 body { --ghost-accent-color: #070707; }
 .gh-head-members { display: none; }
 .blog-search-overlay[hidden] { display: none !important; }
-/* The captured home page uses the dark Casper theme and always displays the banner. */
+
 .home-template .site-header-content { background: #070707; }
 .site-header-cover { object-fit: cover; }
-/* Original screenshot's image path is bannerlate2019-1.jpg;
- * the available website repository has bannerlate2019-2.jpg as its fallback. */
+
 .home-template.has-cover .site-header-content { min-height: 560px; }
 .site-logo { max-width: min(420px, 80%); max-height: 160px; object-fit: contain; }
 .post-card-content-link { min-width: 0; }
 .post-card-excerpt { overflow-wrap: anywhere; }
-/* Unlike current Casper builds, the captured page shows the pagination count. */
+
 .pagination { display: grid !important; }
 .pagination .page-number { display: block; }
 .pagination .newer-posts { grid-column: 1; }
@@ -56,7 +52,6 @@ body { --ghost-accent-color: #070707; }
     .pagination .page-number { font-size: 1.3rem; }
 }
 
-/* Search and archive pages retain the same Casper content width and grid. */
 .blog-archive-heading { padding: 7vmin 0 1vmin; }
 .blog-archive-heading .inner { text-align: center; }
 .blog-archive-heading h1 { margin: 0 0 10px; font-size: clamp(30px, 4vw, 52px); font-family: Georgia, "Times New Roman", serif; }

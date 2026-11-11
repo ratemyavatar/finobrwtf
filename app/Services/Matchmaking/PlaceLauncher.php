@@ -8,24 +8,14 @@ use App\Services\PlaceAccess;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
-/*
-    PlaceLauncher
-     - what the client polls (Game/PlaceLauncher.ashx) until it gets a server to join
-     - servers.status: 1 = RCC is starting it, 2 = running (the game server called /api/gameserver/register)
-     - a server is started in the background (StartGameServer), the client keeps polling while it loads
-*/
 class PlaceLauncher
 {
-    // how long a server may take to call /register before it's treated as dead
     const START_TIMEOUT = 120;
-    // a running server that hasn't called /alive for this long is treated as dead
+
     const ALIVE_TIMEOUT = 75;
-    // after a failed start, don't retry for this long (the client gets an error instead of loading forever)
+
     const FAIL_COOLDOWN = 45;
 
-    /**
-     * @return array{status: Status, jobId: string, message: string}
-     */
     public static function request(int $placeId, object $user, ?string $jobId = null): array
     {
         $db = DB::connection('finobe');
@@ -58,7 +48,6 @@ class PlaceLauncher
         $maxPlayers = max(1, (int) ($additional['maxplayers'] ?? 15));
         $servers = $db->table('servers')->where('placeid', $placeId)->whereIn('status', ['1', '2'])->get();
 
-        // joining a specific server (from a profile's "join" button)
         if ($jobId !== null && $jobId !== '') {
             $server = $servers->firstWhere('jobId', $jobId);
 
@@ -75,7 +64,6 @@ class PlaceLauncher
             return self::ready($server, $user, $additional);
         }
 
-        // the fullest running server that still has room
         $running = $servers->filter(fn($s) => self::isAlive($s) && self::playerCount($s) < $maxPlayers)
             ->sortByDesc(fn($s) => self::playerCount($s));
 
@@ -83,7 +71,6 @@ class PlaceLauncher
             return self::ready($server, $user, $additional);
         }
 
-        // one is already starting: keep the client waiting on it
         if ($server = $servers->first(fn($s) => (string) $s->status === '1'
             && $s->started_at
             && strtotime((string) $s->started_at) > now()->subSeconds(self::START_TIMEOUT)->getTimestamp())) {
@@ -94,7 +81,6 @@ class PlaceLauncher
             return self::result(Status::Error, '', $error);
         }
 
-        // nothing running: start one
         $lock = Cache::lock("gameserver_start_{$placeId}", 10);
         if (!$lock->get()) {
             return self::result(Status::Waiting, '', 'Looking for a server...');
@@ -103,7 +89,6 @@ class PlaceLauncher
         try {
             $newJobId = self::generateJobId();
 
-            // prefer a configured node pool (each node has its own public IP and port range)
             $node = \App\Services\GameNodes::pick(\App\Services\ClientVersions::of($additional));
             if ($node) {
                 $ip = $node->public_ip;
@@ -138,7 +123,6 @@ class PlaceLauncher
         return self::result(Status::Waiting, $newJobId, 'Starting a server...');
     }
 
-    /** Marks a start as failed: removes the server and makes the place's next requests show an error for a bit. */
     public static function startFailed(string $jobId, string $message = "Couldn't start a server, try again in a bit."): void
     {
         $server = DB::connection('finobe')->table('servers')->where('jobId', $jobId)->first();
@@ -150,28 +134,17 @@ class PlaceLauncher
         Cache::put("gameserver_failed_{$server->placeid}", $message, self::FAIL_COOLDOWN);
     }
 
-    /** The address players connect to (the RCC machine's public IP). Null if it isn't configured. */
     public static function gameServerHost(?string $version = null): ?string
     {
         $host = trim($version !== null ? \App\Services\ClientVersions::gameserverHost($version) : (string) config('finobe.gameserver.host'));
 
         if ($host === '' || in_array($host, ['127.0.0.1', 'localhost', '::1', '0.0.0.0'], true)) {
-            // only fine when the client runs on the same machine (local testing)
             return config('app.debug') && $host !== '' ? $host : null;
         }
 
         return $host;
     }
 
-    /**
-     * Removes servers that never finished starting or stopped calling /alive, and stops the
-     * game server process behind each one. Returns how many rows were reaped.
-     *
-     * This is also run every minute by the `finobe:reap-servers` scheduled command: a server
-     * that dies without calling /shutdown leaves both its `servers` row and its RCC job (or
-     * 2012 RobloxApp) running forever, which pins the arbiter's CPU. request() calls it too,
-     * so a player never waits behind a dead server.
-     */
     public static function cleanup(): int
     {
         $db = DB::connection('finobe');
@@ -192,8 +165,6 @@ class PlaceLauncher
 
         $db->table('servers')->whereIn('jobId', $stale->pluck('jobId')->all())->delete();
 
-        // the game server process (a 2012 RobloxApp, or an RCC job) keeps running after its row is gone,
-        // so end it too: otherwise every server that dies without calling /shutdown leaks a process
         $servers = $stale->all();
         $stop = function () use ($servers) {
             foreach ($servers as $server) {
@@ -213,8 +184,6 @@ class PlaceLauncher
             }
         };
 
-        // on the web, don't make the player's launcher request wait on RCC/2012 shutdowns; under the
-        // scheduled reaper there is no response to defer past, so run now.
         if (app()->runningInConsole()) {
             $stop();
         } else {
@@ -224,11 +193,6 @@ class PlaceLauncher
         return $stale->count();
     }
 
-    /**
-     * A server only counts as joinable if it has heartbeated recently. status alone is not
-     * enough: the row survives its process, and a player sent to a dead port just hangs on
-     * "Failed to connect to the Game. (ID=17)".
-     */
     private static function isAlive(object $server): bool
     {
         if ((string) $server->status !== '2' || empty($server->last_alive)) {
@@ -240,22 +204,18 @@ class PlaceLauncher
 
     private static function ready(object $server, object $user, array $additional = []): array
     {
-        // one-time ticket so Join.ashx works even if the client's session cookie didn't stick
         $ticket = bin2hex(random_bytes(24));
         Cache::put("join_ticket_{$ticket}", ['user' => (int) $user->id, 'jobId' => $server->jobId], 300);
 
         $domain = config('finobe.domain');
-        // the 2012 client's old libcurl/OpenSSL can't be relied on for modern TLS, so 2012 joins use http
+
         $scheme = \App\Services\ClientVersions::scheme(\App\Services\ClientVersions::of($additional));
 
         return self::result(Status::Joining, $server->jobId, '', [
-            // lowercase on purpose: the 2016 client checks urlScript.find("join.ashx") (case-sensitive)
-            // and silently keeps polling if it isn't there
             'joinScriptUrl' => "{$scheme}://assetgame.{$domain}/game/join.ashx?jobId=" . urlencode($server->jobId) . "&ticket={$ticket}",
             'authenticationUrl' => "https://www.{$domain}/Login/Negotiate.ashx",
             'authenticationTicket' => (string) ($user->token ?? ''),
-            // the 2012 client can only connect to a local address, so the join script says
-            // localhost and the launcher relays its UDP to the real server named here
+
             'serverAddress' => (string) ($server->ip ?? ''),
             'serverPort' => (int) ($server->port ?? 0),
         ]);

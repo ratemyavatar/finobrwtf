@@ -14,10 +14,6 @@ use App\Http\Controllers\Asset as AssetHelper;
 
 class CharacterAppearanceController extends Controller
 {
-    /**
-     * A thumbnail render may request an outfit snapshot instead of the live avatar.
-     * The token is issued only to RCC and expires after five minutes.
-     */
     private function avatarForRequest(Request $request, User $user): ?array
     {
         $token = (string) $request->query('outfitToken', '');
@@ -35,9 +31,6 @@ class CharacterAppearanceController extends Controller
             return null;
         }
 
-        // The token holds the immutable saved snapshot, not a reference to
-        // users.avatar. An invalid/expired token fails closed rather than
-        // silently rendering the user's current avatar.
         $saved = $render['avatar'] ?? null;
         return is_array($saved) ? $saved : null;
     }
@@ -73,7 +66,6 @@ class CharacterAppearanceController extends Controller
 		$valid = $validator->valid();
 		$user = User::find($valid['userId']);
 
-        // accounts with no saved avatar yet get the default colours instead of a 500
         $avatar = $this->avatarForRequest($request, $user);
         if ($avatar === null) {
             return response('Outfit preview expired', 404);
@@ -119,7 +111,6 @@ class CharacterAppearanceController extends Controller
 		$valid = $validator->valid();
         $user = User::find($valid['userId']);
 
-        //TODO(Karma): Database structure actually should be revamped, as current is hell, too much json which is not supposed to be used?
         $avatar = $this->avatarForRequest($request, $user);
         if ($avatar === null) {
             return response('Outfit preview expired', 404);
@@ -130,8 +121,7 @@ class CharacterAppearanceController extends Controller
             $params['outfitToken'] = $request->query('outfitToken');
         }
         $bodyColorsRoute = $request->query('outfitToken') ? 'client-routes.outfit-body-colors' : 'client-routes.body-colors';
-        // route() defaults to the https www host, which the 2012 client can't follow (301);
-        // pin to assetgame, which serves both clients, while keeping the outfit-token routes
+
         $base = "http://assetgame." . config('finobe.domain');
         $charApp = $base . route($bodyColorsRoute, $params, false) . ';';
 
@@ -140,8 +130,6 @@ class CharacterAppearanceController extends Controller
             $avatar['backpackGearVersionIds'] ?? []
         );
 
-        // A package is not a wearable: the client can't load a type-32 asset, so swap
-        // each equipped package for the items it contains before building the charapp.
         $ids = self::expandPackages(array_map('intval', $ids));
 
         $charApp .= $ids ? implode(";", array_map(
@@ -152,13 +140,6 @@ class CharacterAppearanceController extends Controller
         return response($charApp, 200);
     }
 
-    /**
-     * Replace any package (type 32) in the list with the asset ids it contains.
-     * Non-package ids pass through unchanged; the result keeps its order and is unique.
-     *
-     * @param int[] $ids
-     * @return int[]
-     */
     public static function expandPackages(array $ids): array
     {
         $out = [];

@@ -29,8 +29,6 @@ use Illuminate\Support\Facades\Auth;
 
 class AdminController extends Controller
 {
-
-    /* Which scope each tool needs. Admins hold every scope, so they keep full access. */
     private const TOOL_SCOPES = [
         'assets' => 'Catalog', 'accept' => 'Catalog', 'deny' => 'Catalog',
         'createxml' => 'Items', 'rbxcreatexml' => 'Items',
@@ -57,7 +55,6 @@ class AdminController extends Controller
         }
     }
 
-    /* Admin Panel > Asset Approval Log */
     private function logApproval($assetId, string $action): void {
         if(!$assetId) {
             return;
@@ -67,7 +64,7 @@ class AdminController extends Controller
                 'asset_id' => $assetId, 'moderator_id' => Auth::user()->id, 'action' => $action, 'created_at' => now(),
             ]);
         } catch(\Throwable $e) {
-            report($e); // not migrated yet: approving still works
+            report($e);
         }
     }
 
@@ -124,7 +121,7 @@ class AdminController extends Controller
             ->orderBy('id', 'DESC')
             ->get()
             ->map(fn($item) => $item->toArray());
-        
+
         foreach($results as $result) {
             $result['title'] = strip_tags(htmlspecialchars($result['title']));
             $result['author'] = htmlspecialchars(User::where('id', $result['author'])->value('username'));
@@ -196,10 +193,9 @@ class AdminController extends Controller
 
         $asset->visibility = 'n';
         $asset->save();
-        
-        // the creator owns their item (type 1 = owned, which is what the inventory and avatar editor look for)
+
         AssetHelper::grantToCreator((int) $data['id'], (int) $asset->author);
-        
+
         $this->logApproval($asset->id ?? null, 'approved');
         Session::put('success', 'Item accepted.');
         return redirect('/admin/assets');
@@ -270,16 +266,12 @@ class AdminController extends Controller
 
         $asset->visibility = 'd';
         $asset->save();
-        
+
         $this->logApproval($asset->id ?? null, 'denied');
         Session::put('success', 'Item denied.');
         return redirect('/admin/assets');
     }
 
-    /*
-        moderatePlaceImage
-         - approve/deny an uploaded game thumbnail (asset_type 1 + placeThumbnailFor) or a game badge icon (asset_type 21)
-    */
     private function moderatePlaceImage(Asset $asset, bool $approve)
     {
         $reviewing = public_path('dynamic/reviewing/' . basename($asset->file));
@@ -323,7 +315,6 @@ class AdminController extends Controller
 
         $asset->save();
 
-        // make it the game's thumbnail
         $place = Asset::where('id', (int) $asset->additional['placeThumbnailFor'])->where('asset_type', 9)->first();
 
         if($place) {
@@ -451,7 +442,7 @@ class AdminController extends Controller
             if(!empty($data['id']) || !empty($data['replyid'])) {
                 $id = !empty($data['id']) && empty($data['replyid']) ? $data['id'] : $data['replyid'];
                 $table = !empty($data['id']) && empty($data['replyid']) ? 'forum_threads' : 'forum_replies';
-                
+
                 if (!empty($data['id']) && empty($data['replyid'])) {
                     $exists = Thread::where('id', $id)->exists();
                 } else {
@@ -468,7 +459,7 @@ class AdminController extends Controller
                         ->where('toid', $id)
                         ->get()
                         ->map(fn($item) => $item->toArray());
-                    
+
                     foreach($results as $result) {
                         Reply::where('id', $result['id'])->delete();
                     }
@@ -487,13 +478,13 @@ class AdminController extends Controller
                 }
 
                 $threads = Thread::where('author', $data['username'])->get()->map(fn($item) => $item->toArray());
-                
+
                 foreach($threads as $thread) {
                     Thread::where('id', $thread['id'])->delete();
                 }
 
                 $replies = Reply::where('author', $data['username'])->get()->map(fn($item) => $item->toArray());
-                
+
                 foreach($replies as $reply) {
                     Reply::where('id', $reply['id'])->delete();
                 }
@@ -606,7 +597,7 @@ class AdminController extends Controller
         $thread = Thread::find($data['id']);
         $thread->locked = 'y';
         $thread->save();
-        
+
         Session::put('success', 'Successfully locked');
         return redirect('/forum/post?id=' . $data['id']);
     }
@@ -626,7 +617,7 @@ class AdminController extends Controller
         $thread = Thread::find($data['id']);
         $thread->locked = 'n';
         $thread->save();
-        
+
         Session::put('success', 'Successfully unlocked');
         return redirect('/forum/post?id=' . $data['id']);
     }
@@ -646,7 +637,7 @@ class AdminController extends Controller
         $thread = Thread::find($data['id']);
         $thread->pinned = 'y';
         $thread->save();
-        
+
         Session::put('success', 'Successfully pinned');
         return redirect('/forum/post?id=' . $data['id']);
     }
@@ -666,7 +657,7 @@ class AdminController extends Controller
         $thread = Thread::find($data['id']);
         $thread->pinned = 'n';
         $thread->save();
-        
+
         Session::put('success', 'Successfully unpinned');
         return redirect('/forum/post?id=' . $data['id']);
     }
@@ -692,7 +683,7 @@ class AdminController extends Controller
 
         $reply->sticked = 'y';
         $reply->save();
-        
+
         Session::put('success', 'Successfully sticked');
         return redirect('/forum/post?id=' . $reply->toid);
     }
@@ -712,7 +703,7 @@ class AdminController extends Controller
         $reply = Reply::find($data['id']);
         $reply->sticked = 'n';
         $reply->save();
-        
+
         Session::put('success', 'Successfully sticked');
         return redirect('/forum/post?id=' . $reply->toid);
     }
@@ -817,7 +808,7 @@ class AdminController extends Controller
                     ->update([
                         'diubanned' => DB::raw("CASE WHEN diubanned = 'n' THEN 'y' ELSE 'n' END")
                     ]);
-                
+
                 $user = User::where('username', $data['name'])->select('diubanned')->first();
 
                 if($user->diubanned == 'y') {

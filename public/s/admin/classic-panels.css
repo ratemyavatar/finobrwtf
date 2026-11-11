@@ -1,4 +1,4 @@
-/* Layout enhancements only. Color, typography, cards and controls come from Finobe's light/night CSS. */
+
 .admin-user-side .card{overflow:hidden}
 .admin-profile-card .user-avatar{height:172px;width:100%;object-fit:contain;padding:12px;aspect-ratio:auto}
 .admin-profile-card .card-body{font-size:12px}
@@ -27,7 +27,6 @@
 @media(max-width:991px){.admin-servers .server-stat{min-height:80px}}
 @media(max-width:575px){.admin-nav-heading{padding-left:12px}.admin-nav-link{padding:10px 12px}.admin-servers .server-table{font-size:12px}}
 
-/* Compact, readable account summary on the left of the Syntax-style menu. */
 .admin-account-summary{overflow:hidden}
 .admin-account-summary .card-body{padding:18px 20px}
 .admin-summary-top{display:flex;align-items:center;gap:18px;min-width:0}

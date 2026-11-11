@@ -17,9 +17,6 @@ class DynamicContentEmail extends Mailable
     public string $textContent;
     public string $subjectLine;
 
-    /**
-     * Create a new message instance.
-     */
     public function __construct(string $htmlContent, string $textContent = "", string $subjectLine)
     {
         $this->htmlContent = $htmlContent;
@@ -27,13 +24,8 @@ class DynamicContentEmail extends Mailable
         $this->subjectLine = $subjectLine;
     }
 
-    /**
-     * Build email message
-     */
     public function build()
     {
-        //$to = Arr::get($this->to, '0.address');
-
         return $this->subject($this->subjectLine)
             ->html($this->htmlContent);
     }

@@ -1,14 +1,4 @@
 #!/usr/bin/env python3
-"""
-Converts a Roblox mesh 6.00/7.00 whose COREMESH chunk is Draco-compressed (chunk version 2) into a
-mesh 2.00 the 2016 client can read. Used by app/Services/ItemImport/MeshConverter.php.
-
-    python3 v7_to_v2.py < in.mesh > out.mesh
-
-Needs DracoPy:  pip install DracoPy
-Draco attributes (Roblox ids): 0 position, 1 normal (generic float3), 2 uv, 3 tangent, 4 colour.
-Only the highest-detail LOD is kept.
-"""
 import struct
 import sys
 
@@ -74,7 +64,7 @@ def main():
     normals = attribute(mesh, 1)
     if normals is not None and np.asarray(normals).size == n * 3:
         normals = np.asarray(normals, np.float32).reshape(-1, 3)
-    else:  # smooth normals from the faces
+    else:
         normals = np.zeros((n, 3), np.float32)
         tri = pos[faces]
         fn = np.cross(tri[:, 1] - tri[:, 0], tri[:, 2] - tri[:, 0])

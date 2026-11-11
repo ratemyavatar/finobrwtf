@@ -1,5 +1,5 @@
 <?php
-// Karma: Just to be sure, it will work...
+
 use App\Http\Controllers\Client\ClientSettingsController;
 use Illuminate\Support\Facades\Route;
 

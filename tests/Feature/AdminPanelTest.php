@@ -7,11 +7,6 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 
-/*
-    /admin/ serves the 2020 panel (AdminController@index -> v2/Admin/Index.twig).
-    The Workbench panel lives at /admin/workbench.
-    Every tile and link the panel offers must load without a server error.
-*/
 class AdminPanelTest extends TestCase
 {
     private User $admin;
@@ -50,15 +45,14 @@ class AdminPanelTest extends TestCase
 
     public function test_every_tile_and_link_loads(): void {
         $paths = [
-            // the 16 tiles, in the panel's order
             '/admin/ipbans', '/admin/users', '/admin/assets', '/admin/bans', '/admin/decider',
             '/admin/force-regen', '/admin/prune-posts', '/admin/purge-games', '/admin/createxml',
             '/admin/rbxcreatexml', '/admin/purchase-log', '/admin/give_dius',
             '/admin/give-asset/non-dependent', '/admin/give-asset/dependent',
             '/admin/approval-log', '/admin/player-thumbnails',
-            // the five links
+
             '/admin/rank', '/admin/clear-cache', '/admin/force-username', '/admin/invite-tree',
-            // this site's own tools + the Workbench
+
             '/admin/give_badges', '/admin/warn', '/admin/announcements', '/admin/servers',
             '/admin/changeversions', '/admin/elections', '/admin/blog', '/admin/workbench',
         ];
@@ -76,7 +70,6 @@ class AdminPanelTest extends TestCase
             ->assertSee('Manage user')
             ->assertSee('classic-panels.css?v=', false);
 
-        // the stylesheet the manage-user page loads must carry no blue accent
         $css = file_get_contents(public_path('s/admin/classic-panels.css'));
         $this->assertStringNotContainsString('3,155,229', $css, 'classic-panels.css still has a blue accent');
         $this->assertStringNotContainsString('#039be5', $css, 'classic-panels.css still has a blue accent');

@@ -1,10 +1,8 @@
--- MultiplayerSharedScript.lua inserted here ------ Prepended to GroupBuild.lua and Join.lua --
--- the 2012 client can run its -Script twice: the second run must leave the first one's connection alone
+
 if game:GetService("Players").LocalPlayer ~= nil then return end
 
--- functions --------------------------
 function onPlayerAdded(player)
--- override
+
 end
 
 pcall(function() game:SetPlaceID({placeId}, false) end)
@@ -51,7 +49,6 @@ local platform = settings().Diagnostics.OsPlatform
 pcall(function() game:HttpGet("http://assetgame.finobe.wtf/Game/JoinRate.ashx?st=0&i=0&p=-1&c=" .. category .. "&r=" .. result .. "&d=" .. (math.floor(duration*1000)) .. "&ip=localhost&errorType=" .. errorType .. "&platform=" .. platform, blocking) end)
 end
 
--- arguments ---------------------------------------
 local threadSleepTime = ...
 
 if threadSleepTime==nil then
@@ -98,7 +95,6 @@ pcall(function() game:GetService("SocialService"):SetGroupRankUrl("http://assetg
 pcall(function() game:GetService("SocialService"):SetGroupRoleUrl("http://assetgame.finobe.wtf/Game/LuaWebService/HandleSocialRequest.ashx?method=GetGroupRole&playerid=%d&groupid=%d") end)
 pcall(function() game:SetCreatorID({creatorId}, Enum.CreatorType.User) end)
 
--- Bubble chat.  This is all-encapsulated to allow us to turn it off with a config setting
 pcall(function() game:GetService("Players"):SetChatStyle(Enum.ChatStyle.{chatstyle}) end)
 
 local waitingForCharacter = false
@@ -109,12 +105,9 @@ if settings().Network.MtuOverride == 0 then
 end
 end)
 
--- globals -----------------------------------------
-
 client = game:GetService("NetworkClient")
 visit = game:GetService("Visit")
 
--- functions ---------------------------------------
 function ifSeleniumThenSetCookie(key, value)
 if false then
 game:GetService("CookiesService"):SetCookieValue(key, value)
@@ -122,11 +115,11 @@ end
 end
 
 function setMessage(message)
--- todo: animated "..."
+
 if not false then
 game:SetMessage(message)
 else
--- hack, good enought for now
+
 game:SetMessage("Teleporting ...")
 end
 end
@@ -183,7 +176,6 @@ wait(4)
 showErrorWindow("Error: " .. err, message, "Other")
 end
 
--- called when the client connection closes
 function onDisconnection(peer, lostConnection)
 if lostConnection then
     if waitingForCharacter then analyticsGuid("Waiting for Character Lost Connection",waitingForCharacterGuid) end
@@ -196,7 +188,6 @@ end
 
 function requestCharacter(replicator)
 
--- prepare code for when the Character appears
 local connection
 connection = player.Changed:connect(function (property)
 if property=="Character" then
@@ -239,7 +230,6 @@ return
 end
 end
 
--- called when the client connection is established
 function onConnectionAccepted(url, replicator)
 
 local waitingForMarker = true
@@ -257,7 +247,6 @@ end
 
 replicator.Disconnection:connect(onDisconnection)
 
--- Wait for a marker to return before creating the Player
 local marker = replicator:SendMarker()
 
 marker.Received:connect(function()
@@ -271,20 +260,16 @@ reportError(err,"ConnectionAccepted")
 return
 end
 
--- TODO: report marker progress
-
 while waitingForMarker do
 workspace:ZoomToExtents()
 wait(0.5)
 end
 end
 
--- called when the client connection fails
 function onConnectionFailed(_, error)
 showErrorWindow("Failed to connect to the Game. (ID=" .. error .. ")", "ID" .. error, "Other")
 end
 
--- called when the client connection is rejected
 function onConnectionRejected()
 connectionFailed:disconnect()
 showErrorWindow("This game is not available. Please try another", "WrongVersion", "WrongVersion")
@@ -301,16 +286,12 @@ end
 end
 end
 
--- main ------------------------------------------------------------
-
 analytics("Start Join Script")
 
 ifSeleniumThenSetCookie("SeleniumTest1", "Started join script")
 
 pcall(function() settings().Diagnostics:LegacyScriptMode() end)
 
--- core gui (player list, health bar, chat, backpack, menu): our 2012 client does not ship the core
--- scripts, so the starter script loads them from the site (storage/rbx/files/2012CoreGui)
 print("! DBG: core gui load start")
 local starterOk = pcall(function() game:GetService("ScriptContext"):AddStarterScript(37801172) end)
 if not starterOk then
@@ -329,9 +310,6 @@ connectionFailed = client.ConnectionFailed:connect(onConnectionFailed)
 client.Ticket = ""
 ifSeleniumThenSetCookie("SeleniumTest2", "Successfully connected to server")
 
---PlayerConnect creates the local player and starts connecting, but on this build it then throws
---"Unknown exception", so pcall's second value is the error message rather than a player. Take the player
---from Players instead - never create another one, that fails with "Local player already exists".
 print("! DBG: connect ip={serverip} port={serverport} uid={userid} sleep=" .. tostring(threadSleepTime))
 pcall(function() print("! DBG: client.Ticket=" .. tostring(client.Ticket)) end)
 local pcOk, pcErr = pcall(function() return client:PlayerConnect({userid}, "{serverip}", {serverport}, 0, threadSleepTime) end)
@@ -358,7 +336,6 @@ pcall(function() player:SetMembershipType(Enum.MembershipType.membership) end)
 pcall(function() player:SetAccountAge(365) end)
 player.Idled:connect(onPlayerIdled)
 
--- Overriden
 onPlayerAdded(player)
 
 pcall(function() player.Name = [========[{username}]========] end)
@@ -369,7 +346,7 @@ analytics("Connect Client")
 end)
 
 if not success then
---the connect itself already happened; do not reportError here, that disconnects the live connection
+
 Game:SetMessage("Something went wrong")
 end
 
@@ -394,10 +371,7 @@ end
 
 pcall(function() game:SetScreenshotInfo("") end)
 pcall(function() game:SetVideoInfo('<?xml version="1.0"?><entry xmlns="http://www.w3.org/2005/Atom" xmlns:media="http://search.yahoo.com/mrss/" xmlns:yt="http://gdata.youtube.com/schemas/2007"><media:group><media:title type="plain"><![CDATA[ROBLOX Place]]></media:title><media:description type="plain"><![CDATA[ For more games visit http://assetgame.finobe.wtf]]></media:description><media:category scheme="http://gdata.youtube.com/schemas/2007/categories.cat">Games</media:category><media:keywords>ROBLOX, video, free game, online virtual world</media:keywords></media:group></entry>') end)
--- use single quotes here because the video info string may have unescaped double quotes
 
--- Rewrite hardcoded roblox.com asset links in the place to this site: the 2012 client fails Roblox's
--- trust check on them, so decals/sounds/meshes would never load.
 pcall(function()
 local assetPropertyNames = {"Texture","TextureId","SoundId","MeshId","SkyboxUp","SkyboxLf","SkyboxBk","SkyboxRt","SkyboxFt","SkyboxDn","PantsTemplate","ShirtTemplate","Graphic","Image","LinkedSource","AnimationId"}
 local variations = {"http://www%.roblox%.com/asset/%?id=","http://www%.roblox%.com/asset%?id=","http://%.roblox%.com/asset/%?id=","http://%.roblox%.com/asset%?id="}

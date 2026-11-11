@@ -1,6 +1,4 @@
 #!/bin/sh
-# Builds FinobeLauncher.exe (32-bit Windows) with MinGW-w64.
-#   Debian/Ubuntu: apt install g++-mingw-w64-i686 binutils-mingw-w64-i686
 set -e
 cd "$(dirname "$0")"
 CC=i686-w64-mingw32-gcc

@@ -48,14 +48,7 @@
                 <p>No results</p>
             {% endif %}
             </div>
-            <div class="mt-2" style="display: flex; justify-content: center;">{#
-                <ul class="pagination shadow-sm">
-                    <li class="page-item{{ (threads.pages.info.previous_page == threads.pages.info.start_page) ? " disabled" : "" }}"><a class="page-link" id="previous-page" href="/forum/{{ (search == false) ? "home" : "search" }}{{ (section != "0") ? "/" ~ section : "" }}{{ (search != false) ? "?q=" ~ search : "" }}{{ (search != false) ? "&" : "?" }}page={{ threads.pages.info.previous_page }}" onclick="" rel="previous" aria-label="Previous <<">«</a></li>
-                              {% for page in threads.pages.data %}
-                                  <li class="page-item"><a class="page-link{{ (page.page == threads.pages.info.current_page) ? " selected" : "" }}" href="/forum/{{ (search == false) ? "home" : "search" }}{{ (section != "0") ? "/" ~ section : "" }}{{ (search != false) ? "?q=" ~ search : "" }}{{ (search != false) ? "&" : "?" }}page={{ page.page }}">{{ page.page }}</a></li>
-                              {% endfor %}
-                    <li class="page-item{{ (threads.pages.info.next_page == threads.pages.info.end_page) ? " disabled" : "" }}"><a class="page-link" id="next-page" href="/forum/{{ (search == false) ? "home" : "search" }}{{ (section != "0") ? "/" ~ section : "" }}{{ (search != false) ? "?q=" ~ search : "" }}{{ (search != false) ? "&" : "?" }}page={{ threads.pages.info.next_page + 1 }}" onclick="" rel="next" aria-label="Next >>">»</a></li>
-                </ul>#}
+            <div class="mt-2" style="display: flex; justify-content: center;">
                 <ul class="pagination shadow-sm">
     <li class="page-item{{ (data.threads.pages.info.previous_page == data.threads.pages.info.start_page) ? " disabled" : "" }}">
       <a class="page-link" id="previous-page" href="/forum/{{ (not data.search) ? "home" : "search" }}{{ (data.section != "0") ? "/" ~ data.section : "" }}{{ (data.search) ? "?q=" ~ data.search : "" }}{{ (data.search) ? "&" : "?" }}page={{ data.threads.pages.info.previous_page }}" rel="previous" aria-label="Previous <<" {{ (data.threads.pages.info.current_page <= 1) ? "style='pointer-events: none;'" : "" }}>«</a>

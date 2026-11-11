@@ -11,7 +11,7 @@
         .down.vote-selected {
             color: var(--purple)!important
         }
-    </style>
+</style>
   </head>
   <body>
     <div id="app">
@@ -34,7 +34,7 @@
             </video>
             <script>
               const player = new Plyr('#player');
-            </script>
+</script>
             {% if data.siteusername %}
             <script>
                                     function sync_rating(type, videoId) {
@@ -51,7 +51,7 @@
                                                     data: data.toString(),
                                                     success: function(data) {
                                                         number.text(data.rating);
-                                                        //console.log(data);
+
                                                     },
                                                     error: function(error) {
                                                         console.error('Error:', error);
@@ -59,7 +59,6 @@
                                                 });
                                             }
                                         document.addEventListener('DOMContentLoaded', function() {
-                                            
 
                                             document.getElementById('video-up-main').addEventListener('click', function () {
                                                 var video = document.getElementById('video-up-main');
@@ -93,7 +92,7 @@
                                                         videodown.innerHTML = '<i data-v-73be696c="" class="far fa-arrow-down"></i>' + (parseInt(video.innerText, 10) - 1);
                                                         videodown.classList.toggle('vote-selected');
                                                     }
-                                                    
+
                                                     video.classList.toggle('vote-selected');
                                                 });
                                             });
@@ -130,12 +129,12 @@
                                                         videoup.innerHTML = '<i data-v-73be696c="" class="far fa-arrow-up"></i>' + (parseInt(videoup.innerText, 10) - 1);
                                                         videoup.classList.remove('vote-selected');
                                                     }
-                                                    
+
                                                     video.classList.toggle('vote-selected');
                                                 });
                                             })
                                         });
-                                    </script>
+</script>
                                     {% endif %}
             <h4 class="mt-4 font-weight-light">Description</h4>
             <div> {{ (not data.video.description|length) ? "No description" : data.video.description|raw }} </div>
@@ -148,7 +147,7 @@
                 s.setAttribute('data-timestamp', +new Date());
                 (d.head || d.body).appendChild(s);
                 })();
-            </script>
+</script>
             <noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
     	</div>
     </div>

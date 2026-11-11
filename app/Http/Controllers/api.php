@@ -71,7 +71,7 @@ class api extends Controller
 
         $pageData = [
             'items' => [
-                'data' => [] // WHY UNDEFINED WHEN NO ITEMS??
+                'data' => []
             ]
         ];
 
@@ -90,7 +90,7 @@ class api extends Controller
             ->orderBy('purchases.date', 'desc')
             ->select('assets.id', 'assets.title', 'assets.author', 'assets.asset_type', 'assets.additional')
             ->count();
-        
+
         $items = Purchases::join('assets', 'purchases.assetid', '=', 'assets.id')
             ->where('purchases.username', $data['user'])
             ->where('purchases.assetid', '!=', 0)
@@ -117,7 +117,7 @@ class api extends Controller
             $item['author'] = htmlspecialchars($user['username'] ?? $item['additional']['oldUser']);
             $this->response['data']['items']['data'][] = $item;
         }
-        
+
         $this->response['data']['items']['pagination'] = [
             'current_page' => $currentPage,
             'number_of_pages' => ceil($itemcount / $itemsPerPage),
@@ -160,7 +160,7 @@ class api extends Controller
                 ->where('toid', $data['postId'])
                 ->first()
                 ->toArray();
-            
+
             if($ratingData['rate_type'] != $data['rating']) {
                 $rating = Rating::find($ratingData['id']);
                 $rating->rate_type = $data['rating'];
@@ -212,12 +212,12 @@ class api extends Controller
             ->where('toid', $data['postId'])
             ->where('rate_type', 'l')
             ->count();
-        
+
         $rating -= Rating::where('type', $data['type'])
             ->where('toid', $data['postId'])
             ->where('rate_type', 'd')
             ->count();
-        
+
         $this->response['rating'] = $rating;
         return response()->json($this->response, 200);
     }
@@ -238,7 +238,7 @@ class api extends Controller
 
         if($data['id'] == 'all') {
             Notification::where('touser', $user->id)->update(['readed' => true]);
-            
+
             return redirect('/');
         }
 
@@ -250,7 +250,7 @@ class api extends Controller
 
         $notification->readed = true;
         $notification->save();
-        
+
         $results_per_page = 10;
         $total_replies_before = Reply::where('toid', $notification->forum_id)->where('id', $notification->reply_id)->count();
         $page_number = ceil($total_replies_before / $results_per_page);
@@ -326,7 +326,6 @@ class api extends Controller
         $error = null;
 
         DB::connection('finobe')->transaction(function() use ($item, $price, $data, &$error) {
-            // lock the buyer row so concurrent requests cannot double-spend
             $user = User::where('id', Auth::id())->lockForUpdate()->first();
 
             if($user->Dius < $price) {
@@ -339,7 +338,6 @@ class api extends Controller
                 return;
             }
 
-            // a Unique hands out the next serial (#1, #2, ...) until its stock runs out
             $serial = 0;
             if(\App\Services\Trading::kind($item->additional) === 'unique') {
                 Asset::where('id', $item->id)->lockForUpdate()->first();
@@ -389,7 +387,6 @@ class api extends Controller
             return response()->json($this->response, 400);
         }
 
-        // a package hands out everything it contains, not just the package row
         if((int) $item->asset_type === 32) {
             $this->grantPackageContents($item, Auth::id());
         }
@@ -397,12 +394,6 @@ class api extends Controller
         return response()->json($this->response, 200);
     }
 
-    /*
-        grantPackageContents
-         - give the buyer a copy of every asset inside a package. Items the buyer
-           already owns are left alone, and the creator's own items are skipped
-           (you already own what you made). No Dius changes hands for the contents.
-    */
     private function grantPackageContents(Asset $package, int $buyerId): void
     {
         $buyer = User::find($buyerId);
@@ -453,8 +444,7 @@ class api extends Controller
             }
 
             $avatar = $user->avatar[0] ?? [];
-            // Save an explicit six-part colour snapshot. RCC must not have to
-            // guess the colours from the avatar the user is wearing later.
+
             $defaults = [
                 'headColorId' => 24,
                 'torsoColorId' => 23,
@@ -512,7 +502,6 @@ class api extends Controller
             return response()->json($this->response, 200);
         }
 
-        // wear: only items you still own and that are approved go back on
         $saved = json_decode($outfit->avatar, true) ?: [];
         $ids = array_values(array_unique(array_map('intval', $saved['equippedGearVersionIds'] ?? [])));
         $backpackIds = array_values(array_unique(array_map('intval', $saved['backpackGearVersionIds'] ?? [])));
@@ -558,7 +547,6 @@ class api extends Controller
             return response()->json($this->response, 400);
         }
 
-        // pose the avatar thumbnail is rendered in
         if ($data['type'] == 'pose') {
             $pose = (string) ($data['pose'] ?? '');
             if (!isset(\App\Services\AvatarRenderer::POSES[$pose])) {
@@ -574,7 +562,6 @@ class api extends Controller
             $user->avatar = $avatar;
             $user->save();
 
-            // re-render now so the page can show it (like an outfit change, this skips the regen cooldown)
             try {
                 $this->response['image'] = 'https://cdn.' . config('finobe.domain') . '/' . AvatarRenderer::render($user);
                 $user->render_cooldown = now();
@@ -587,12 +574,10 @@ class api extends Controller
             return response()->json($this->response, 200);
         }
 
-        // Character > Outfits: save what you're wearing, put a saved outfit back on, or delete one
         if (in_array($data['type'], ['outfit-create', 'outfit-wear', 'outfit-delete', 'outfit-preview'], true)) {
             return $this->outfit($data);
         }
 
-        // movement animations used in game (doesn't change the render, so no re-render)
         if ($data['type'] == 'animations') {
             $pack = (string) ($data['pack'] ?? '');
             if (!\App\Services\AnimationPacks::exists($pack)) {
@@ -1016,8 +1001,6 @@ class api extends Controller
             $user->avatar = $avatar;
             $user->save();
         } elseif($data['type'] == 'head-asset') {
-            // a custom head (asset type 17). Only one at a time; it lives in the same
-            // worn-items list as hats, faces and gear so CharacterFetch picks it up.
             if(!isset($data['assetid'])) {
                 $this->response['code'] = 400;
                 $this->response['message'] = 'Bad request';
@@ -1055,7 +1038,6 @@ class api extends Controller
             $worn = $avatar[0]['equippedGearVersionIds'];
             $equipped = in_array($data['assetid'], $worn);
 
-            // drop any other head already worn
             $worn = array_values(array_filter($worn, fn($id) => (int) Asset::where('id', $id)->value('asset_type') !== 17));
             if(!$equipped) {
                 $worn[] = $data['assetid'];
@@ -1065,8 +1047,6 @@ class api extends Controller
             $user->avatar = $avatar;
             $user->save();
         } elseif($data['type'] == 'package') {
-            // a package (asset type 32). Only one at a time; it is expanded into its
-            // contents by CharacterFetch, so it never reaches the client itself.
             if(!isset($data['assetid'])) {
                 $this->response['code'] = 400;
                 $this->response['message'] = 'Bad request';
@@ -1104,7 +1084,6 @@ class api extends Controller
             $worn = $avatar[0]['equippedGearVersionIds'];
             $equipped = in_array($data['assetid'], $worn);
 
-            // drop any other package already worn
             $worn = array_values(array_filter($worn, fn($id) => (int) Asset::where('id', $id)->value('asset_type') !== 32));
             if(!$equipped) {
                 $worn[] = $data['assetid'];
@@ -1115,7 +1094,6 @@ class api extends Controller
             $user->save();
         }
 
-        // outfit changed: re-render the avatar once the response has been sent
         RenderAvatar::dispatchAfterResponse(Auth::id());
 
         return response()->json($this->response, 200);
@@ -1132,7 +1110,7 @@ class api extends Controller
         $user = Auth::user();
         $avatar = $user->avatar;
 
-        if($user->status != 'admin' && abs(Carbon::now()->diffInSeconds($user->render_cooldown)) <= 30) { // literally have no fucking clue why it goes into this (value is always negative)
+        if($user->status != 'admin' && abs(Carbon::now()->diffInSeconds($user->render_cooldown)) <= 30) {
             $this->response['code'] = 400;
             $this->response['message'] = 'Whoa, cool down with the regeneration requests there!';
 
@@ -1291,7 +1269,7 @@ class api extends Controller
         }
 
         $results = $results->get()->map(fn($item) => $item->toArray());
-        
+
         foreach($results as $result) {
             $players = 0;
 
@@ -1299,7 +1277,7 @@ class api extends Controller
                 ->where('placeid', $result['id'])
                 ->get()
                 ->map(fn($item) => $item->toArray());
-            
+
             foreach($servers as $server) {
                 $players += count($server['players']);
             }
@@ -1325,7 +1303,7 @@ class api extends Controller
                         </span>
                     </a>
                 </div>';
-            
+
             $this->response['data'][] = $html;
         }
 
@@ -1347,7 +1325,7 @@ class api extends Controller
 
         $this->response['info']['pages'] = $total_pages;
         $this->response['info']['current_page'] = $currentPage;
-        
+
         return response()->json($this->response, 200);
     }
 }

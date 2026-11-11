@@ -4,11 +4,6 @@ namespace App\Services;
 
 use App\Models\User;
 
-/*
-    PlaceAccess
-     - the "User Restrictions" a place owner sets: who can join, minimum account age, blocked players
-     - stored on the place as additional.restrictions
-*/
 class PlaceAccess
 {
     const ACCESS = ['everyone', 'friends', 'me'];
@@ -24,7 +19,6 @@ class PlaceAccess
         ];
     }
 
-    /** Why this user can't join the place, or null if they can. $place and $user may be arrays or objects. */
     public static function denyReason($place, $user): ?string
     {
         $place = (array) $place;

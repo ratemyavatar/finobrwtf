@@ -11,11 +11,11 @@
             opacity: 0.6;
             animation: fadeInSetup 0.25s ease;
         }
-		
+
 		.fadeInCard .card, .fadeOutCard .card {
 			box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
 		}
-		
+
 		@-webkit-keyframes fadeInSpinner {
 			0% {
 				opacity: 0
@@ -25,7 +25,7 @@
 				opacity: 0.6
 			}
 		}
-		
+
 		.fadeInCard, .fadeOutCard {
             position: fixed;
             z-index: 9999999;
@@ -34,37 +34,37 @@
             justify-content: center;
             align-items: center;
         }
-		
+
 		.fadeInCard .loading-overlay {
             opacity: 0.6;
             animation: fadeInSpinner 0.15s ease;
         }
-		
+
 		.fadeInCard .card {
             opacity: 1;
             animation: fadeIn 0.25s ease;
         }
-		
+
 		.fadeOutCard {
             opacity: 0;
             animation: fadeOut 0.25s ease;
         }
-		
+
 		.colorCard {
 			width: 40px;height: 40px;
 			border: 1px solid #555;
 			cursor: pointer;
 		}
-		
+
 		.colorCard:hover {
 			border-width: 2px;
 			border-color: black;
 		}
-		
+
 		#head, #r-arm, #torso, #l-arm, #r-leg, #l-leg {
 			cursor: pointer;
 		}
-		
+
 		.spinner-border {
 			animation: spin 1s linear infinite;
 		}
@@ -77,7 +77,7 @@
 		.item-thumb { height: 150px; }
 		.item-search-icon { background-color: transparent; color: #6c757d; }
 		#item-search:focus { box-shadow: none; }
-	</style>
+</style>
   </head>
   <body>
 	<div class="" id="colorCard" style="display: none;">
@@ -455,16 +455,16 @@
 									"Royal purple": { rgb: [98, 37, 209], id: 1031 },
 									"Hot pink": { rgb: [255, 0, 191], id: 1032 },
 								};
-								
+
 								var type = "";
-								
+
 								head.style.backgroundColor = "rgb(" + toRgbColor(avatar[0].bodyColors.headColorId) + ")";
 								torso.style.backgroundColor = "rgb(" + toRgbColor(avatar[0].bodyColors.torsoColorId) + ")";
 								rarm.style.backgroundColor = "rgb(" + toRgbColor(avatar[0].bodyColors.rightArmColorId) + ")";
 								larm.style.backgroundColor = "rgb(" + toRgbColor(avatar[0].bodyColors.leftArmColorId) + ")";
 								rleg.style.backgroundColor = "rgb(" + toRgbColor(avatar[0].bodyColors.rightLegColorId) + ")";
 								lleg.style.backgroundColor = "rgb(" + toRgbColor(avatar[0].bodyColors.leftLegColorId) + ")";
-								
+
 								head.addEventListener('click', () => openCard('head'));
 								torso.addEventListener('click', () => openCard('torso'));
 								rarm.addEventListener('click', () => openCard('r-arm'));
@@ -478,12 +478,12 @@
 										spinner.classList.add("fadeInCard");
 										spinner.style.display = "flex";
 										document.getElementById(type).style.backgroundColor = color;
-										
+
 										const formData = new FormData();
 										formData.append('type', this.type);
 										formData.append('color', toRbxColor(color));
 										formData.append('_token', '{{ data.csrf_token }}');
-										
+
 										fetch("/api/character", {
 											method: 'POST',
 											body: formData
@@ -499,7 +499,7 @@
 										  });
 									});
 								});
-								
+
 								function regen() {
 									const formData = new FormData();
 									formData.append('_token', '{{ data.csrf_token }}');
@@ -539,7 +539,7 @@
 										} else {
 											avatarimg.src = data.image;
 										}
-										
+
 										render.innerHTML = "Done";
 										setTimeout(() => {
 											render.innerHTML = '<i class="fa fa-sync-alt"></i> regen';
@@ -547,14 +547,14 @@
 										}, 10000);
 									  });
 								}
-								
+
 								function openCard(type) {
 									this.type = type;
 									colorCard.classList.add('fadeInCard');
 									colorCard.classList.remove('fadeOutCard');
 									colorCard.style.display = "flex";
 								}
-								
+
 								function closeCard() {
 									colorCard.classList.remove('fadeInCard');
 									colorCard.classList.add('fadeOutCard');
@@ -564,7 +564,7 @@
 										colorCard.style.display = "none";
 									}, 250);
 								}
-								
+
 								function toRbxColor(rgbString) {
 									const rgbArray = rgbString.match(/\d+/g).map(Number);
 
@@ -584,7 +584,7 @@
 
 									return closestColor;
 								}
-								
+
 								function toRgbColor(id) {
 									const colorEntry = Object.values(robloxColors).find(color => color.id === id);
 									if (colorEntry) {
@@ -644,7 +644,7 @@
 										alert(error);
 									  });
 								}
-							  </script>
+</script>
                             </div>
                             <div class="tab-pane" id="t-shirts">
 							  <div class="{{ (data.purchases|filter(p => p.asset_type == 2)|length) ? 'row' : '' }}">
@@ -887,7 +887,7 @@
                                   if (outfitPreviewsLoading) return;
                                   outfitPreviewsLoading = true;
                                   try {
-                                    // One RCC job at a time to avoid flooding the render service.
+
                                     for (const card of document.querySelectorAll('#outfits-list .outfit')) {
                                       if (card.isConnected) await loadOutfitPreview(card);
                                     }
@@ -928,12 +928,12 @@
                                         if (!document.querySelector('.outfit')) document.getElementById('outfits-empty').style.display = '';
                                         return;
                                       }
-                                      // the items and colours changed: reload so every tab shows what's worn now
+
                                       location.reload();
                                     })
                                     .catch(() => { btn.disabled = false; alert('Something went wrong, try again.'); });
                                 }
-                              </script>
+</script>
                             </div>
                          </div>
                      </div>
@@ -942,7 +942,6 @@
          </div>
       </div>
       <script>
-        // the search box filters the item tabs (not Body Colors or Outfits)
         function filterItems() {
           const q = document.getElementById('item-search').value.trim().toLowerCase();
           document.querySelectorAll('.tab-pane.active .equipped, .tab-pane.active .unequipped').forEach(el => {
@@ -956,7 +955,7 @@
           document.getElementById('item-search').value = '';
           document.querySelectorAll('.equipped, .unequipped').forEach(el => el.style.display = '');
         });
-      </script>
+</script>
       {% include ('v2/Modules/footer.twig') %}
   </body>
 </html>

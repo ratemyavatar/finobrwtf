@@ -8,15 +8,8 @@ use Illuminate\Support\Facades\Storage;
 
 class ClientSettingsController extends Controller
 {
-    /**
-     * Function to get Client Fast Flags
-     * @param \Illuminate\Http\Request $request
-     * @param string $bucket Name of the bucket.
-     * @return \Illuminate\Http\Response
-     */
     public function getBucket(Request $request, string $bucket)
     {
-        //TODO(Karma): Move this to database, already got controllers and db migrations, discuss that with waterboi.
         if ($bucket == "ClientSharedSettings")
             $bucket = "ClientAppSettings";
 

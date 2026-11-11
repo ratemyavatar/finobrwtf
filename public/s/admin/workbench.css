@@ -1,5 +1,4 @@
-/* The site's existing light.css / night.css supply the Finobe design system.
-   These rules only arrange the admin workspace and its native dialog. */
+
 @font-face{font-family:Source Sans Pro;font-style:normal;font-weight:400;src:url('/fonts/WOFF2/TTF/SourceSansPro-Regular.ttf.woff2') format('woff2');font-display:swap}
 @font-face{font-family:Source Sans Pro;font-style:normal;font-weight:600;src:url('/fonts/WOFF2/TTF/SourceSansPro-Semibold.ttf.woff2') format('woff2');font-display:swap}
 @font-face{font-family:Source Sans Pro;font-style:normal;font-weight:700;src:url('/fonts/WOFF2/TTF/SourceSansPro-Bold.ttf.woff2') format('woff2');font-display:swap}
@@ -7,8 +6,6 @@
 @media(max-width:1199px){.lookup{flex-wrap:wrap}.lookup span{width:100%}.admin-shell{gap:22px}.sidebar{width:145px}}
 @media(max-width:767px){.admin-shell{display:block}.sidebar{width:100%;padding:0;margin-bottom:16px}.side-heading,.side-bottom{display:none}.sidebar nav{flex-direction:row;overflow:auto;gap:15px;border-bottom:1px solid #d5d8dd}.section-link{width:auto;flex:none;gap:5px;padding:6px 0}.lookup form{width:100%}.lookup input{width:100%}.lookup input{min-width:0}.tools-bar input[type=search]{width:100%}.tools-table th:nth-child(3),.tools-table td:nth-child(3){display:none}#moderation-form{grid-template-columns:1fr;gap:14px}.radio-options{grid-template-columns:repeat(3,1fr)}.admin-footer{font-size:11px}.account-heading{padding:12px}.account-heading a{white-space:nowrap}.tools-table td{padding:7px!important}#notice{left:12px;right:12px;bottom:12px}}
 
-/* Original Finobe admin entry: six-column catalog cards, shared site navbar. */
 .admin-classic .admin-category{display:block;height:100%;text-decoration:none}.admin-classic .admin-category .card{height:100%}.admin-classic .admin-category .card-body{padding:20px 10px}.admin-classic .admin-category p{font-size:14px}.admin-classic #page-title{margin-bottom:20px}
 
-/* User management keeps the existing Finobe cards, typography and colors. */
 .admin-user .user-avatar{display:block;width:100%;aspect-ratio:1;object-fit:contain;padding:12px}.admin-user dt{font-size:13px}.admin-user dd{font-size:14px;overflow-wrap:anywhere}.admin-user dd:last-child{margin-bottom:0}.admin-user .user-text{white-space:pre-wrap;overflow-wrap:anywhere}.admin-user .list-group-item{padding:9px 14px}.admin-user table td{vertical-align:top}.admin-user .user-quick-actions{display:flex;flex-wrap:wrap}#user-action-form{max-width:100%}#user-action-form button:disabled{opacity:.65}

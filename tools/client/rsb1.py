@@ -1,14 +1,3 @@
-"""
-Read/write Roblox 2016 CoreScript bytecode blobs ("RSB1"), as built by CoreScriptConverter2
-(App/script/LuaSerializer.inl in the 2016 engine source):
-
-    blob = xor( "RSB1" + u32 dataSize + lz4_block(data) , xxh32(seed 42) )
-    data = u8 error(0) + root
-    root = u32 stringTableOffset + proto... + string table (u32 count, u32 len*count, bytes)
-
-Strings (constants, local/upvalue names) are referenced by 1-based index into the string table, so
-changing a string's text only touches the table; instructions and constants are left byte-for-byte.
-"""
 import struct
 import lz4.block
 import xxhash
@@ -45,8 +34,7 @@ def encode(data: bytes) -> bytes:
 
 
 def split_strings(data: bytes):
-    """-> (prefix bytes up to the string table, [strings])"""
-    off = struct.unpack_from("<I", data, 1)[0] + 1   # offset is relative to the root (after the error byte)
+    off = struct.unpack_from("<I", data, 1)[0] + 1
     count = struct.unpack_from("<I", data, off)[0]
     lens = struct.unpack_from("<%dI" % count, data, off + 4)
     p = off + 4 + 4 * count

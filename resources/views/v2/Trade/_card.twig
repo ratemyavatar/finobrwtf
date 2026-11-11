@@ -1,4 +1,4 @@
-{# one item copy in a trade: title, thumbnail, Limited or Unique #serial #}
+
 <div class="card trade-item{{ selectable ? ' trade-pick' : '' }}"{% if selectable %} data-id="{{ item.id }}" data-value="{{ item.value }}" data-side="{{ side }}" role="button" tabindex="0"{% endif %}>
   <div class="card-body text-center px-2 py-3">
     <a href="/item/{{ item.assetid }}" class="d-block text-truncate" title="{{ item.title }}"{% if selectable %} onclick="event.stopPropagation();" target="_blank"{% endif %}>{{ item.title }}</a>

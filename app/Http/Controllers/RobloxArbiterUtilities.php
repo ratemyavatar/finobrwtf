@@ -9,7 +9,7 @@ class RobloxArbiterUtilities extends Controller
     private $SoapClient;
 
     function __construct($url = "127.0.0.1", $port = 64989) {
-        $this->SoapClient = new \SoapClient(storage_path("rbx/files/RCCService.wsdl"), ["location" => "http://{$url}:$port", "uri" => "http://finobe.wtf/", "exceptions" => false, "connection_timeout" => 30]); //Arseny: I hope this works like thsis :sob:
+        $this->SoapClient = new \SoapClient(storage_path("rbx/files/RCCService.wsdl"), ["location" => "http://{$url}:$port", "uri" => "http://finobe.wtf/", "exceptions" => false, "connection_timeout" => 30]);
     }
 
     function SoapCallService(string $name, array $arguments = [])
@@ -40,7 +40,6 @@ class RobloxArbiterUtilities extends Controller
 
     private function GetLuaType($value): string
     {
-        // only real PHP numbers become Lua numbers; numeric-looking strings (keys, ids) stay strings
         if (is_bool($value) || $value === "true" || $value === "false") {
             return "LUA_TBOOLEAN";
         }

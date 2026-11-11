@@ -1,29 +1,28 @@
-# Finobe blog
+# finobe blog
 
-The public blog is a patched capture of the January 2021 Finobe.com Ghost/Casper client, backed by this Laravel app's `finobe` database. It has its own original blog header and theme; the administration pages use the website's shared Finobe navbar and stylesheet.
+the blog is a capture of the january 2021 finobe.com ghost blog (casper theme), running on this laravel app and the `finobe` database. there's no ghost or node install.
 
-The source capture is https://web.archive.org/web/20210125203354/https://blog.finobe.com/. The page identifies Ghost 3.40. Homepage, article, author archive, and page-two HTML were recovered. The original `screen.css`, `casper.js`, logo, cover, and favicon are stored locally under `public/s/blog`. Their SHA-256 hashes are recorded in [blog-capture.json](blog-capture.json). Casper's MIT notice is included alongside them.
+the capture came from the wayback machine. the original `screen.css`, `casper.js`, logo, cover and favicon are in `public/s/blog`. their hashes are in [blog-capture.json](blog-capture.json). casper's mit notice is next to them.
 
-The recovered template structure is in `resources/views/blog/partials`. Dynamic content, dates, authors, images, metadata, and links are supplied by local models. The original built JavaScript consumes the local `rel="next"` link and appends `.post-card` elements from the next HTML page, preserving the original infinite-scroll behavior. There is no dependency on Ghost's production API. The old site's analytics, inactive subscription initialization, and links to its feeds/accounts are not used. Twitter is shown only when configured.
+the templates are in `resources/views/blog/partials`. the original javascript reads the `rel="next"` link and adds the next page's posts, so infinite scroll works like before. old analytics and subscriptions aren't used. twitter only shows if you set it.
 
-The live Finobe.net blog returned an access-denied page during research. Its client was not recovered or treated as verified. The archived Finobe.com version is the visual reference.
+the capture has six old post titles, dates and short excerpts, but not the full posts. don't make up the missing text. a snapshot of what's there is in `research/finobe-blog/homepage-snapshot.json`.
 
-The supplied HTML contains **six** original post titles, timestamps, dated article
-URLs, excerpts, and partial read-time labels. It does not contain the full post bodies.
-Do not fabricate body text or auto-import incomplete material as published posts.
-The Laravel blog continues to read published posts, tags and authors from its
-own finobe database. A metadata-only snapshot is kept for reference at
-research/finobe-blog/homepage-snapshot.json.
-
-Use the existing website checkout and PHP runtime. After pulling the `finobe` branch:
+## setup
 
 ```sh
 php artisan migrate --database=finobe --force
+```
+
+```sh
 php artisan storage:link
+```
+
+```sh
 php artisan optimize:clear
 ```
 
-Configure the real hostnames in `.env`:
+then set the hostnames in `.env`:
 
 ```dotenv
 APP_URL=https://finobe.wtf
@@ -32,11 +31,9 @@ BLOG_URL=https://blog.finobe.wtf
 BLOG_TWITTER_URL=
 ```
 
-When `BLOG_URL` is omitted, it derives `blog.<FINOBE_DOMAIN>` using `APP_URL`'s scheme. `BLOG_URL` allows an explicit port for local development, such as `http://blog.localhost:8080`. The main website and blog must have different hostnames. Both versions of the main navbar read this configuration.
+if `BLOG_URL` is empty it uses `blog.<FINOBE_DOMAIN>`. the blog and the main site need different hostnames.
 
-Point the blog hostname's DNS A/AAAA record at the web server, or use a CNAME to the website's hostname when appropriate. Add the hostname to the existing TLS/web-server configuration and serve **the same** Laravel `public/` directory. A separate Ghost installation or Node process is not required. DNS and the production virtual host were not changed by this source update.
-
-Example Caddy site block; adapt paths and PHP socket to the actual server:
+point the blog hostname at the web server and serve the same `public` folder. a caddy example:
 
 ```caddyfile
 blog.finobe.wtf {
@@ -46,52 +43,43 @@ blog.finobe.wtf {
 }
 ```
 
-For Nginx, add a server for `blog.finobe.wtf` with the same document root, PHP-FPM configuration, and `try_files $uri $uri/ /index.php?$query_string;` as the existing website. Keep existing PHP upload execution protections. The public blog routes are outside the legacy game-site Redis/IP middleware.
+for nginx, copy the main site's server block and change the name.
 
-Uploads go to `storage/app/public/blog/YYYY/MM/`. Persist that directory and make it writable by PHP. The `public/storage` symlink makes uploads available from both hostnames. Back up the `blog_*` tables and those uploads together. Original theme assets are tracked files, not runtime uploads.
+uploads go to `storage/app/public/blog/YYYY/MM/`. keep that folder and make it writable. back it up with the `blog_*` tables.
 
-## Administration
+## writing posts
 
-Open **Admin → Blog** on the main website, or `/admin/blog`.
+open admin, then blog, or go to `/admin/blog`.
 
-- Create authors and tags, then write a post.
-- Save drafts, preview saved drafts privately, publish immediately, or set a scheduled publication date.
-- Edit the title, slug, body, excerpt, feature image/description, author, and tags. The editor accepts Markdown; raw executable HTML and unsafe link schemes are stripped.
-- Upload JPEG, PNG, GIF, or WebP images, then use them as feature images or insert their paths into the post. SVG and non-image uploads are rejected.
-- Archive posts without deleting their history. Restoring an archived post makes it a draft.
-- Restore an earlier revision as a new draft revision. Stale editor submissions are rejected instead of overwriting a newer save.
-- Change blog title, description, logo, cover, and an optional Twitter link.
+- make authors and tags, then write a post
+- save a draft, preview it privately, publish now, or pick a date to publish later
+- posts use markdown. unsafe html and links get removed
+- upload jpeg, png, gif or webp images. svg and other files are refused
+- archive a post to hide it without losing it. restoring makes it a draft again
+- old versions can be brought back as a new draft. if someone saved after you opened the editor, your save is refused instead of overwriting theirs
+- change the blog title, description, logo, cover and twitter link
 
-Full administrators have Blog access. Owners can grant/revoke the separate **Blog** scope through the existing Staff controls. Blog editors do not gain moderation or account-management access. Every blog write records its actor and before/after state in the admin audit table. Private previews return `noindex` and `no-store` headers.
+full admins can use the blog. owners can give the separate blog permission to other staff. every blog change goes in the audit log.
 
-Scheduled posts become public when their publication time is reached; the visibility query checks time directly, so no cron or queue worker is needed for publication. Times use the configured application timezone, shown in the editor. The URL uses that publication date. Old article URLs redirect after slug/date changes, while unpublished or archived targets remain inaccessible.
+scheduled posts show up on their own when their time comes. no cron is needed.
 
-No historical Finobe articles, original staff identities, preview accounts, or sample posts are seeded into the live site. The screenshots use disposable local database fixtures.
+## public pages
 
-## Public routes
-
-| Route | Behavior |
+| route | what it shows |
 | --- | --- |
-| `/` | Published posts, newest first |
-| `/page/2/` | Next batch of 25 posts, used by Casper's infinite scroll |
-| `/YYYY/MM/DD/slug/` | Published article, byline, reading time, tags, related posts |
-| `/author/slug/` | Author profile and published posts |
-| `/tag/slug/` | Tagged published posts |
-| `/author/slug/page/2/`, `/tag/slug/page/2/` | Archive pagination |
-| `/rss/` | RSS feed with full rendered post content |
-| `/author/slug/rss/`, `/tag/slug/rss/` | Filtered feeds |
-| `/sitemap.xml` | Public article URLs |
+| `/` | newest posts |
+| `/page/2/` | the next 25 posts |
+| `/YYYY/MM/DD/slug/` | a post |
+| `/author/slug/` | an author and their posts |
+| `/tag/slug/` | posts with a tag |
+| `/rss/` | the rss feed |
+| `/author/slug/rss/`, `/tag/slug/rss/` | feeds for one author or tag |
+| `/sitemap.xml` | all public post urls |
 
-Drafts and future posts are excluded from lists, article routes, feeds, related posts, and sitemap. Empty blogs display the recovered header with an empty-state message. No fake content is substituted.
+drafts and future posts never show up on any of these.
 
-## Verification
+## tests
 
 ```sh
 php vendor/bin/phpunit tests/Feature/BlogTest.php
-php vendor/bin/phpunit tests/Feature/AdminWorkbenchTest.php
-php vendor/bin/phpunit --testsuite Unit
-node --check public/s/blog/admin.js
-php artisan view:cache
 ```
-
-The blog feature suite covers publication through the admin route; all public page types; original theme assets/markup; next-page links; RSS parsing; scheduled visibility; draft privacy; permission checks; private previews; revision recovery; conflict prevention; redirects; archive/restore; author deletion protection; tag detachment; image upload validation; and executable content rejection. Browser checks additionally verified an admin save and the resulting public article. Production MySQL, DNS, PHP-FPM, and persistent media storage still need verification on the deployment server.

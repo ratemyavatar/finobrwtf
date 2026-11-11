@@ -12,9 +12,6 @@ use Laravel\Telescope\TelescopeApplicationServiceProvider;
 
 class TelescopeServiceProvider extends TelescopeApplicationServiceProvider
 {
-    /**
-     * Register any application services.
-     */
     public function register(): void
     {
         Telescope::night();
@@ -24,14 +21,6 @@ class TelescopeServiceProvider extends TelescopeApplicationServiceProvider
         $isLocal = $this->app->environment('local');
 
         Telescope::filter(function (IncomingEntry $entry) use ($isLocal) {
-            /* stop
-            return $isLocal ||
-                   $entry->isReportableException() ||
-                   $entry->isFailedRequest() ||
-                   $entry->isFailedJob() ||
-                   $entry->isScheduledTask() ||
-                   $entry->hasMonitoredTag();
-            */
             if ($entry->type == 'request' && isset($entry->content['uri']) && (str_starts_with($entry->content['uri'], '/s') || str_starts_with($entry->content['uri'], '/web') || str_starts_with($entry->content['uri'], '/fonts'))) {
                 return false;
             }
@@ -49,9 +38,6 @@ class TelescopeServiceProvider extends TelescopeApplicationServiceProvider
         });
     }
 
-    /**
-     * Prevent sensitive request details from being logged by Telescope.
-     */
     protected function hideSensitiveRequestDetails(): void
     {
         if ($this->app->environment('local')) {
@@ -71,15 +57,9 @@ class TelescopeServiceProvider extends TelescopeApplicationServiceProvider
         ]);
     }
 
-    /**
-     * Register the Telescope gate.
-     *
-     * This gate determines who can access Telescope in non-local environments.
-     */
     protected function gate(): void
     {
         Gate::define('viewTelescope', function () {
-            // site admins only (it used to be two hardcoded usernames, so anyone who registered one got in)
             $user = Auth::user();
             return $user && $user->status === 'admin';
         });

@@ -12,7 +12,6 @@ use Illuminate\Support\Facades\Auth;
 
 class InvitesController extends Controller
 {
-
     public function index(Request $request) {
         $title = 'Invites';
 
@@ -31,11 +30,11 @@ class InvitesController extends Controller
             ->orderBy('creation', 'DESC')
             ->get()
             ->map(fn($item) => $item->toArray());
-        
+
         foreach($inviteKeys as $key) {
             $key['creation'] = date('m/d/Y', strtotime($key['creation']));
 
-            if($key['used'] && $key['used'] !== 'n') {   // 'y' or 1 depending on the column type
+            if($key['used'] && $key['used'] !== 'n') {
                 $key['uuid'] = User::where('username', $key['usedBy'])->value('id');
                 $key['dateUsed'] = date('m/d/Y', strtotime($key['dateUsed']));
             }
@@ -49,15 +48,10 @@ class InvitesController extends Controller
         return $this->page('Invitations/Invites', $pageData ?? [], $title ?? null);
     }
 
-    /*
-        inviteTree
-         - who invited this user, and everyone they invited (and who those people invited, ...)
-         - built from invite keys: author = who made the key, usedBy = who signed up with it
-    */
     private static function inviteTree(string $username): array
     {
         $maxDepth = 5;
-        $budget = 500;   // never walk more than this many people
+        $budget = 500;
 
         $inviter = Keys::where('usedBy', $username)->where('used', '!=', 'n')->value('author');
 
@@ -136,13 +130,13 @@ class InvitesController extends Controller
             function inviteKey($length) {
                 $characters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
                 $randomString = '';
-            
+
                 $maxIndex = strlen($characters) - 1;
-            
+
                 for($i = 0; $i < $length; $i++) {
                     $randomString .= $characters[random_int(0, $maxIndex)];
                 }
-            
+
                 return $randomString;
             }
 

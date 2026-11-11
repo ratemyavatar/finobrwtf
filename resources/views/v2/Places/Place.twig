@@ -39,7 +39,7 @@
                 -webkit-animation: fa-spin 1s linear infinite;
                 animation: fa-spin 1s linear infinite
             }
-        </style>
+</style>
   </head>
   <body>
     <div class="" id="client-setup" style="display: none;">
@@ -100,7 +100,7 @@
                                                     info.innerHTML = '<i class="far align-middle fa-circle-notch mr-1 fa-spin-2"></i> Waiting for server...';
                                                     setTimeout(function () {
                                                         info.innerHTML = '<i class="far align-middle fa-circle-notch mr-1 fa-spin-2"></i> Starting the client...';
-                                                        // every year (2012 too) goes through FinobeLauncher, which installs that year's client
+
                                                         var launchUri = `finobe-launcher:///1+launchmode:play+gameinfo:{{ data.user.token }}+placelauncherurl:https://assetgame.finobe.wtf/Game/PlaceLauncher.ashx?ticket={{ data.user.token }}&request=RequestGame${serverid ? 'Job' : ''}&isTeleport=false&placeId={{ data.place.id }}${serverid ? '&gameId=' + serverid : ''}+clientversion:{{ data.place.additional.version ?: '2016' }}+k:l`;
                                                         openUri(launchUri, () => {
                                                             info.classList.add("text-success");
@@ -125,7 +125,7 @@
                                                         play.disabled = false;
                                                     }, 15000);
                                                 }
-                                                
+
                                                 document.addEventListener('DOMContentLoaded', function () {
                                                     setupClose.addEventListener('click', function() {
                                                         clientDownload.style.display = "none";
@@ -134,7 +134,7 @@
 
                                                     play.addEventListener('click', () => joinGame());
                                                 });
-                                            </script>
+</script>
                                         </div>
                                     </div>
                                 </div>

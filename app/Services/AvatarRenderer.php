@@ -8,15 +8,10 @@ use App\Http\Controllers\RobloxArbiterUtilities;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Cache;
 
-/*
-    AvatarRenderer
-     - asks the arbiter (RCC) to render a user's character and makes it their avatar (users.pfp)
-*/
 class AvatarRenderer
 {
     const DEFAULT_PFP = 'avatar/682b8bd6cbc48.png';
 
-    /** Render poses picked on the Character page (avatar[0]['pose']). */
     const POSES = [
         'default' => 'Standing',
         'walking' => 'Walking',
@@ -46,10 +41,6 @@ class AvatarRenderer
         player.CharacterAppearance = characterUrl
         player:LoadCharacter(false)
 
-        -- Saved outfit thumbnails must use the six body colours captured when the
-        -- outfit was saved. The normal avatar renderer passes no seventh argument.
-        -- Applying them directly also covers old RCC builds which fail to apply
-        -- a separate BodyColors appearance URL after loading shirts and hats.
         if player.Character and type(outfitBodyColorIds) == "string" then
             local ids = {}
             for number in string.gmatch(outfitBodyColorIds, "%d+") do
@@ -110,7 +101,6 @@ class AvatarRenderer
                     torso["Right Shoulder"].C0 = CFrame.new(1, 0.5, 0, -4.37113883e-08, 0, 1, -0, 0.99999994, 0, -1, 0, -4.37113883e-08)
                     torso["Right Shoulder"].C1 = CFrame.new(-0.5, 0.5, 0, 0.163175479, 0.229498848, 0.959533155, 0.332843512, 0.902745068, -0.272518843, -0.928756654, 0.363842756, 0.0709186569)
                 elseif pose == "retro" then
-                    -- joints from the "Retro Character Posing" model (only the C0/C1 values, not the model)
                     local joints = {
                         ["RootJoint"] = { CFrame.new(0, 0, 0, -1, 0, 0, 0, 0, 1, 0, 1, 0), CFrame.new(0, 0, 0, -0.965925813, -0.258819044, 0, 0, 0, 1, -0.258819044, 0.965925813, 0) },
                         ["Neck"] = { CFrame.new(0, 1, 0, -0.965925813, -0.258819044, 0, 0, 0, 1, -0.258819044, 0.965925813, 0), CFrame.new(0, -0.500181615, -0.0259598941, -1, 0, 0, 0, -0.0909212455, 0.995858073, 0, 0.995858073, 0.0909212455) },
@@ -128,8 +118,6 @@ class AvatarRenderer
                         end
                     end
                 elseif pose == "peter" then
-                    -- rebuilt from the part positions of the "dead" ragdoll model; the whole body is turned so
-                    -- the 2016 thumbnail camera sees it from the same angle as the model\'s ThumbnailCamera
                     local joints = {
                         ["RootJoint"] = { CFrame.new(0, 0, 0, -1, 0, 0, 0, 0, 1, 0, 1, 0), CFrame.new(0, 0, 0, 0.346894313, -0.485215706, -0.802639245, 0.725988373, 0.680724649, -0.0977488384, 0.59380559, -0.548798243, 0.58840047) },
                         ["Neck"] = { CFrame.new(0, 1, 0, -1, 0, 0, 0, 0, 1, 0, 1, 0), CFrame.new(4.020735e-05, -0.499989733, 2.8695507e-05, -0.770034022, 0.591979798, -0.237922, -0.174891193, 0.162775468, 0.971039, 0.613563907, 0.789343857, -0.0218109) },
@@ -159,8 +147,6 @@ class AvatarRenderer
                 end
             end)
 
-            -- Gear assets arrive as Tools in the Backpack, so they never appear on the
-            -- avatar until equipped. Equip the first gear so it is held in the render.
             local backpack = player.Backpack or player:FindFirstChild("Backpack")
             if backpack then
                 for _, gear in pairs(backpack:GetChildren()) do
@@ -183,10 +169,6 @@ class AvatarRenderer
         return game:GetService("ThumbnailGenerator"):Click(fileExtension, x, y, true)
     ';
 
-    /**
-     * True when the user has no real render yet: still on the default picture,
-     * no picture at all, or the file is missing from the CDN.
-     */
     public static function needsRender(?string $pfp): bool
     {
         if (!$pfp || $pfp === self::DEFAULT_PFP) {
@@ -196,10 +178,6 @@ class AvatarRenderer
         return !File::exists(config('finobe.cdn_path') . '/avatar/' . basename($pfp));
     }
 
-    /**
-     * Queues a background render for a user whose avatar isn't rendered.
-     * At most one attempt per user every 10 minutes, so a down arbiter isn't hammered.
-     */
     public static function renderIfMissing(int $userId, ?string $pfp): void
     {
         if (self::needsRender($pfp) && Cache::add("avatar_autorender_{$userId}", true, 600)) {
@@ -207,10 +185,6 @@ class AvatarRenderer
         }
     }
 
-    /**
-     * Renders the user's current outfit, stores it on the CDN and points users.pfp at it.
-     * Returns the new pfp path (e.g. "avatar/abc123.png").
-     */
     public static function render(User $user): string
     {
         $domain = config('finobe.domain');
@@ -242,7 +216,6 @@ class AvatarRenderer
 
         File::put("{$directory}/{$filename}", $image);
 
-        // delete the previous render, never the shared default
         $old = $user->fresh()->pfp;
         if ($old && $old !== self::DEFAULT_PFP && str_starts_with($old, 'avatar/')) {
             File::delete(config('finobe.cdn_path') . '/avatar/' . basename($old));
@@ -250,7 +223,6 @@ class AvatarRenderer
 
         User::where('id', $user->id)->update(['pfp' => "avatar/{$filename}"]);
 
-        // friends' pages read the avatar through this cache; drop it so the new render shows
         Cache::forget('pfp_' . $user->id);
 
         return "avatar/{$filename}";

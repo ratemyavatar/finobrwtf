@@ -10,12 +10,6 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 
-/*
-    Restrictions set from the admin panel (admin_restrictions) must
-    - be enforced across the site through Restrictions::active()/message()
-    - show up on Settings > Security
-    Play maps onto the panel's "play" feature, chat onto "messages", forum onto "forum_posts".
-*/
 class RestrictionsTest extends TestCase
 {
     private User $admin;
@@ -73,7 +67,7 @@ class RestrictionsTest extends TestCase
 
     public function test_restricted_member_cannot_post_and_message_but_others_can(): void {
         $this->block('access-restrictions-block-forum-posting');
-        // enforcement is what the forum/messages controllers call
+
         $this->assertNotNull(Restrictions::message(2, 'forum'));
         $this->assertNull(Restrictions::message(1, 'forum'));
     }

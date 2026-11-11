@@ -13,11 +13,6 @@ class RobloxUtilities extends Controller
         $this->db = DB::connection('finobe');
     }
 
-    /*
-        GenerateClientTicket function
-         - Used to generate ClientTicket for secured Finobe servers
-         - Arseny: What the fuck I just said? Edit it please :sob:
-    */
     public static function GenerateClientTicket(int $userId, string $username, string $charApp, string $jobId): string
     {
         $currentDate = date("n\/j\/Y\ g\:i\:s\ A");
@@ -30,11 +25,6 @@ class RobloxUtilities extends Controller
         return "{$currentDate};{$signedTicket2};{$signedTicket}";
     }
 
-    /*
-        GenerateGUID
-         - Generating GUID, pretty simple isnt it?
-         - Code taken from: https://stackoverflow.com/questions/21671179/how-to-generate-a-new-guid
-    */
     public static function GenerateGUID(): string
     {
         if (function_exists('com_create_guid') === true)
@@ -44,22 +34,14 @@ class RobloxUtilities extends Controller
 
         return sprintf('%04X%04X-%04X-%04X-%04X-%04X%04X%04X', mt_rand(0, 65535), mt_rand(0, 65535), mt_rand(0, 65535), mt_rand(16384, 20479), mt_rand(32768, 49151), mt_rand(0, 65535), mt_rand(0, 65535), mt_rand(0, 65535));
     }
-    /*
-        IsFinobeCloudAuthorized
-         - checks if request was by Finobe Cloud
-    */
+
     public static function IsFinobeCloudAuthorized()
     {
-        // RCC may send the key as an AccessKey header or, from the game server script, as ?accesskey=
         $requestKey = request()->header('AccessKey') ?? request()->query('accesskey', "");
         $exceptKey = config('finobe.cloud_key');
         return is_string($exceptKey) && $exceptKey !== '' && hash_equals($exceptKey, (string)$requestKey);
     }
-    /*
-        ConstructPlaceLauncher
-         - Generating a placelauncher response...
-         - what.?
-    */
+
     public static function ConstructPlaceLauncher(string $jobId, int $status, string $joinScriptUrl, string $authenticationUrl, string $authenticationToken, string $message)
     {
         return json_encode(
@@ -75,15 +57,8 @@ class RobloxUtilities extends Controller
         );
     }
 
-    /*
-        ConstructJoinScript
-         - Generating a join script...
-         - Oh my god wtf.
-         - My brain aint braining :sob:
-    */
     public static function ConstructJoinScript(object $userInformation, object $placeInformation, object $serverInformation, object $additionalInfo)
     {
-        // every year with a JSON join script (2016+) builds the same one
         $format = \App\Services\ClientVersions::joinFormat((string) $additionalInfo->version);
         switch ($format === 'json' ? '2016' : (string) $additionalInfo->version) {
             case "2016":
@@ -103,7 +78,7 @@ class RobloxUtilities extends Controller
                     "SuperSafeChat" => false,
                     "CharacterAppearance" => $charApp,
                     "ClientTicket" => RobloxUtilities::GenerateClientTicket((int) $userInformation->id, $userInformation->username, $charApp, $serverInformation->jobId),
-                    "GameId" => $serverInformation->jobId, // the job id, not a game id
+                    "GameId" => $serverInformation->jobId,
                     "PlaceId" => (int) $placeInformation->id,
                     "MeasurementUrl" => "",
                     "WaitingForCharacterGuid" => RobloxUtilities::GenerateGUID(),
@@ -114,7 +89,7 @@ class RobloxUtilities extends Controller
                     "VideoInfo" => "",
                     "CreatorId" => (int) $placeInformation->author,
                     "CreatorTypeEnum" => "User",
-                    "MembershipType" => \App\Services\PlayerBadges::membershipType((int) $userInformation->id), // drives the player-list badge
+                    "MembershipType" => \App\Services\PlayerBadges::membershipType((int) $userInformation->id),
                     "AccountAge" => $created > 0 ? (int) floor((time() - $created) / 86400) : 0,
                     "CookieStoreFirstTimePlayKey" => "rbx_evt_ftp",
                     "CookieStoreFiveMinutePlayKey" => "rbx_evt_fmp",
@@ -131,29 +106,24 @@ class RobloxUtilities extends Controller
                     "characterAppearanceId" => (int) $userInformation->id
                 ], JSON_UNESCAPED_SLASHES);
             case "2012":
-                //okay wtf
+
                 $joinscript = file_get_contents(storage_path("rbx/files/scripts/join2012.lua"));
 
                 if (!file_exists(storage_path("rbx/files/scripts/join2012.lua"))) {
                     return "I'm so tired bruhh";
                 }
 
-                //TODO: clean up this shit.
                 $joinscript = str_replace("{placeId}", $placeInformation->id, $joinscript);
                 $joinscript = str_replace("{jobId}", $serverInformation->jobId, $joinscript);
-                // the 2012 client only completes PlayerConnect against a local address - any
-                // remote IP/hostname throws "Unknown exception" and it never opens the socket.
-                // so it always connects to localhost, and the launcher relays that UDP to the
-                // real game server (serverAddress/serverPort from PlaceLauncher).
+
                 $serverAddress = 'localhost';
                 $joinscript = str_replace("{serverip}", $serverAddress, $joinscript);
                 $joinscript = str_replace("{creatorId}", $placeInformation->author, $joinscript);
-                $joinscript = str_replace("{chatstyle}", "ClassicAndBubble", $joinscript); //TODO: please, do this use db.
+                $joinscript = str_replace("{chatstyle}", "ClassicAndBubble", $joinscript);
                 $joinscript = str_replace("{serverport}", $serverInformation->port, $joinscript);
                 $joinscript = str_replace("{userid}", $userInformation->id, $joinscript);
                 $joinscript = str_replace("{username}", $userInformation->username, $joinscript);
-                // the 2012 client's http client won't follow the www->https 301, so the character
-                // fetch has to come from assetgame (which serves it directly) or the avatar never loads
+
                 $charAppUrl = "http://assetgame." . config('finobe.domain') . "/Asset/CharacterFetch.ashx?userId={$userInformation->id}&placeId={$placeInformation->id}";
                 $joinscript = str_replace("{charapp}", $charAppUrl, $joinscript);
                 return $joinscript;
@@ -161,10 +131,7 @@ class RobloxUtilities extends Controller
                 return "Not implemented yet!";
         }
     }
-    /*
-        RequestGame
-         - Basically requests server for the game
-    */
+
     public static function RequestGame(int $placeId, object $user): object
     {
         $instance = new self();
@@ -179,7 +146,7 @@ class RobloxUtilities extends Controller
         $asset = $instance->db->table('assets')
             ->where('id', $placeId)
             ->first();
-        
+
         $additional = json_decode($asset->additional);
         if ($additional->allowplaying === false && (int) $asset->author !== (int) $user->id)
         {
@@ -190,7 +157,6 @@ class RobloxUtilities extends Controller
             ];
         }
 
-        // owner's "User Restrictions" (who can join, minimum account age, blocked players)
         if ($reason = \App\Services\PlaceAccess::denyReason($asset, $user))
         {
             return (object)[
@@ -200,7 +166,7 @@ class RobloxUtilities extends Controller
             ];
         }
 
-        if ($asset->asset_type == 9) { //placeId asset_type
+        if ($asset->asset_type == 9) {
             if (!$instance->db->table('servers')->where('placeid', $placeId)->whereIn('status', [1, 2])->exists()) {
                 $port = self::FreeGameServerPort();
                 $ip = config('finobe.gameserver.host');
@@ -226,8 +192,6 @@ class RobloxUtilities extends Controller
                     "publicMessage" => "Requested a new server"
                 ];
             }
-
-
 
             $server = $instance->db->table('servers')
                 ->where('placeid', $placeId)
@@ -265,7 +229,6 @@ class RobloxUtilities extends Controller
                 "data" => [
                     "status" => $server->status,
                     "jobId" => $server->jobId,
-
                 ]
             ];
         }
@@ -277,10 +240,6 @@ class RobloxUtilities extends Controller
         ];
     }
 
-    /*
-        FreeGameServerPort
-         - picks a UDP port in the configured range that no running server is using
-    */
     private static function FreeGameServerPort(): int
     {
         $min = (int) config('finobe.gameserver.port_min');
@@ -308,8 +267,8 @@ class RobloxUtilities extends Controller
         $gamescript = file_get_contents(storage_path("rbx/files/scripts/gameserver2016.lua"));
         $constructJob = $arbiter->constructJob(
             $jobId,
-            "{$gamescript}", //I'll kill myself if this will work :sob:
-            90, //infinity, since its gameserver, also this NOT how roblox did, so i'll adjust it later
+            "{$gamescript}",
+            90,
             0,
             1,
             "ScriptExecution",
@@ -327,10 +286,6 @@ class RobloxUtilities extends Controller
         return $jobId;
     }
 
-    /* 
-        RequestGameJob
-         - Joins an already exist server with jobId
-    */
     public static function RequestGameJob(int $placeId, string $jobId, object $user,)
     {
         $instance = new self();
@@ -345,7 +300,7 @@ class RobloxUtilities extends Controller
         $asset = $instance->db->table('assets')
             ->where('id', $placeId)
             ->first();
-        
+
         $additional = json_decode($asset->additional);
         if ($additional->allowplaying === false && (int) $asset->author !== (int) $user->id)
         {
@@ -356,7 +311,6 @@ class RobloxUtilities extends Controller
             ];
         }
 
-        // owner's "User Restrictions" (who can join, minimum account age, blocked players)
         if ($reason = \App\Services\PlaceAccess::denyReason($asset, $user))
         {
             return (object)[
@@ -365,7 +319,7 @@ class RobloxUtilities extends Controller
                 "publicMessage" => $reason
             ];
         }
-        if ($asset->asset_type == 9) { //placeId asset_type
+        if ($asset->asset_type == 9) {
             if ($instance->db->table('servers')->where('placeid', $placeId)->where('jobId', $jobId)->where('status', 2)->exists()) {
                 return (object)[
                     "success" => true,

@@ -14,7 +14,6 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withExceptions(function (Exceptions $exceptions) {
         Integration::handles($exceptions);
 
-        // any other 403 (abort(403), staff-only pages): the real site's "Error" card, with the normal navbar
         $exceptions->render(function (\Symfony\Component\HttpKernel\Exception\HttpExceptionInterface $e, $request) {
             if ($e->getStatusCode() !== 403 || $request->expectsJson()) {
                 return null;
@@ -22,12 +21,10 @@ return Application::configure(basePath: dirname(__DIR__))
             try {
                 return response()->view('v2/Forbidden', ['data' => app(\App\View\PageData::class)->with([], '403 Forbidden')], 403);
             } catch (\Throwable $ignored) {
-                return null;   // fall back to Laravel's own 403 page
+                return null;
             }
         });
 
-        // upload bigger than PHP allows: send people back with a normal message instead of an error page.
-        // (this happens before the session starts, so the message travels in the URL: ?upload=too_big)
         $exceptions->render(function (\Illuminate\Http\Exceptions\PostTooLargeException $e, $request) {
             $back = strtok(url()->previous(), '#');
             $back .= (str_contains($back, '?') ? '&' : '?') . 'upload=too_big';
@@ -36,9 +33,6 @@ return Application::configure(basePath: dirname(__DIR__))
         });
     })
     ->withMiddleware(function (Middleware $middleware) {
-        // (keep every middleware setting in this one block: a second withMiddleware() resets the global list)
-
-        // Roblox clients use mixed-case paths (/Game/..., /Asset/...); normalise before routing
         $middleware->prepend([\App\Http\Middleware\ClientIp::class, \App\Http\Middleware\NormalizeClientPaths::class]);
 
         $middleware->web(append: [\App\Http\Middleware\AdminSitePolicy::class, \App\Http\Middleware\GrantDailyDius::class]);

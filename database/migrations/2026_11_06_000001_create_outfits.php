@@ -6,7 +6,6 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    // Character > Outfits: saved sets of worn items and body colours
     public function up(): void
     {
         if (Schema::connection('finobe')->hasTable('outfits')) {

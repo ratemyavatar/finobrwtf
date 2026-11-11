@@ -22,7 +22,7 @@
                                         var expirationFields = document.getElementById("expirationFields");
                                         var dateInput = document.getElementById("date");
                                         var timeInput = document.getElementById("time");
-                                        
+
                                         if (banTypeSelect.value === "y") {
                                             expirationFields.style.display = "none";
                                             dateInput.removeAttribute("required");
@@ -33,7 +33,7 @@
                                             timeInput.setAttribute("required", "required");
                                         }
                                     }
-                                </script>
+</script>
                                 <div class="card-body text-center">
                                     <form role="form" method="POST" action="/admin/bans" enctype="multipart/form-data">
                                         <input type="hidden" name="_token" value="{{ data.csrf_token }}">

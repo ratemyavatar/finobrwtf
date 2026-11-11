@@ -6,12 +6,6 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * These columns hold usernames in the app code (e.g. forum author, rating sender, invite
-     * key author), but the original migrations created them as unsigned big integers, so every
-     * insert fails under MariaDB strict mode ("Incorrect integer value"). Convert them to strings.
-     * Columns that are already text are left alone.
-     */
     private array $columns = [
         'forum_threads' => ['author' => false],
         'forum_replies' => ['author' => false],
@@ -52,6 +46,5 @@ return new class extends Migration
 
     public function down(): void
     {
-        // not reversible: usernames can't be turned back into integers
     }
 };

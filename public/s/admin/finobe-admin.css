@@ -1,4 +1,4 @@
-/* Classic Finobe management pages: use the site's existing Bootstrap/theme surfaces. */
+
 .admin-user-page{max-width:100%;font-size:14px}
 .admin-breadcrumb{font-size:12px;margin:0 0 10px;color:#89939b;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .admin-breadcrumb a{color:inherit;text-decoration:none}

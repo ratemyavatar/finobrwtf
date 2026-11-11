@@ -2,20 +2,16 @@
 <script src="/s/blog/casper.js"></script>
 @if($kind === 'post')<script>
     $(document).ready(function () {
-        // FitVids - start
+
         var $postContent = $(".post-full-content");
         $postContent.fitVids();
-        // FitVids - end
 
-        // Replace nav with title on scroll - start
         Casper.stickyNavTitle({
             navSelector: '.site-nav-main',
             titleSelector: '.post-full-title',
             activeClass: 'nav-post-title-active'
         });
-        // Replace nav with title on scroll - end
 
-        // Hover on avatar
         var hoverTimeout;
         $('.author-list-item').hover(function () {
             var $this = $(this);
@@ -34,13 +30,8 @@
         });
     });
 </script>@elseif($kind === 'home')<script>
-
-    // NOTE: Scroll performance is poor in Safari
-    // - this appears to be due to the events firing much more slowly in Safari.
-    //   Dropping the scroll event and using only a raf loop results in smoother
-    //   scrolling but continuous processing even when not scrolling
     $(document).ready(function () {
-        
+
         var nav = document.querySelector('.site-nav-main .site-nav');
         var feed = document.querySelector('.post-feed');
 
@@ -71,7 +62,6 @@
             var trigger = feed.getBoundingClientRect().top + window.scrollY;
             var progressMax = lastDocumentHeight - lastWindowHeight;
 
-            // show/hide nav
             if (lastScrollY >= trigger - 20) {
                 nav.classList.add('fixed-nav-active');
             } else {

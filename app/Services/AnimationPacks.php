@@ -2,18 +2,10 @@
 
 namespace App\Services;
 
-/*
-    AnimationPacks
-     - which movement animations a player's character uses in game (picked on the Character page)
-     - the game server asks /api/gameserver/animations/{userId} when a character spawns and swaps the
-       AnimationIds on the character's Animate script; "default" leaves it as it is
-     - the animation files are served from storage/rbx/files/animations (see rbxAPIs::asset)
-*/
 class AnimationPacks
 {
     const DEFAULT = 'default';
 
-    /** pack => [label, description, [Animate config value => [Animation child, asset id]]] */
     const PACKS = [
         'default' => [
             'label' => 'Default',
@@ -44,7 +36,6 @@ class AnimationPacks
         return self::exists($pack) ? $pack : self::DEFAULT;
     }
 
-    /** Lines of "<config> <Animation child> <url>" for the game server script (empty for default). */
     public static function gameServerLines(string $pack, string $baseUrl): string
     {
         $lines = [];
