@@ -140,8 +140,15 @@ class rbxAPIs extends Controller
                         abort(404);
                     }
 
-                    if (is_string($body)) {
-                        $body = preg_replace('#https?://www\\.' . preg_quote(config('finobe.domain'), '#') . '#i', 'http://assetgame.' . config('finobe.domain'), $body);
+                    if (is_string($body) && !str_starts_with($body, '<roblox!')) {
+                        $rewritten = preg_replace(
+                            ['#https?://www\\.' . preg_quote(config('finobe.domain'), '#') . '#i', '#https?://(?:www\\.)?roblox\\.com/asset#i'],
+                            ['http://assetgame.' . config('finobe.domain'), 'http://assetgame.' . config('finobe.domain') . '/asset'],
+                            $body
+                        );
+                        if (is_string($rewritten)) {
+                            $body = $rewritten;
+                        }
                     }
 
                     if ((int) $assetinfo->asset_type === 9 && is_string($body) && str_starts_with($body, '<roblox!')
