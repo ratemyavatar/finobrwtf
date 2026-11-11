@@ -513,7 +513,7 @@ class CatalogController extends Controller
                         $file->move(public_path('dynamic/temp/'), $filename);
                         $input = public_path('dynamic/temp/' . $filename);
                         $output = public_path('dynamic/temp/' . $filename . '.mp3');
-                        exec("timidity $input -Ow -o - | ffmpeg -i - -codec:a libmp3lame -b:a 96k $output");
+                        exec("timidity " . escapeshellarg($input) . " -Ow -o - | ffmpeg -i - -codec:a libmp3lame -b:a 96k " . escapeshellarg($output));
                         $audio = $ffmpeg->open($output);
                         $duration = $audio->getFormat()->get('duration');
                     } else {

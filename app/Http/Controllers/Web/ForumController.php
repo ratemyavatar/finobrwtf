@@ -852,15 +852,18 @@ class ForumController extends Controller
                 }
 
                 $file = $request->file('file');
-                $fileUrl = 'https://cdn.finobe.wtf/forum/media/' . $file->getClientOriginalName();
+                $base = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+                $base = trim(preg_replace('/[^A-Za-z0-9_-]+/', '-', $base), '-') ?: 'file';
+                $name = substr($base, 0, 60) . '.' . ($file->guessExtension() ?: 'bin');
+                $fileUrl = 'https://cdn.' . config('finobe.domain') . '/forum/media/' . $name;
 
-                if(file_exists(config('finobe.cdn_path') . '/forum/media/' . $file->getClientOriginalName())) {
+                if(file_exists(config('finobe.cdn_path') . '/forum/media/' . $name)) {
                     Session::put('error', 'File already exists. Here is the link: ' . $fileUrl);
                     return redirect('/app/forum/new/post');
                 }
 
                 try {
-                    $file->move(config('finobe.cdn_path') . '/forum/media', $file->getClientOriginalName());
+                    $file->move(config('finobe.cdn_path') . '/forum/media', $name);
                     Session::put('success', 'File uploaded successfully. Here is the link: ' . $fileUrl);
                     return redirect('/app/forum/new/post');
                 } catch(\Exception $e) {
