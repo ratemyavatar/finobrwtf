@@ -53,14 +53,16 @@ class LegalController extends Controller
         $data = $request->all();
 
         $bans = [];
+        $query = $data['user'] ?? $data['q'] ?? null;
+        $query = is_string($query) && $query !== '' ? $query : null;
+        $search = $query === null ? null : '%' . addcslashes($query, '\\%_') . '%';
         $results = Ban::whereIn('username', function ($subquery) {
                 $subquery->select('username')->from('users');
             })
             ->orderByDesc('id')
             ->limit(50);
 
-        if(isset($data['q'])) {
-            $search = '%' . $data['q'] . '%';
+        if($search !== null) {
             $results->where('username', 'like', $search);
         }
 
@@ -73,6 +75,7 @@ class LegalController extends Controller
             }
 
             $result['username'] = htmlspecialchars($result['username']);
+            $result['moderator'] = htmlspecialchars((string) ($result['moderator'] ?? ''));
             $result['date'] = date('Y-m-d', strtotime($result['date']));
             $result['expire'] = date('Y-m-d', strtotime($result['expire']));
             $bans[] = $result;
@@ -84,8 +87,7 @@ class LegalController extends Controller
             ->orderByDesc('id')
             ->limit(50);
 
-        if(isset($data['q'])) {
-            $search = '%' . $data['q'] . '%';
+        if($search !== null) {
             $results->where('username', 'like', $search);
         }
 
@@ -98,12 +100,14 @@ class LegalController extends Controller
             }
 
             $result['username'] = htmlspecialchars($result['username']);
+            $result['moderator'] = htmlspecialchars((string) ($result['moderator'] ?? ''));
             $result['date'] = date('Y-m-d', strtotime($result['date']));
             $bans[] = $result;
         }
 
         usort($bans, fn($a, $b) => strtotime($b['date']) - strtotime($a['date']));
         $pageData['bans'] = $bans;
+        $pageData['search'] = $query;
 
         return $this->page('Bans', $pageData ?? [], $title ?? null);
     }
