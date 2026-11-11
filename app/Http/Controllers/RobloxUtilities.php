@@ -52,7 +52,7 @@ class RobloxUtilities extends Controller
     {
         // RCC may send the key as an AccessKey header or, from the game server script, as ?accesskey=
         $requestKey = request()->header('AccessKey') ?? request()->query('accesskey', "");
-        $exceptKey = env('FINOBE_CLOUD_AUTHORIZATION');
+        $exceptKey = config('finobe.cloud_key');
         return is_string($exceptKey) && $exceptKey !== '' && hash_equals($exceptKey, (string)$requestKey);
     }
     /*
@@ -87,7 +87,7 @@ class RobloxUtilities extends Controller
         $format = \App\Services\ClientVersions::joinFormat((string) $additionalInfo->version);
         switch ($format === 'json' ? '2016' : (string) $additionalInfo->version) {
             case "2016":
-                $domain = env('FINOBE_DOMAIN', 'finobe.wtf');
+                $domain = config('finobe.domain');
                 $charApp = "https://www.{$domain}/Asset/CharacterFetch.ashx?userId={$userInformation->id}&placeId={$placeInformation->id}";
                 $created = is_numeric($userInformation->created ?? null) ? (int) $userInformation->created : (int) strtotime((string) ($userInformation->created ?? ""));
 
@@ -154,7 +154,7 @@ class RobloxUtilities extends Controller
                 $joinscript = str_replace("{username}", $userInformation->username, $joinscript);
                 // the 2012 client's http client won't follow the www->https 301, so the character
                 // fetch has to come from assetgame (which serves it directly) or the avatar never loads
-                $charAppUrl = "http://assetgame." . env('FINOBE_DOMAIN', 'finobe.wtf') . "/Asset/CharacterFetch.ashx?userId={$userInformation->id}&placeId={$placeInformation->id}";
+                $charAppUrl = "http://assetgame." . config('finobe.domain') . "/Asset/CharacterFetch.ashx?userId={$userInformation->id}&placeId={$placeInformation->id}";
                 $joinscript = str_replace("{charapp}", $charAppUrl, $joinscript);
                 return $joinscript;
             default:
@@ -316,9 +316,9 @@ class RobloxUtilities extends Controller
             [
                 $placeId,
                 $port,
-                "https://www." . env('FINOBE_DOMAIN', 'finobe.wtf'),
+                "https://www." . config('finobe.domain'),
                 $creatorId,
-                (string) env('FINOBE_CLOUD_AUTHORIZATION', '')
+                (string) config('finobe.cloud_key')
             ]
         );
 

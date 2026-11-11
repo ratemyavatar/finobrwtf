@@ -37,7 +37,7 @@ class PlaceThumbnail
         $thumbnail = $additional['media']['thumbnail'] ?? null;
 
         if ($thumbnail && str_starts_with($thumbnail, 'thumbnails/')) {
-            return 'https://cdn.' . env('FINOBE_DOMAIN', 'finobe.wtf') . '/' . $thumbnail;
+            return 'https://cdn.' . config('finobe.domain') . '/' . $thumbnail;
         }
 
         return self::PLACEHOLDER;
@@ -72,7 +72,7 @@ class PlaceThumbnail
             throw new \RuntimeException("Place {$placeId} not found");
         }
 
-        $site = 'https://www.' . env('FINOBE_DOMAIN', 'finobe.wtf');
+        $site = 'https://www.' . config('finobe.domain');
 
         // RCC downloads the place itself; this token lets it fetch a private place (valid 5 minutes, this place only)
         $token = \Illuminate\Support\Str::random(48);
@@ -86,7 +86,7 @@ class PlaceThumbnail
             0,
             2,
             "ScriptExecution",
-            ["{$site}/asset/?id={$placeId}&rendertoken={$token}", $site, (string) env('FINOBE_CLOUD_AUTHORIZATION', ''), "PNG", 768, 432]
+            ["{$site}/asset/?id={$placeId}&rendertoken={$token}", $site, (string) config('finobe.cloud_key'), "PNG", 768, 432]
         );
 
         try {

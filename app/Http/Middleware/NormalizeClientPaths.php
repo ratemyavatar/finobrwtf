@@ -18,7 +18,7 @@ class NormalizeClientPaths
 {
     public function handle(Request $request, Closure $next): Response
     {
-        $domain = env('FINOBE_DOMAIN', 'finobe.wtf');
+        $domain = config('finobe.domain');
         $host = strtolower($request->getHost());
         $path = $request->getPathInfo();
         $lower = strtolower($path);

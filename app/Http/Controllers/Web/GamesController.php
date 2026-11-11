@@ -221,7 +221,7 @@ class GamesController extends Controller
                 ->where('asset_type', 9)
                 ->count();
             
-            if(!(bool)env('FINOBE_CREATE_PLACES')) {
+            if(!config('finobe.features.create_places')) {
                 Session::put('error', 'Creating assets is currently disabled');
                 return redirect('/games/new');
             }

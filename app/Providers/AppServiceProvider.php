@@ -23,8 +23,8 @@ class AppServiceProvider extends ServiceProvider
         // the client years a place can use (place creation/settings, the place page's Play button)
         \Illuminate\Support\Facades\View::share('client_versions', \App\Services\ClientVersions::names());
 
-        if (env('APP_ENV') !== 'local') {
-            $appUrl = parse_url(env('APP_URL'), PHP_URL_HOST);
+        if (!app()->environment('local')) {
+            $appUrl = parse_url(config('app.url'), PHP_URL_HOST);
             $requestHost = request()->getHost();
 
             if ($appUrl == $requestHost || request()->is('telescope*')) {

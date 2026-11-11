@@ -112,7 +112,7 @@ class MeshConverter
     private static function decodeDraco(string $mesh): string
     {
         $script = base_path('tools/mesh/v7_to_v2.py');
-        $python = (string) env('FINOBE_PYTHON', 'python3');
+        $python = (string) config('finobe.python');
         $proc = @proc_open([$python, $script], [0 => ['pipe', 'r'], 1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes);
         if (!is_resource($proc)) {
             throw new ImportException('A mesh in the model is a compressed (7.00) mesh, and python3 isn\'t available to convert it.');

@@ -132,7 +132,7 @@ class CharacterAppearanceController extends Controller
         $bodyColorsRoute = $request->query('outfitToken') ? 'client-routes.outfit-body-colors' : 'client-routes.body-colors';
         // route() defaults to the https www host, which the 2012 client can't follow (301);
         // pin to assetgame, which serves both clients, while keeping the outfit-token routes
-        $base = "http://assetgame." . env('FINOBE_DOMAIN', 'finobe.wtf');
+        $base = "http://assetgame." . config('finobe.domain');
         $charApp = $base . route($bodyColorsRoute, $params, false) . ';';
 
         $ids = array_merge(

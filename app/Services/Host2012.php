@@ -26,7 +26,7 @@ class Host2012
         $token = bin2hex(random_bytes(24));
         Cache::put("gameserver2012_{$token}", $jobId, 600);
 
-        $domain = env('FINOBE_DOMAIN', 'finobe.wtf');
+        $domain = config('finobe.domain');
         // http: the 2012 client's old libcurl/OpenSSL can't be relied on for modern TLS
         $scriptUrl = "http://assetgame.{$domain}/game/gameserver2012.ashx?token={$token}";
 
@@ -51,6 +51,6 @@ class Host2012
 
     private static function client()
     {
-        return Http::timeout(15)->withHeaders(['AccessKey' => (string) env('FINOBE_CLOUD_AUTHORIZATION', '')])->asJson();
+        return Http::timeout(15)->withHeaders(['AccessKey' => (string) config('finobe.cloud_key')])->asJson();
     }
 }

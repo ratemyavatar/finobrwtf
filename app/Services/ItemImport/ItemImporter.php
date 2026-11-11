@@ -290,7 +290,7 @@ class ItemImporter
 
     private function siteUrl(int $siteId): string
     {
-        return 'http://www.' . env('FINOBE_DOMAIN', 'finobe.wtf') . '/asset/?id=' . $siteId;
+        return 'http://www.' . config('finobe.domain') . '/asset/?id=' . $siteId;
     }
 
     private function mesh(int $robloxId): int
@@ -334,14 +334,14 @@ class ItemImporter
     public static function download(int $id): string
     {
         $headers = ['User-Agent' => 'Roblox/WinInet'];
-        $cookie = (string) env('FINOBE_ROBLOSECURITY', '');
+        $cookie = (string) config('finobe.roblosecurity');
         if ($cookie !== '') {
             $headers['Cookie'] = '.ROBLOSECURITY=' . $cookie;
         }
 
         try {
             $r = Http::withHeaders($headers)->timeout(30)->retry(2, 500, throw: false)
-                ->get(rtrim((string) env('FINOBE_ASSETDELIVERY', 'https://assetdelivery.roproxy.com'), '/') . '/v1/asset/', ['id' => $id]);
+                ->get(rtrim((string) config('finobe.assetdelivery'), '/') . '/v1/asset/', ['id' => $id]);
         } catch (\Throwable $e) {
             throw new ImportException("Couldn't reach Roblox to download asset {$id}, try again.");
         }

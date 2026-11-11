@@ -170,7 +170,7 @@ class PlaceSettingsActions
         $this->place->additional = $additional;
         $this->place->save();
 
-        Discord::send($this->user['username'] . ' uploaded a game thumbnail, moderate it! [ ' . env('APP_URL') . '/admin/assets ]');
+        Discord::send($this->user['username'] . ' uploaded a game thumbnail, moderate it! [ ' . config('app.url') . '/admin/assets ]');
 
         return $this->back('thumbnail', "Uploaded! It'll show up once a moderator approves it.");
     }
@@ -222,7 +222,7 @@ class PlaceSettingsActions
             'additional' => ['placeId' => (int) $this->place->id, 'media' => ['thumbnail' => null]],
         ]);
 
-        Discord::send($this->user['username'] . ' made a game badge, moderate it! [ ' . env('APP_URL') . '/admin/assets ]');
+        Discord::send($this->user['username'] . ' made a game badge, moderate it! [ ' . config('app.url') . '/admin/assets ]');
 
         return $this->back('badges', "Badge made! It'll work in-game once a moderator approves the icon.");
     }

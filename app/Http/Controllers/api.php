@@ -496,7 +496,7 @@ class api extends Controller
         if ($data['type'] == 'outfit-preview') {
             try {
                 $path = OutfitPreviewRenderer::render($user, (int) $outfit->id);
-                $this->response['image'] = 'https://cdn.' . env('FINOBE_DOMAIN', 'finobe.wtf') . '/' . $path;
+                $this->response['image'] = 'https://cdn.' . config('finobe.domain') . '/' . $path;
             } catch (\Throwable $e) {
                 report($e);
                 $this->response['code'] = 503;
@@ -536,7 +536,7 @@ class api extends Controller
 
         $missing = count($ids) - count($avatar[0]['equippedGearVersionIds']);
         try {
-            $this->response['image'] = 'https://cdn.' . env('FINOBE_DOMAIN', 'finobe.wtf') . '/' . AvatarRenderer::render($user);
+            $this->response['image'] = 'https://cdn.' . config('finobe.domain') . '/' . AvatarRenderer::render($user);
             $user->render_cooldown = now();
             $user->save();
             $this->response['message'] = $missing ? "Outfit on. {$missing} item(s) you no longer own were left off." : 'Outfit on.';
@@ -576,7 +576,7 @@ class api extends Controller
 
             // re-render now so the page can show it (like an outfit change, this skips the regen cooldown)
             try {
-                $this->response['image'] = 'https://cdn.' . env('FINOBE_DOMAIN', 'finobe.wtf') . '/' . AvatarRenderer::render($user);
+                $this->response['image'] = 'https://cdn.' . config('finobe.domain') . '/' . AvatarRenderer::render($user);
                 $user->render_cooldown = now();
                 $user->save();
             } catch (\Throwable $e) {
@@ -1153,7 +1153,7 @@ class api extends Controller
         $user->render_cooldown = now();
         $user->save();
 
-        $this->response['image'] = 'https://cdn.' . env('FINOBE_DOMAIN', 'finobe.wtf') . '/' . $pfp;
+        $this->response['image'] = 'https://cdn.' . config('finobe.domain') . '/' . $pfp;
 
         return response()->json($this->response, 200);
     }

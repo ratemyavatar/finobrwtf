@@ -244,7 +244,7 @@ class PlaceLauncher
         $ticket = bin2hex(random_bytes(24));
         Cache::put("join_ticket_{$ticket}", ['user' => (int) $user->id, 'jobId' => $server->jobId], 300);
 
-        $domain = env('FINOBE_DOMAIN', 'finobe.wtf');
+        $domain = config('finobe.domain');
         // the 2012 client's old libcurl/OpenSSL can't be relied on for modern TLS, so 2012 joins use http
         $scheme = \App\Services\ClientVersions::scheme(\App\Services\ClientVersions::of($additional));
 

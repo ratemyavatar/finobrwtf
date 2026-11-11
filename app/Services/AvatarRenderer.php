@@ -213,7 +213,7 @@ class AvatarRenderer
      */
     public static function render(User $user): string
     {
-        $domain = env('FINOBE_DOMAIN', 'finobe.wtf');
+        $domain = config('finobe.domain');
         $site = "https://www.{$domain}";
 
         $arbiter = new RobloxArbiterUtilities(config('finobe.arbiter.host'), (int) config('finobe.arbiter.port'));

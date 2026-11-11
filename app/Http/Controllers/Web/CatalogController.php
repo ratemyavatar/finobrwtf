@@ -265,7 +265,7 @@ class CatalogController extends Controller
         // meshes / textures a hat, gear or head points at, if they were uploaded with it (same author, mesh/image)
         if(in_array($asset->asset_type, [8, 17, 19])) {
             $file = config('finobe.cdn_path') . '/assets/' . $asset->file;
-            $domain = preg_quote(env('FINOBE_DOMAIN', 'finobe.wtf'), '#');
+            $domain = preg_quote(config('finobe.domain'), '#');
             if(is_file($file) && preg_match_all('#https?://(?:www\.)?' . $domain . '/asset/\?id=(\d+)#i', (string) file_get_contents($file), $m)) {
                 $ids = array_merge($ids, Asset::whereIn('id', array_map('intval', $m[1]))
                     ->where('author', $asset->author)->whereIn('asset_type', [1, 4])->pluck('id')->all());
@@ -389,7 +389,7 @@ class CatalogController extends Controller
         }
         
         if($request->isMethod('post')) {
-            if(!(bool)env('FINOBE_CREATE_ASSETS')) {
+            if(!config('finobe.features.create_assets')) {
                 Session::put('Creating assets is currently disabled');
                 return redirect('/catalog/new');
             }

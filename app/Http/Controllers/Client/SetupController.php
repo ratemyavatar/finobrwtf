@@ -14,10 +14,10 @@ class SetupController extends Controller
     public function getCurrentVersion (Request $request) {
         $year = (string) $request->query('year', '2016');
         if ($year === '2016') {
-            return (string) env('FINOBE_CLIENT_VERSION', 'version-xqs0ranlc9ofKJwiJtSd');
+            return (string) config('finobe.client_version');
         }
         $version = preg_match('/^\d{4}$/', $year) && \App\Services\ClientVersions::isValid($year)
-            ? (string) env("FINOBE_CLIENT_VERSION_{$year}", '') : '';
+            ? (string) config("finobe.client_versions.{$year}", '') : '';
 
         return $version !== '' ? $version : response("No {$year} client is published yet.", 404);
     }
@@ -35,7 +35,7 @@ class SetupController extends Controller
     }
 
     public function getCurrentActiveCDN (Request $request): string {
-        return 'prod1-setup.' . env('FINOBE_DOMAIN', 'finobe.wtf');
+        return 'prod1-setup.' . config('finobe.domain');
     }
 
     // client builds live in two places: storage/setup (tracked launcher packages) and

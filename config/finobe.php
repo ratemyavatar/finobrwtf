@@ -3,6 +3,24 @@
 return [
     'domain' => env('FINOBE_DOMAIN', 'finobe.wtf'),
     'ads' => (bool) env('FINOBE_ADS', false),
+    'cloud_key' => (string) env('FINOBE_CLOUD_AUTHORIZATION', ''),
+    'roblosecurity' => (string) env('FINOBE_ROBLOSECURITY', ''),
+    'python' => env('FINOBE_PYTHON', 'python3'),
+    'assetdelivery' => env('FINOBE_ASSETDELIVERY', 'https://assetdelivery.roproxy.com'),
+    'client_version' => env('FINOBE_CLIENT_VERSION', 'version-xqs0ranlc9ofKJwiJtSd'),
+    'client_versions' => [
+        '2007' => env('FINOBE_CLIENT_VERSION_2007', ''),
+        '2012' => env('FINOBE_CLIENT_VERSION_2012', ''),
+        '2017' => env('FINOBE_CLIENT_VERSION_2017', ''),
+        '2018' => env('FINOBE_CLIENT_VERSION_2018', ''),
+        '2020' => env('FINOBE_CLIENT_VERSION_2020', ''),
+    ],
+    'features' => [
+        'forum_post' => (bool) env('FINOBE_FORUM_POST', false),
+        'create_places' => (bool) env('FINOBE_CREATE_PLACES', false),
+        'create_assets' => (bool) env('FINOBE_CREATE_ASSETS', false),
+        'create_invite_keys' => (bool) env('FINOBE_CREATE_INVITE_KEYS', false),
+    ],
     'trusted_proxies' => env('FINOBE_TRUSTED_PROXIES', '127.0.0.1,::1'),
     'mail' => [
         'mode' => (int) env('FINOBE_MAIL_MODE', 3),

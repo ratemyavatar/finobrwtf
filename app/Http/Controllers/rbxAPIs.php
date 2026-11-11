@@ -105,7 +105,7 @@ class rbxAPIs extends Controller
             $script = "%{$assetId}%\r\n".file_get_contents(storage_path("rbx/files/2012CoreGui/{$assetId}.lua"));
             // core gui scripts load their images/assets through www.finobe.wtf, which 301-redirects
             // to https and the 2012 client can't follow it (menu images etc. then never load)
-            $script = preg_replace('#https?://www\.' . preg_quote(env('FINOBE_DOMAIN', 'finobe.wtf'), '#') . '#i', 'http://assetgame.' . env('FINOBE_DOMAIN', 'finobe.wtf'), $script);
+            $script = preg_replace('#https?://www\.' . preg_quote(config('finobe.domain'), '#') . '#i', 'http://assetgame.' . config('finobe.domain'), $script);
             return response(SecurityNotary::SignScript($script, FormatVersion::V1, false));
         }
 
@@ -148,7 +148,7 @@ class rbxAPIs extends Controller
                     // the 2012 client can't follow the www->https 301, so asset files (hats, faces,
                     // shirts) that reference their textures through www.finobe.wtf never load
                     if (is_string($body)) {
-                        $body = preg_replace('#https?://www\\.' . preg_quote(env('FINOBE_DOMAIN', 'finobe.wtf'), '#') . '#i', 'http://assetgame.' . env('FINOBE_DOMAIN', 'finobe.wtf'), $body);
+                        $body = preg_replace('#https?://www\\.' . preg_quote(config('finobe.domain'), '#') . '#i', 'http://assetgame.' . config('finobe.domain'), $body);
                     }
                     // the 2012 client only reads XML place files (the binary format is from 2013), so a binary
                     // place of a 2012 game (Studio saves binary, older baseplates were binary) is converted
@@ -320,7 +320,7 @@ class rbxAPIs extends Controller
         $user = User::find((int) $userId);
         $pack = \App\Services\AnimationPacks::forUser($user);
 
-        return response(\App\Services\AnimationPacks::gameServerLines($pack, 'https://www.' . env('FINOBE_DOMAIN', 'finobe.wtf')), 200)
+        return response(\App\Services\AnimationPacks::gameServerLines($pack, 'https://www.' . config('finobe.domain')), 200)
             ->header('Content-Type', 'text/plain');
     }
 
@@ -477,7 +477,7 @@ class rbxAPIs extends Controller
     }
 
     public function studioAshx() {
-        $domain = env('FINOBE_DOMAIN', 'finobe.wtf');
+        $domain = config('finobe.domain');
         $src = '-- Setup studio cmd bar & load core scripts
 
         pcall(function() game:GetService("InsertService"):SetFreeModelUrl("http://www.finobe.wtf/Game/Tools/InsertAsset.ashx?type=fm&q=%s&pg=%d&rs=%d") end)

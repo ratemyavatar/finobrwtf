@@ -236,7 +236,7 @@ class ForumController extends Controller
                 'content' => 'required|string|min:3|max:16384'
             ]);
 
-            if(!(bool)env('FINOBE_FORUM_POST')) {
+            if(!config('finobe.features.forum_post')) {
                 Session::put('error', 'Posting on the forums have been disabled');
                 return redirect('/forum/post?id=' . $data['id']);
             }
@@ -565,7 +565,7 @@ class ForumController extends Controller
                 'content' => 'required|string|min:3|max:16384'
             ]);
 
-            if(!(bool)env('FINOBE_FORUM_POST')) {
+            if(!config('finobe.features.forum_post')) {
                 Session::put('error', 'Posting on the forums have been disabled');
                 return redirect('/forum/post?id=' . $data['id']);
             }
@@ -929,7 +929,7 @@ class ForumController extends Controller
             if(@is_dir($path) && @is_readable($path)) {
                 $html .= '<strong>' . $name . '</strong>' . self::displayDirectory($path, $prefix . rawurlencode($file) . '/');
             } else {
-                $html .= '<a href="https://cdn.' . env('FINOBE_DOMAIN', 'finobe.wtf') . '/forum/media/' . $prefix . rawurlencode($file) . '" target="_blank">' . $name . '</a>';
+                $html .= '<a href="https://cdn.' . config('finobe.domain') . '/forum/media/' . $prefix . rawurlencode($file) . '" target="_blank">' . $name . '</a>';
             }
 
             $html .= '</li>';

@@ -113,12 +113,12 @@ class InvitesController extends Controller
         }
 
         if($request->isMethod('post')) {
-            if(!(bool)env('FINOBE_INVITE_KEYS')) {
+            if(!(bool) config('admin.invites_enabled')) {
                 Session::put('error', 'Invite keys are disabled');
                 return redirect('/invites');
             }
 
-            if(!(bool)env('FINOBE_CREATE_INVITE_KEYS')) {
+            if(!config('finobe.features.create_invite_keys')) {
                 Session::put('error', 'Invite key creation is disabled');
                 return redirect('/invites');
             }

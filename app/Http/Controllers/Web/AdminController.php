@@ -312,7 +312,7 @@ class AdminController extends Controller
 
         if($asset->asset_type == 21) {
             $additional = $asset->additional;
-            $additional['media']['thumbnail'] = 'https://cdn.' . env('FINOBE_DOMAIN', 'finobe.wtf') . '/thumbnails/' . basename($asset->file);
+            $additional['media']['thumbnail'] = 'https://cdn.' . config('finobe.domain') . '/thumbnails/' . basename($asset->file);
             $asset->additional = $additional;
             $asset->save();
 
@@ -768,11 +768,11 @@ class AdminController extends Controller
                     $id = AssetCopier::fromImage($file, $type, $title, $author, $description, intval($data['price']), isset($data['onsale']));
                 } elseif($type === 'mesh') {
                     $id = AssetHelper::createAsset($title, 4, $author, MeshConverter::toLegacy($file), '', 'n', []);
-                    Session::put('success', 'Mesh uploaded (http://www.' . env('FINOBE_DOMAIN', 'finobe.wtf') . '/asset/?id=' . $id . ')');
+                    Session::put('success', 'Mesh uploaded (http://www.' . config('finobe.domain') . '/asset/?id=' . $id . ')');
                     return redirect('/admin/createxml');
                 } else {
                     $id = AssetHelper::createAsset($title, 1, $author, $file, '', 'n', [], true);
-                    Session::put('success', 'Texture uploaded (http://www.' . env('FINOBE_DOMAIN', 'finobe.wtf') . '/asset/?id=' . $id . ')');
+                    Session::put('success', 'Texture uploaded (http://www.' . config('finobe.domain') . '/asset/?id=' . $id . ')');
                     return redirect('/admin/createxml');
                 }
             } catch(ImportException $e) {

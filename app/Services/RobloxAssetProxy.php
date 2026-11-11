@@ -76,7 +76,7 @@ class RobloxAssetProxy
         if (!self::isXml($body)) {
             return $body; // images, meshes, binary models (rewriting those would corrupt them)
         }
-        $domain = env('FINOBE_DOMAIN', 'finobe.wtf');
+        $domain = config('finobe.domain');
         return str_ireplace(['roblox.com/asset', 'Accessory'], ["{$domain}/asset", 'Hat'], $body);
     }
 
@@ -137,7 +137,7 @@ class RobloxAssetProxy
     private static function assetDelivery(array $query): array
     {
         $headers = ['User-Agent' => 'Roblox/WinInet', 'requester' => 'server'];
-        $cookie = (string) env('FINOBE_ROBLOSECURITY', '');
+        $cookie = (string) config('finobe.roblosecurity');
         if ($cookie !== '') {
             $headers['Cookie'] = '.ROBLOSECURITY=' . $cookie;
         }

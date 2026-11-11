@@ -74,9 +74,9 @@ class StartGameServer
             $job = $arbiter->ConstructJob($this->jobId, $script, 21600, 0, 1, 'GameServer', [
                 (int) $server->placeid,
                 (int) $server->port,
-                'https://www.' . env('FINOBE_DOMAIN', 'finobe.wtf'),
+                'https://www.' . config('finobe.domain'),
                 (int) $place->author,
-                (string) env('FINOBE_CLOUD_AUTHORIZATION', ''),
+                (string) config('finobe.cloud_key'),
             ]);
 
             // call SOAP directly: OpenJobEx() would turn a fault into null
