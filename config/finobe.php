@@ -2,6 +2,18 @@
 
 return [
     'domain' => env('FINOBE_DOMAIN', 'finobe.wtf'),
+    'ads' => (bool) env('FINOBE_ADS', false),
+    'mail' => [
+        'mode' => (int) env('FINOBE_MAIL_MODE', 3),
+        'from' => env('MAIL_FROM_ADDRESS', 'noreply@finobe.wtf'),
+        'zepto_key' => env('FINOBE_ZOHO_API_KEY'),
+        'smtp2go_key' => env('FINOBE_SMTP2GO_API_KEY'),
+    ],
+    'turnstile' => [
+        'secret' => env('TURNSTILE_SECRET'),
+        'sitekey' => env('TURNSTILE_SITEKEY'),
+    ],
+    'discord_webhook' => env('DISCORD_WEBHOOK') ?: (env('FINOBE_DISCORD_WEBHOOK') ? 'https://discord.com/api/webhooks/' . env('FINOBE_DISCORD_WEBHOOK') : null),
 
     // Filesystem root of the CDN (cdn.<domain>) web root on the server.
     'cdn_path' => rtrim(env('FINOBE_CDN_PATH', '/var/www/cdn.finobe.net'), '/'),

@@ -35,12 +35,6 @@ class UsernameChange
         'reset_password' => ['username'],
     ];
 
-    const FORBIDDEN = [
-        'raped', 'dick', 'fuck', 'shit', 'fag', 'f@g', 'd1ck', 'pussy',
-        'jew', 'tranny', 'tr@nny', 'goon', 'g@@n', 'g00n', 'gyat', 'gy@t', 'r@ped', 'tities', 't1t1es',
-        'nigg', 'n!gger', 'nigga', 'n1gga', 'n1gger', 'pedo', 'faggot',
-    ];
-
     public static function cost(): int
     {
         return max(0, (int) config('finobe.name_change.cost', 150));
@@ -79,20 +73,11 @@ class UsernameChange
     /** why $name can't be used, or null when it can */
     public static function problem(User $user, string $name): ?string
     {
-        if (!preg_match('/^(?!_)(?!.*_$)(?!.*_.*_)[A-Za-z0-9_]{3,20}$/', $name)) {
-            return 'Usernames are 3 to 20 letters, numbers or one underscore (not at the start or end).';
-        }
-        foreach (self::FORBIDDEN as $phrase) {
-            if (str_contains(strtolower($name), $phrase)) {
-                return "You can't use that username.";
-            }
-        }
         if ($name === $user->username) {
             return "That's already your username.";
         }
-        // the same name in other capitals is fine for yourself, not for anyone else's name
-        if (User::whereRaw('LOWER(username) = ?', [strtolower($name)])->where('id', '!=', $user->id)->exists()) {
-            return 'That username is taken.';
+        if ($problem = Usernames::problem($name, $user->id)) {
+            return $problem;
         }
         if (!self::onlyCapitalization($user, $name) && ($next = self::nextAllowed($user)) !== null) {
             return 'You can change your username again on ' . $next->format('m/d/Y h:i A') . '.';

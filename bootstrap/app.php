@@ -20,9 +20,7 @@ return Application::configure(basePath: dirname(__DIR__))
                 return null;
             }
             try {
-                $data = (new \App\Http\Controllers\frontEnd($request))->getData();
-                $data['data']['embeds']['title'] = '403 Forbidden' . ($data['data']['embeds']['title'] ?? ' - Finobe');
-                return response()->view('v2/Forbidden', $data, 403);
+                return response()->view('v2/Forbidden', ['data' => app(\App\View\PageData::class)->with([], '403 Forbidden')], 403);
             } catch (\Throwable $ignored) {
                 return null;   // fall back to Laravel's own 403 page
             }
@@ -43,7 +41,10 @@ return Application::configure(basePath: dirname(__DIR__))
         // Roblox clients use mixed-case paths (/Game/..., /Asset/...); normalise before routing
         $middleware->prepend(\App\Http\Middleware\NormalizeClientPaths::class);
 
-        $middleware->web(append: [\App\Http\Middleware\AdminSitePolicy::class]);
+        $middleware->web(append: [\App\Http\Middleware\AdminSitePolicy::class, \App\Http\Middleware\GrantDailyDius::class]);
+        $middleware->redirectGuestsTo('/login');
+        $middleware->redirectUsersTo('/');
+        $middleware->alias(['admin' => \App\Http\Middleware\RequireAdmin::class, 'limit' => \App\Http\Middleware\LimitRoute::class]);
         $middleware->validateCsrfTokens([
             '/logout',
             '/marketplace/productinfo',

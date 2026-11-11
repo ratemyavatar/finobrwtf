@@ -15,7 +15,19 @@ use App\Http\Controllers\Web\LegalController;
 use App\Http\Controllers\Web\VideoController;
 use App\Http\Controllers\Web\TradesController;
 use App\Http\Controllers\Web\AvatarController;
-use App\Http\Controllers\Web\AccountController;
+use App\Http\Controllers\Auth\EmailVerificationController;
+use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\Auth\PasswordResetController;
+use App\Http\Controllers\Auth\RegisterController;
+use App\Http\Controllers\Auth\TwoFactorController;
+use App\Http\Controllers\Settings\AccountSettingsController;
+use App\Http\Controllers\Settings\CharacterSettingsController;
+use App\Http\Controllers\Settings\LanguageController;
+use App\Http\Controllers\Settings\PasswordController;
+use App\Http\Controllers\Settings\PlaceSlotsController;
+use App\Http\Controllers\Settings\PrivacyController;
+use App\Http\Controllers\Settings\SecurityController;
+use App\Http\Controllers\Settings\ThemeController;
 use App\Http\Controllers\Web\CatalogController;
 use App\Http\Controllers\Web\ProfileController;
 use App\Http\Controllers\Web\FriendsController;
@@ -44,19 +56,26 @@ Route::middleware([SetClientIp::class, \App\Http\Middleware\IpBanned::class, Lim
         ], 404));
 
         Route::match(['post', 'get'], '/', [HomeController::class, 'index']);
-        Route::post('/logout', [AccountController::class, 'logout']);
+        Route::post('/logout', [LoginController::class, 'logout']);
         Route::post('/moderation/acknowledge', [WorkbenchController::class, 'acknowledge'])->withoutMiddleware([SetClientIp::class, LimitRequestPerIp::class, ModerationMiddleware::class]);
+        Route::match(['post', 'get'], '/api/locale', [LanguageController::class, 'update'])->middleware('limit:30,1');
+        Route::get('/email/verify/{id}/{token}', [EmailVerificationController::class, 'verify'])->whereNumber('id');
 
-        Route::match(['post', 'get'], '/login', [AccountController::class, 'login'])->middleware('throttle:10,1');
-        Route::match(['post', 'get'], '/register', [AccountController::class, 'register'])->middleware('throttle:10,1');
-        Route::get('/register/form', [AccountController::class, 'form']);
-        Route::match(['post', 'get'], '/2fa/validate', [AccountController::class, 'twoFactorChallenge'])->middleware('throttle:10,1');
+        Route::middleware('guest')->group(function () {
+            Route::get('/login', [LoginController::class, 'show']);
+            Route::post('/login', [LoginController::class, 'store'])->middleware('limit:10,1');
+            Route::get('/register', [RegisterController::class, 'landing']);
+            Route::post('/register', [RegisterController::class, 'store'])->middleware('limit:5,1');
+            Route::get('/register/form', [RegisterController::class, 'form']);
+            Route::get('/2fa/validate', [TwoFactorController::class, 'show']);
+            Route::post('/2fa/validate', [TwoFactorController::class, 'verify'])->middleware('limit:10,1');
+            Route::get('/password/reset', [PasswordResetController::class, 'request']);
+            Route::post('/password/email', [PasswordResetController::class, 'send'])->middleware('limit:5,1');
+            Route::get('/password/verify/{id}/{token}', [PasswordResetController::class, 'show'])->whereNumber('id');
+            Route::post('/password/verify/{id}/{token}', [PasswordResetController::class, 'reset'])->whereNumber('id')->middleware('limit:10,1');
+        });
 
-        Route::get('/password/reset', [AccountController::class, 'password_reset']);
-        Route::post('/password/email', [AccountController::class, 'password_email'])->middleware('throttle:5,1');
-        Route::match(['post', 'get'], '/password/verify/{id}/{resetid}', [AccountController::class, 'password_verify'])->middleware('throttle:10,1');
-        Route::get('/email/verify/{id}/{verifyid}', [AccountController::class, 'email_verify']);
-        Route::post('/verify/email', [AccountController::class, 'verify_email'])->middleware('throttle:5,1');
+        Route::post('/verify/email', [EmailVerificationController::class, 'send'])->middleware(['auth', 'limit:3,10']);
 
         Route::get('/download', fn () => redirect('https://prod1-setup.' . config('finobe.domain') . '/FinobeLauncher.exe'));
         Route::get('/create', [HomeController::class, 'create']);
@@ -72,8 +91,8 @@ Route::middleware([SetClientIp::class, \App\Http\Middleware\IpBanned::class, Lim
         Route::get('/friends/incoming', [FriendsController::class, 'incoming']);
 
         Route::get('/trades', [TradesController::class, 'trades']);
-        Route::match(['get', 'post'], '/trade/info/{id}', [TradesController::class, 'info'])->whereNumber('id')->middleware('throttle:30,1');
-        Route::match(['get', 'post'], '/trade/new/{userId}', [TradesController::class, 'create'])->whereNumber('userId')->middleware('throttle:30,1');
+        Route::match(['get', 'post'], '/trade/info/{id}', [TradesController::class, 'info'])->whereNumber('id')->middleware('limit:30,1');
+        Route::match(['get', 'post'], '/trade/new/{userId}', [TradesController::class, 'create'])->whereNumber('userId')->middleware('limit:30,1');
 
         Route::get('/item/{id}', [CatalogController::class, 'item']);
         Route::match(['post', 'get'], '/item/{id}/settings', [CatalogController::class, 'settings']);
@@ -108,15 +127,24 @@ Route::middleware([SetClientIp::class, \App\Http\Middleware\IpBanned::class, Lim
             Route::get('/inbox/archive', [MessagesController::class, 'archive']);
             Route::match(['post', 'get'], '/inbox/message', [MessagesController::class, 'message']);
             Route::match(['post', 'get'], '/inbox/compose', [MessagesController::class, 'compose']);
-            Route::match(['post', 'get', 'options'], '/settings', [AccountController::class, 'settings']);
-            Route::match(['post', 'get'], '/theme', [AccountController::class, 'theme']);
-            Route::get('/character-settings', [AccountController::class, 'characterSettings']);
-            Route::match(['post', 'get'], '/password', [AccountController::class, 'password'])->middleware('throttle:10,1');
-            Route::match(['post', 'get'], '/security', [AccountController::class, 'security'])->middleware('throttle:20,1');
-            Route::get('/security/backup-codes', [AccountController::class, 'backupCodes']);
-            Route::match(['post', 'get'], '/privacy', [AccountController::class, 'privacy']);
-            Route::match(['post', 'get'], '/language', [AccountController::class, 'language']);
-            Route::match(['post', 'get'], '/games', [AccountController::class, 'games']);
+            Route::middleware('auth')->group(function () {
+                Route::get('/settings', [AccountSettingsController::class, 'show']);
+                Route::post('/settings', [AccountSettingsController::class, 'update'])->middleware('limit:20,1');
+                Route::get('/theme', [ThemeController::class, 'show']);
+                Route::post('/theme', [ThemeController::class, 'update']);
+                Route::get('/character-settings', [CharacterSettingsController::class, 'show']);
+                Route::get('/password', [PasswordController::class, 'show']);
+                Route::post('/password', [PasswordController::class, 'update'])->middleware('limit:10,1');
+                Route::get('/security', [SecurityController::class, 'show']);
+                Route::post('/security', [SecurityController::class, 'update'])->middleware('limit:20,1');
+                Route::get('/security/backup-codes', [SecurityController::class, 'backupCodes']);
+                Route::get('/privacy', [PrivacyController::class, 'show']);
+                Route::post('/privacy', [PrivacyController::class, 'update']);
+                Route::get('/language', [LanguageController::class, 'show']);
+                Route::post('/language', [LanguageController::class, 'update']);
+                Route::get('/games', [PlaceSlotsController::class, 'show']);
+                Route::post('/games', [PlaceSlotsController::class, 'purchase'])->middleware('limit:10,1');
+            });
             Route::match(['post', 'get'], '/forum/new/post', [ForumController::class, 'new_post']);
         });
 
@@ -139,8 +167,8 @@ Route::middleware([SetClientIp::class, \App\Http\Middleware\IpBanned::class, Lim
             Route::match(['post', 'get'], '/post', [ForumController::class, 'post']);
             Route::match(['post', 'get'], '/edit', [ForumController::class, 'edit_reply']);
             Route::match(['post', 'get'], '/new/reply', [ForumController::class, 'reply']);
-            Route::post('/api/notifications/oneread', [api::class, 'markOne'])->middleware('throttle:60,1');
-            Route::post('/api/notifications/allread', [api::class, 'markAll'])->middleware('throttle:20,1');
+            Route::post('/api/notifications/oneread', [api::class, 'markOne'])->middleware('limit:60,1');
+            Route::post('/api/notifications/allread', [api::class, 'markAll'])->middleware('limit:20,1');
         });
 
         Route::prefix('api')->group(function () {
@@ -192,14 +220,14 @@ Route::middleware([SetClientIp::class, \App\Http\Middleware\IpBanned::class, Lim
                 Route::get('/users', [WorkbenchController::class, 'users']);
                 Route::get('/users/{id}', [WorkbenchController::class, 'manageUser']);
                 Route::get('/users/{id}/{section}', [WorkbenchController::class, 'manageUser']);
-                Route::post('/users/{id}/actions', [WorkbenchController::class, 'userAction'])->middleware('throttle:60,1');
+                Route::post('/users/{id}/actions', [WorkbenchController::class, 'userAction'])->middleware('limit:60,1');
                 Route::get('/assets', [AssetApprovalController::class, 'index']);
                 Route::get('/assets/{id}', [AssetApprovalController::class, 'show'])->whereNumber('id');
-                Route::post('/assets/{id}/{decision}', [AssetApprovalController::class, 'decide'])->whereNumber('id')->where('decision', 'approve|deny')->middleware('throttle:30,1');
+                Route::post('/assets/{id}/{decision}', [AssetApprovalController::class, 'decide'])->whereNumber('id')->where('decision', 'approve|deny')->middleware('limit:30,1');
                 Route::get('/servers', [ServerManagementController::class, 'index']);
-                Route::post('/servers', [ServerManagementController::class, 'create'])->middleware('throttle:20,1');
-                Route::post('/servers/clear', [ServerManagementController::class, 'clear'])->middleware('throttle:10,1');
-                Route::delete('/servers/{id}', [ServerManagementController::class, 'remove'])->whereNumber('id')->middleware('throttle:20,1');
+                Route::post('/servers', [ServerManagementController::class, 'create'])->middleware('limit:20,1');
+                Route::post('/servers/clear', [ServerManagementController::class, 'clear'])->middleware('limit:10,1');
+                Route::delete('/servers/{id}', [ServerManagementController::class, 'remove'])->whereNumber('id')->middleware('limit:20,1');
             });
         });
 

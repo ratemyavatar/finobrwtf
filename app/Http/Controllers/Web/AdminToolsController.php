@@ -38,7 +38,7 @@ class AdminToolsController extends Controller
         return DB::connection('finobe');
     }
 
-    private function page(string $view, string $title, array $extra = []) {
+    private function toolPage(string $view, string $title, array $extra = []) {
         $this->request['data']['embeds']['title'] = $title . $this->request['data']['embeds']['title'];
         $this->request['data']['tool'] = ['title' => $title, 'url' => '/' . request()->path()];
         foreach($extra as $k => $v) {
@@ -90,7 +90,7 @@ class AdminToolsController extends Controller
         }
         $bans = $this->db()->table('ip_bans')->orderByDesc('id')->get();
         $mods = User::whereIn('id', $bans->pluck('moderator_id')->filter()->all())->pluck('username', 'id');
-        return $this->page('IpBans', 'IP Bans', ['bans' => $bans->map(fn($b) => (array) $b + ['moderator' => $mods[$b->moderator_id] ?? null])->all(), 'lookup' => $lookup]);
+        return $this->toolPage('IpBans', 'IP Bans', ['bans' => $bans->map(fn($b) => (array) $b + ['moderator' => $mods[$b->moderator_id] ?? null])->all(), 'lookup' => $lookup]);
     }
 
     /* Force Regen Character: re-render avatars */
@@ -106,7 +106,7 @@ class AdminToolsController extends Controller
                 }
             }
         }
-        return $this->page('ForceRegen', 'Force Regen Character', ['results' => $results]);
+        return $this->toolPage('ForceRegen', 'Force Regen Character', ['results' => $results]);
     }
 
     /* Purge Inactive Game Servers: drop servers that stopped checking in */
@@ -127,7 +127,7 @@ class AdminToolsController extends Controller
         }
         $servers = $dead()->orderBy('id')->get();
         $places = Asset::whereIn('id', $servers->pluck('placeid')->all())->pluck('title', 'id');
-        return $this->page('PurgeGames', 'Purge Inactive Game Servers', ['servers' => $servers->map(fn($s) => (array) $s + ['place' => $places[$s->placeid] ?? '?'])->all()]);
+        return $this->toolPage('PurgeGames', 'Purge Inactive Game Servers', ['servers' => $servers->map(fn($s) => (array) $s + ['place' => $places[$s->placeid] ?? '?'])->all()]);
     }
 
     /* Item Purchase Log */
@@ -149,7 +149,7 @@ class AdminToolsController extends Controller
             'assetid' => $r->assetid, 'title' => $titles[$r->assetid] ?? '[deleted]', 'serial' => (int) $r->serial,
             'amount' => (float) $r->amount, 'type' => $labels[(int) $r->type] ?? $r->type,
         ])->all();
-        return $this->page('PurchaseLog', 'Item Purchase Log', ['log' => $log, 'filter' => ['user' => $user, 'asset' => $asset ?: ''],
+        return $this->toolPage('PurchaseLog', 'Item Purchase Log', ['log' => $log, 'filter' => ['user' => $user, 'asset' => $asset ?: ''],
             'pagination' => ['page' => min($page, $pages), 'pages' => $pages]]);
     }
 
@@ -191,7 +191,7 @@ class AdminToolsController extends Controller
             }
             return $this->back('Gave ' . $asset->title . ($serial ? ' #' . $serial : '') . ' to ' . $user->username . '.');
         }
-        return $this->page('GiveAsset', $title, ['dependent' => $dependent]);
+        return $this->toolPage('GiveAsset', $title, ['dependent' => $dependent]);
     }
 
     /* Asset Approval Log */
@@ -199,7 +199,7 @@ class AdminToolsController extends Controller
         $rows = $this->db()->table('asset_approval_log')->orderByDesc('id')->limit(200)->get();
         $titles = Asset::whereIn('id', $rows->pluck('asset_id')->all())->pluck('title', 'id');
         $mods = User::whereIn('id', $rows->pluck('moderator_id')->filter()->all())->pluck('username', 'id');
-        return $this->page('ApprovalLog', 'Asset Approval Log', ['log' => $rows->map(fn($r) => [
+        return $this->toolPage('ApprovalLog', 'Asset Approval Log', ['log' => $rows->map(fn($r) => [
             'date' => date('m/d/Y g:i A', strtotime($r->created_at)), 'asset_id' => $r->asset_id,
             'title' => $titles[$r->asset_id] ?? '[deleted]', 'action' => $r->action, 'moderator' => $mods[$r->moderator_id] ?? '?',
         ])->all()]);
@@ -217,7 +217,7 @@ class AdminToolsController extends Controller
             $q->where('username', 'like', '%' . $search . '%');
         }
         $users = $q->orderByDesc('id')->limit(48)->get(['id', 'username', 'pfp'])->toArray();
-        return $this->page('PlayerListThumbs', 'Player List Thumbnails', ['users' => $users, 'search' => $search]);
+        return $this->toolPage('PlayerListThumbs', 'Player List Thumbnails', ['users' => $users, 'search' => $search]);
     }
 
     /* - Set User Rank */
@@ -250,7 +250,7 @@ class AdminToolsController extends Controller
             return $this->back($user->username . ' is now ' . ucfirst($rank) . '.');
         }
 
-        return $this->page('SetRank', 'Set User Rank', [
+        return $this->toolPage('SetRank', 'Set User Rank', [
             'admins' => User::where('status', 'admin')->orderBy('id')->pluck('username', 'id')->all(),
             'roles' => \App\Admin\Roles::names(),
             'can_owner' => \App\Admin\Access::owner(Auth::user()),
@@ -279,7 +279,7 @@ class AdminToolsController extends Controller
             }
             return $this->back('Timed cache cleared' . ($n !== null ? " ({$n} entries)." : '.'));
         }
-        return $this->page('ClearCache', 'Clear Timed Cache');
+        return $this->toolPage('ClearCache', 'Clear Timed Cache');
     }
 
     /* - Force Username Change: free and without a cooldown */
@@ -301,7 +301,7 @@ class AdminToolsController extends Controller
             }
             return $this->back($old . ' is now ' . $name . '.');
         }
-        return $this->page('ForceUsername', 'Force Username Change');
+        return $this->toolPage('ForceUsername', 'Force Username Change');
     }
 
     /* Invite Keys: mint (or revoke) registration invite keys from the panel.
@@ -359,7 +359,7 @@ class AdminToolsController extends Controller
             'dateUsed' => $k->dateUsed ? date('m/d/Y', strtotime($k->dateUsed)) : null,
         ])->all();
 
-        return $this->page('InviteKeys', 'Create Invite Keys', [
+        return $this->toolPage('InviteKeys', 'Create Invite Keys', [
             'keys' => $keys,
             'invitesEnabled' => (bool) config('admin.invites_enabled'),
             'requireInvites' => \App\Admin\Settings::get(\App\Admin\Settings::REQUIRE_INVITES, true),
@@ -400,6 +400,6 @@ class AdminToolsController extends Controller
                 $walk($root, 0);
             }
         }
-        return $this->page('InviteTree', 'Invite Tree', ['tree' => $flat]);
+        return $this->toolPage('InviteTree', 'Invite Tree', ['tree' => $flat]);
     }
 }

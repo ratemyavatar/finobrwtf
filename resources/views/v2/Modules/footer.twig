@@ -49,7 +49,7 @@
                         const form = new FormData();
                         form.append('locale', link.dataset.locale);
                         form.append('_token', '{{ data.csrf_token }}');
-                        fetch('/app/language', { method: 'POST', body: form, headers: { 'Accept': 'application/json' } })
+                        fetch('/api/locale', { method: 'POST', body: form, headers: { 'Accept': 'application/json' } })
                             .then(function () { location.reload(); });
                     });
                 });

@@ -156,10 +156,8 @@ class UsersController extends Controller
     }
 
     public function gettoken(Request $request) {
-        if(!$this->request['data']['siteusername']) {
-            return response('', 204);
-        }
+        $user = $request->user();
 
-        return response($this->request['data']['user']['token'], 200);
+        return $user ? response($user->token, 200) : response('', 204);
     }
 }

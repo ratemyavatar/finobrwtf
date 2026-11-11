@@ -47,11 +47,32 @@ class User extends Authenticatable
      * @var list<string>
      */
     protected $hidden = [
-        //'password',
+        'password',
         'remember_token',
         'two_factor_secret',
         'two_factor_backup_codes',
+        'email',
+        'ip',
+        'token',
     ];
+
+    public static function defaultAvatar(): array
+    {
+        return [
+            'resolvedAvatarType' => 'R6',
+            'equippedGearVersionIds' => [],
+            'backpackGearVersionIds' => [],
+            'assetAndAssetTypeIds' => [],
+            'bodyColors' => [
+                'headColorId' => 24,
+                'torsoColorId' => 23,
+                'rightArmColorId' => 24,
+                'leftArmColorId' => 24,
+                'rightLegColorId' => 119,
+                'leftLegColorId' => 119,
+            ],
+        ];
+    }
 
     /**
      * Get the attributes that should be cast.
