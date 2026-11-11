@@ -10,4 +10,4 @@ it also works without javascript. the first post only shows the warning, it does
 
 admins are skipped.
 
-the angry face is the blob pouting face from blobmoji (apache 2.0), saved at public/s/img/emoji/pouting.svg.
+the angry face is the old noto blob pouting face from noto emoji 2017 (apache 2.0), saved at public/s/img/emoji/pouting.png.
