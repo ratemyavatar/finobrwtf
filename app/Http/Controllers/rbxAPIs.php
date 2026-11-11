@@ -110,6 +110,11 @@ class rbxAPIs extends Controller
             return response()->file($animation, ['Content-Type' => 'application/octet-stream']);
         }
 
+        $r15Mesh = storage_path("rbx/files/r15/{$assetId}");
+        if ($assetId > 0 && is_file($r15Mesh)) {
+            return response()->file($r15Mesh, ['Content-Type' => 'application/octet-stream']);
+        }
+
         if (Asset::isAssetExist($assetId))
         {
             $renderToken = (string) ($data['rendertoken'] ?? '');

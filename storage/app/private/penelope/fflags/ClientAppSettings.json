@@ -25,7 +25,6 @@
     "DFFlagUrlReconstructToAssetGame": "True",
     "DFFlagUrlReconstructToAssetGameSecure": "True",
     "FFlagWebkitDeveloperToolsEnabled": "True",
-    
     "FFlagUseDynamicTypesetterUTF8": "True",
     "DFFlagBadTypeOnConnectErrorEnabled": "True",
     "DFFlagBlockUsersInLuaChat": "True",
@@ -878,5 +877,9 @@
     "SFFlagTopRepContSync": "True",
     "SFFlagUseLuaChat": "True",
     "StartPageUrl": "/ide/welcome",
-    "VideoPreRollWaitTimeSeconds": "45"
+    "VideoPreRollWaitTimeSeconds": "45",
+    "FFlagR15CompositingEnabled": "True",
+    "DFFlagR15CompositingEnabled": "True",
+    "FFlagR15CompositingEnabledOnClient": "True",
+    "DFFlagR15CompositingEnabledOnClient": "True"
 }

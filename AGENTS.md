@@ -31,7 +31,16 @@
 
 - packages and heads can only be copied from roblox, using the copy form at `/admin/rbxcreatexml`
 - bundle details come from `catalog.roblox.com` directly with a roblox user agent. roproxy rate limits that host
-- most bundle items are body parts and animations, which this site can't hold, so they get skipped. if nothing usable is left the copy fails with a clear message
+- body parts with an r6 version use its CharacterMesh. r15 only body parts get their r15 meshes merged into one r6 CharacterMesh per limb with a texture atlas (`app/Services/ItemImport/R15ToR6.php`). arms get turned to hang down and pushed out past the torso
+- dynamic heads (type 79) import as heads marked `dynamicHead`. CharacterFetch then swaps the face for a blank face asset
+- animations in bundles get skipped. if nothing usable is left the copy fails with a clear message
+
+## r15 animation pack
+
+- the `r15_2016` pack in `app/Services/AnimationPacks.php` sends a `rig R15` line to the 2016 game server
+- the game server then builds the player from `rbxasset://fonts/characterR15.rbxm`, makes the Motor6Ds from the rig attachments and loads the hats, clothes, face, gear and body colors from CharacterFetch itself
+- the block meshes live in `storage/rbx/files/r15/` named by their old roblox ids. the animations live in `storage/rbx/files/animations/`
+- thumbnails still render the normal r6 body
 
 ## rcc and game servers
 

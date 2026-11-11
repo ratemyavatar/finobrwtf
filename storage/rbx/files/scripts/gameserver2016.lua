@@ -136,8 +136,188 @@ local function verifyPlayer(player)
 	return nil
 end
 
+local playerAnims = {}
+
+local function animLinesFor(player)
+	if playerAnims[player] == nil then
+		local lines = ""
+		pcall(function() lines = game:HttpGet(url .. "/api/gameserver/animations/" .. player.userId .. auth, true) end)
+		playerAnims[player] = {}
+		for line in string.gmatch(tostring(lines or ""), "[^\r\n]+") do
+			local config, child, id, weight = string.match(line, "^(%S+) (%S+) (%S+) ?(%S*)$")
+			if config ~= nil then
+				table.insert(playerAnims[player], { config = config, child = child, id = id, weight = tonumber(weight) })
+			end
+		end
+	end
+	return playerAnims[player]
+end
+
+local function wantsR15(player)
+	for _, anim in pairs(animLinesFor(player)) do
+		if anim.config == "rig" and anim.child == "R15" then return true end
+	end
+	return false
+end
+
+local R15_MESHES = {
+	Head = 419776358, UpperTorso = 419776040, LowerTorso = 419776201,
+	LeftUpperArm = 419769794, LeftLowerArm = 419770884, LeftHand = 419771232,
+	RightUpperArm = 419771918, RightLowerArm = 419772046, RightHand = 419774811,
+	LeftUpperLeg = 419771598, LeftLowerLeg = 419771410, LeftFoot = 419771742,
+	RightUpperLeg = 419775117, RightLowerLeg = 419775579, RightFoot = 419775789
+}
+
+local R15_JOINTS = {
+	{ "HumanoidRootPart", "LowerTorso", "RootRigAttachment", "Root" },
+	{ "LowerTorso", "UpperTorso", "WaistRigAttachment", "Waist" },
+	{ "UpperTorso", "Head", "NeckRigAttachment", "Neck" },
+	{ "UpperTorso", "LeftUpperArm", "LeftShoulderRigAttachment", "LeftShoulder" },
+	{ "LeftUpperArm", "LeftLowerArm", "LeftElbowRigAttachment", "LeftElbow" },
+	{ "LeftLowerArm", "LeftHand", "LeftWristRigAttachment", "LeftWrist" },
+	{ "UpperTorso", "RightUpperArm", "RightShoulderRigAttachment", "RightShoulder" },
+	{ "RightUpperArm", "RightLowerArm", "RightElbowRigAttachment", "RightElbow" },
+	{ "RightLowerArm", "RightHand", "RightWristRigAttachment", "RightWrist" },
+	{ "LowerTorso", "LeftUpperLeg", "LeftHipRigAttachment", "LeftHip" },
+	{ "LeftUpperLeg", "LeftLowerLeg", "LeftKneeRigAttachment", "LeftKnee" },
+	{ "LeftLowerLeg", "LeftFoot", "LeftAnkleRigAttachment", "LeftAnkle" },
+	{ "LowerTorso", "RightUpperLeg", "RightHipRigAttachment", "RightHip" },
+	{ "RightUpperLeg", "RightLowerLeg", "RightKneeRigAttachment", "RightKnee" },
+	{ "RightLowerLeg", "RightFoot", "RightAnkleRigAttachment", "RightAnkle" }
+}
+
+local R15_COLORS = {
+	HeadColor = { "Head" }, TorsoColor = { "UpperTorso", "LowerTorso" },
+	LeftArmColor = { "LeftUpperArm", "LeftLowerArm", "LeftHand" },
+	RightArmColor = { "RightUpperArm", "RightLowerArm", "RightHand" },
+	LeftLegColor = { "LeftUpperLeg", "LeftLowerLeg", "LeftFoot" },
+	RightLegColor = { "RightUpperLeg", "RightLowerLeg", "RightFoot" }
+}
+
+local r15Rig, r15Animate = nil, nil
+
+local function buildR15(player)
+	if r15Rig == nil then
+		r15Rig = game:GetObjects("rbxasset://fonts/characterR15.rbxm")[1]
+		r15Animate = game:GetObjects("rbxasset://fonts/humanoidAnimateR15_2.rbxm")[1]
+	end
+	local model = r15Rig:Clone()
+	model.Name = player.Name
+	local humanoid = model:FindFirstChild("Humanoid")
+	humanoid.RigType = Enum.HumanoidRigType.R15
+
+	for name, id in pairs(R15_MESHES) do
+		local part = model:FindFirstChild(name)
+		local mesh = part and part:FindFirstChild("Mesh")
+		if mesh ~= nil then mesh.MeshId = url .. "/asset/?id=" .. id end
+	end
+
+	for _, joint in pairs(R15_JOINTS) do
+		local part0, part1 = model:FindFirstChild(joint[1]), model:FindFirstChild(joint[2])
+		local a0 = part0 and part0:FindFirstChild(joint[3])
+		local a1 = part1 and part1:FindFirstChild(joint[3])
+		if a0 ~= nil and a1 ~= nil then
+			local motor = Instance.new("Motor6D")
+			motor.Name = joint[4]
+			motor.Part0 = part0
+			motor.Part1 = part1
+			motor.C0 = a0.CFrame
+			motor.C1 = a1.CFrame
+			motor.Parent = part1
+		end
+	end
+
+	local items = tostring(player.CharacterAppearance or "")
+	local list = ""
+	pcall(function() list = game:HttpGet(items, true) end)
+	for itemUrl in string.gmatch(tostring(list or ""), "[^;]+") do
+		pcall(function()
+			for _, object in pairs(game:GetObjects(itemUrl)) do
+				if object:IsA("BodyColors") then
+					for property, parts in pairs(R15_COLORS) do
+						for _, name in pairs(parts) do
+							local part = model:FindFirstChild(name)
+							if part ~= nil then part.BrickColor = object[property] end
+						end
+					end
+					object.Parent = model
+				elseif object:IsA("Hat") or object:IsA("Shirt") or object:IsA("Pants") or object:IsA("ShirtGraphic") then
+					object.Parent = model
+				elseif object:IsA("Decal") then
+					local head = model:FindFirstChild("Head")
+					local old = head and head:FindFirstChild("face") or (head and head:FindFirstChild("Decal"))
+					if old ~= nil then old:Destroy() end
+					object.Name = "face"
+					object.Parent = head
+				elseif object:IsA("Tool") or object:IsA("HopperBin") then
+					local backpack = player:FindFirstChild("Backpack")
+					if backpack ~= nil then object.Parent = backpack end
+				end
+			end
+		end)
+	end
+
+	local animate = r15Animate:Clone()
+	local cleared = {}
+	for _, anim in pairs(animLinesFor(player)) do
+		local value = animate:FindFirstChild(anim.config)
+		if value ~= nil then
+			if not cleared[anim.config] then
+				cleared[anim.config] = true
+				for _, old in pairs(value:GetChildren()) do old:Destroy() end
+			end
+			local animation = Instance.new("Animation")
+			animation.Name = anim.child
+			animation.AnimationId = anim.id
+			if anim.weight ~= nil then
+				local weight = Instance.new("NumberValue")
+				weight.Name = "Weight"
+				weight.Value = anim.weight
+				weight.Parent = animation
+			end
+			animation.Parent = value
+		end
+	end
+	animate.Parent = model
+
+	local spawns = {}
+	local function findSpawns(parent)
+		for _, child in pairs(parent:GetChildren()) do
+			if child:IsA("SpawnLocation") and child.Enabled then table.insert(spawns, child) end
+			findSpawns(child)
+		end
+	end
+	pcall(function() findSpawns(workspace) end)
+	local spawnAt = CFrame.new(0, 100, 0)
+	local spawnPart = nil
+	if #spawns > 0 then
+		spawnPart = spawns[math.random(1, #spawns)]
+		spawnAt = CFrame.new(spawnPart.Position + Vector3.new(0, spawnPart.Size.Y / 2 + humanoid.HipHeight + model.HumanoidRootPart.Size.Y / 2 + 0.5, 0))
+	end
+	model.PrimaryPart = model.HumanoidRootPart
+	model:SetPrimaryPartCFrame(spawnAt)
+
+	if spawnPart ~= nil and spawnPart.Duration > 0 then
+		local field = Instance.new("ForceField")
+		field.Parent = model
+		game:GetService("Debris"):AddItem(field, spawnPart.Duration)
+	end
+
+	return model
+end
+
 local function spawnPlayer(player)
 	if player.Parent == nil then return end
+	if wantsR15(player) then
+		local ok, model = pcall(buildR15, player)
+		if ok and model ~= nil then
+			pcall(function() local old = player.Character if old ~= nil then old:Destroy() end end)
+			player.Character = model
+			model.Parent = workspace
+			return
+		end
+		print("R15 spawn failed: " .. tostring(model))
+	end
 	pcall(function() player:LoadCharacter() end)
 end
 
@@ -179,10 +359,10 @@ game:GetService("Players").PlayerAdded:connect(function(player)
 		spawnPlayer(player)
 	end
 
-	local animLines = ""
-	pcall(function() animLines = game:HttpGet(url .. "/api/gameserver/animations/" .. player.userId .. auth, true) end)
 	local function applyAnimations(character)
-		if animLines == nil or animLines == "" then return end
+		if wantsR15(player) then return end
+		local lines = animLinesFor(player)
+		if #lines == 0 then return end
 		local animate = nil
 		for i = 1, 50 do
 			animate = character:FindFirstChild("Animate")
@@ -190,11 +370,11 @@ game:GetService("Players").PlayerAdded:connect(function(player)
 			wait(0.1)
 		end
 		if animate == nil then return end
-		for config, child, id in string.gmatch(animLines, "(%S+) (%S+) (%S+)") do
+		for _, anim in pairs(lines) do
 			pcall(function()
-				local value = animate:FindFirstChild(config)
-				local anim = value and value:FindFirstChild(child)
-				if anim ~= nil then anim.AnimationId = id end
+				local value = animate:FindFirstChild(anim.config)
+				local child = value and value:FindFirstChild(anim.child)
+				if child ~= nil then child.AnimationId = anim.id end
 			end)
 		end
 	end
@@ -205,7 +385,7 @@ game:GetService("Players").PlayerAdded:connect(function(player)
 		local command = string.lower(tostring(msg or ""))
 		if not ecCommands[command] then return end
 		local character = player.Character
-		local torso = character and character:FindFirstChild("Torso")
+		local torso = character and (character:FindFirstChild("Torso") or character:FindFirstChild("UpperTorso"))
 		local humanoid = character and character:FindFirstChild("Humanoid")
 		if torso == nil or humanoid == nil or humanoid.Health <= 0 then return end
 		if ecCooldown[player] and tick() - ecCooldown[player] < 3 then return end
@@ -234,6 +414,7 @@ end)
 
 game:GetService("Players").PlayerRemoving:connect(function(player)
 	ecCooldown[player] = nil
+	playerAnims[player] = nil
 	print("Player " .. player.userId .. " leaving")
 
 	delay(1, function()
