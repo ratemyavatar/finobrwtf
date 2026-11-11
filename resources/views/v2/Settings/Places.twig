@@ -14,7 +14,7 @@
                         <div class="card">
                             <div class="card-body">
                                 <h4 style="font-weight: 300;">Places</h4>
-                                <div class="nav-item nav-link n-money-text" data-animation="false" data-toggle="tooltip" data-placement="bottom" style="padding-left:0px;">You can purchase more place slots here. Each place slot costs <a><img src="/s/img/diu_16.png" alt="Diu" title="Diu" class="img-responsive align-middle "> 625</a> Dius.</div>
+                                <div class="nav-item nav-link n-money-text" data-animation="false" data-toggle="tooltip" data-placement="bottom" style="padding-left:0px;">You can purchase more place slots here. Each place slot costs <a><img src="/s/img/diu_16.png" alt="Diu" title="Diu" class="img-responsive align-middle "> {{ data.slot_price }}</a> Dius.</div>
                                 <p><strong>You currently have {{ data.user.places }} of {{ data.user.slots }} place slots.</strong></p>
                                 <form role="form" method="POST" action="/app/games" enctype="multipart/form-data">
                                     <input type="hidden" name="_token" value="{{ data.csrf_token }}">

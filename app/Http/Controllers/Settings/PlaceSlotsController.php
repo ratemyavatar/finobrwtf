@@ -10,11 +10,11 @@ use Illuminate\Support\Facades\DB;
 
 class PlaceSlotsController extends Controller
 {
-    public const PRICE = 625;
+    public const PRICE = 25;
 
     public function show()
     {
-        return $this->page('Settings/Places', [], 'Places');
+        return $this->page('Settings/Places', ['slot_price' => self::PRICE], 'Places');
     }
 
     public function purchase(Request $request)
