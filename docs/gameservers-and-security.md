@@ -111,3 +111,12 @@ every render runs on the 2016 rcc with the same `ThumbnailGenerator:Click` finob
 - shirts, t-shirts, pants and packages render on the classic body colors (yellow head and arms, blue torso, green legs), like the old catalog
 - render and cdn urls follow `FINOBE_DOMAIN` and `FINOBE_CDN_URL`, so renders work on any domain
 - rcc loads the character url through winhttp. if you test with a self signed certificate, rcc can't load it over https. production behind cloudflare is fine
+
+## 12. client login api
+
+`POST https://api.finobe.wtf/login/v1` with `username=<name>&password=<password>` logs a client in, like the old roblox login api. it also takes an email in `username`.
+
+- success gives `{"userId":..,"membership":..,"username":..,"isUnder13":false,"countryCode":"US"}` and a normal site session
+- a wrong name or password gives a 403 with `{"errors":[{"code":1,"message":"Incorrect username or password. Please try again."}]}`
+- banned accounts and accounts with two step verification are refused, so this can't be used to skip a 2fa code
+- each ip gets 10 tries a minute

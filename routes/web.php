@@ -251,5 +251,6 @@ Route::middleware([Moderation::class, SerializeWrites::class])->group(function (
     Route::domain('api.' . $domain)->group(function () {
         Route::get('/universes/validate-place-join', [rbxAPIs::class, 'validatePlaceJoin']);
         Route::any('/marketplace/productinfo', [rbxAPIs::class, 'productInfo']);
+        Route::post('/login/v1', [\App\Http\Controllers\Client\LoginApiController::class, 'login'])->middleware('limit:10,1');
     });
 });

@@ -30,7 +30,7 @@ class ProfileController extends Controller
 
         $user['places'] = [];
         $joined = strtotime($user['created'] ?? $user['created_at'] ?? '');
-        $user['created'] = $joined ? date('m/d/Y h:i:s A', $joined) : 'Unknown';
+        $user['created'] = $joined ? date('m/d/Y g:i A', $joined) : 'Unknown';
         $user['blurb'] = nl2br(str_replace('${myDius}', '<span class="n-money-text text-nowrap"><img src="/s/img/diu_16.png" alt="Diu" title="Diu" class="img-responsive align-middle "> [' . number_format($user['Dius']) . ']</span>', preg_replace('/\b((?:https?|ftp):\/\/\S+)/i', '<a href="$1">$1</a>', strip_tags(htmlspecialchars(\App\Services\CurseFilter::forViewer($user['blurb']))))));
         $user['badges'] = $user['badges']['data']['custom_badges'] ?? [];
         $user['CurrentFriends'] = array_reverse(array_filter($user['friends'], fn($friend) => $friend['status'] == 'friends'));
