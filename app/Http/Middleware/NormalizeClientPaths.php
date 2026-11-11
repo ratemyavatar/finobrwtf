@@ -26,7 +26,7 @@ class NormalizeClientPaths
         // http://roblox.com/asset/?id=... (no www) in places becomes finobe.wtf/asset, which is the website:
         // send asset/thumbnail requests to the client host
         if ($host === $domain && (in_array($lower, ['/asset', '/asset/'], true)
-                || in_array($lower, ['/thumbs/asset.ashx', '/asset-thumbnail/image'], true))) {
+                || in_array($lower, ['/thumbs/asset.ashx', '/asset-thumbnail/image', '/thumbs/avatar.ashx', '/thumbs/avatar-headshot.ashx'], true))) {
             $query = $request->server->get('QUERY_STRING');
             return redirect()->away($request->getScheme() . "://www.{$domain}{$lower}" . ($query ? '?' . $query : ''));
         }

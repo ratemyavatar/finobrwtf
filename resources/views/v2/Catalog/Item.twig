@@ -79,12 +79,15 @@
                         {% endif %}
                         <div class="card" style="margin: 10px 0px 10px 0px;">
                                 <div class="card-header">
-                                    Finobe {{ (data.item.asset_type == 3) ? "Audio" : (data.item.asset_type == 8) ? "Hat" : "" }}
+                                    {% set typeNames = {2: 'T-Shirt', 3: 'Audio', 4: 'Mesh', 8: 'Hat', 10: 'Model', 11: 'Shirt', 12: 'Pants', 13: 'Decal', 17: 'Head', 18: 'Face', 19: 'Gear', 24: 'Animation', 32: 'Package'} %}
+                                    Finobe {{ typeNames[data.item.asset_type] ?? 'Item' }}
                                 </div>
                                 <div class="card-body mt-2">
                                     <div class="row">
                                         <div class="col-md-7">
                                             <h4>{{ data.item.title | raw }}</h4>
+                                            {% if data.item.additional.isUnique %}<p class="mb-1"><span class="badge badge-warning">Unique</span>{% if data.item.additional.stock %} <small class="text-muted">{{ data.item.additional.stock }} made</small>{% endif %}</p>
+                                            {% elseif data.item.additional.isLimited %}<p class="mb-1"><span class="badge badge-success">Limited</span></p>{% endif %}
                                             <p style="margin-bottom:0px;">by {% if data.item.uuid matches '/^[0-9]+$/'%}<a href="/user/{{ data.item.uuid }}">{{ data.item.author }}</a>{% else %}{{ data.item.author }}{% endif %}</p>
                                             <img src="{% if data.item.asset_type == 3 %}/s/img/{{ ((data.item.visibility == "r" and data.item.author == data.user.username) or data.item.visibility == "d") ? "spinnerv2.gif" : data.item.thumbnail }}{% else %}{% if data.item.visibility == 'd' or data.item.visibility == 'r' %}/s/img/spinnerv2.gif{% else %}{{ data.item.additional.media.thumbnail }}{% endif %}{% endif %}" class="mt-2" style="max-width:200px; display: block;">
                                             {% if data.item.asset_type == 3 %}
@@ -94,11 +97,19 @@
                                             {% endif %}
                                             <p class="mt-3 mb-0"><strong>Description:</strong></p>
                                             <p>{{ (data.item.description|length) ? data.item.description|raw : 'No description' }}</p>
+                                            {% if data.item.asset_type == 32 and data.item.contents|length %}
+                                            <p class="mt-3 mb-0"><strong>This package contains:</strong></p>
+                                            <ul class="mb-0">
+                                                {% for part in data.item.contents %}
+                                                <li><a href="/item/{{ part.id }}">{{ part.title|raw }}</a></li>
+                                                {% endfor %}
+                                            </ul>
+                                            {% endif %}
                                         </div>
                                         <div class="col-md-5">
                                             {% if data.user.username == data.item.author or data.user.status == 'admin' %}
                                                 <div class="float-left mr-2 d-flex flex-column">
-                                                    {% if data.user.username == data.item.author %}
+                                                    {% if data.user.username == data.item.author or data.user.status == 'admin' %}
                                                     <button class="btn btn-secondary mb-2" onclick="window.location.href='/item/{{ data.item.id }}/settings'"><i class="far fa-cog"></i></button>
                                                     {% endif %}
                                                     <form method="POST" action="/item/{{ data.item.id }}/delete" onsubmit="return confirm('Delete this item? Everyone who owns it loses it. This can\'t be undone.');">
@@ -139,6 +150,9 @@
                                                                 <p>Item Owned.</p>
                                                             </div>
                                                         </div>
+                                                        {% endif %}
+                                                        {% if data.item.asset_type == 10 %}
+                                                        <p class="text-center mt-3 mb-0"><b>ID:</b> {{ data.item.id }}</p>
                                                         {% endif %}
                                                         {% if data.item.asset_type == 3 %}
                                                         <button id="CopyButton" class="btn btn-primary btn-lg col-md-12 mr-1" style="text-transform: capitalize;">Copy ID</button>

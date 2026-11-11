@@ -1,0 +1,24 @@
+{# the Settings sidebar, like 2020: plain text links, the open page coloured #}
+{% set settingsPages = [
+  {key: 'details', label: 'User Details', url: '/app/settings'},
+  {key: 'password', label: 'Password', url: '/app/password'},
+  {key: 'security', label: 'Security', url: '/app/security'},
+  {key: 'privacy', label: 'Privacy', url: '/app/privacy'},
+  {key: 'theming', label: 'Theming', url: '/app/theme'},
+  {key: 'character', label: 'Character', url: '/app/character-settings'},
+  {key: 'language', label: 'Language', url: '/app/language'},
+  {key: 'places', label: 'Places', url: '/app/games'}
+] %}
+<style>.settings-menu p { margin-bottom: 0; line-height: 1.4; } .settings-menu .settings-item, .settings-menu .settings-link { color: #6c757d; } .settings-menu .settings-link:hover { color: #6c757d; text-decoration: underline; } .settings-menu .settings-title { margin-bottom: .35rem; }</style>
+<div class="settings-menu">
+    <p class="settings-title"><strong>Settings</strong></p>
+    {% for page in settingsPages %}
+        {% if page.key == active %}
+            <p class="text-primary">{{ page.label }}</p>
+        {% elseif page.url %}
+            <p><a href="{{ page.url }}" class="settings-link">{{ page.label }}</a></p>
+        {% else %}
+            <p class="settings-item">{{ page.label }}</p>
+        {% endif %}
+    {% endfor %}
+</div>

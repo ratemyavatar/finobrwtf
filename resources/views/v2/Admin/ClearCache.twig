@@ -1,0 +1,5 @@
+{% extends 'v2/Admin/_layout.twig' %}
+{% block tool %}
+<p>Forgets the timed cache: the user count, usernames, thumbnails, place lists, client data and IP ban list. Nobody gets logged out.</p>
+<form method="POST"><input type="hidden" name="_token" value="{{ data.csrf_token }}"><button class="btn btn-warning">clear timed cache</button></form>
+{% endblock %}

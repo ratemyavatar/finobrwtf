@@ -47,12 +47,15 @@ class ModerationMiddleware
                     'error' => false,
                     'announcements' => []
                 ],
-                'lucky_number' => rand(0, Cache::remember('user_count', 3600, fn() => User::count())) . '/' . Cache::remember('user_count', 3600, fn() => User::count())
+                'lucky_number' => rand(0, Cache::remember('user_count', 3600, fn() => User::count())) . '/' . Cache::remember('user_count', 3600, fn() => User::count()),
+                'server_name' => config('finobe.server_name'), // shown after the lucky number, e.g. "(bumpy)"; blank hides it
             ]
         ];
 
         if(Auth::check()) {
             $this->request['data']['user'] = Auth::user()->toArray();
+            // the real site had no version picker: everyone gets the v2 pages
+            $this->request['data']['user']['version'] = 'v2';
             $this->request['data']['user']['formattedDius'] = $this->dataService->formatNumber($this->request['data']['user']['Dius']);
             $this->request['data']['embeds']['title'] .= 'Finobe';
                 
@@ -99,42 +102,42 @@ class ModerationMiddleware
             }
 
             if(Auth::check()) {
-                // Keep the existing moderation screen compatible with both legacy
-                // string flags ('n'/'y') and boolean flags from the migrations.
-                $moderationName = $this->request['data']['user']['username'];
-                $pendingWarning = $this->db->table('warning')
-                    ->where('username', $moderationName)
-                    ->whereIn('reactivated', [0, 'n'])
-                    ->whereIn('undone', [0, 'n'])
-                    ->orderByDesc('id')->first();
-                if ($pendingWarning) {
-                    if (parse_url(env('APP_URL'), PHP_URL_HOST) != $request->getHost()) {
+                if($this->db->table('warning')->where('username', $this->request['data']['user']['username'])->where('reactivated', \App\Admin\Workbench::flag('warning', 'reactivated', false))->exists()) {
+                    if(parse_url(env('APP_URL'), PHP_URL_HOST) != $request->getHost()) {
                         return response()->json(['code' => 403, 'message' => 'Access denied'], 403);
                     }
                     $this->request['data']['embeds']['title'] = 'Moderation' . $this->request['data']['embeds']['title'];
                     $this->request['data']['isCurrentlyBanned'] = true;
                     $this->request['data']['moderationType'] = 1;
-                    $this->request['data']['ban_info'] = (array) $pendingWarning;
+                    $this->request['data']['ban_info'] = (array) $this->db->table('warning')
+                        ->where('username', $this->request['data']['user']['username'])
+                        ->where('reactivated', \App\Admin\Workbench::flag('warning', 'reactivated', false))
+                        ->first();
+                    
                     return response()->view('v2/Moderation', $this->request);
                 }
 
-                $activeBan = $this->db->table('bans')
-                    ->where('username', $moderationName)
-                    ->whereIn('reactivated', [0, 'n'])
-                    ->whereIn('undone', [0, 'n'])
-                    ->where(function ($query) {
-                        $query->whereIn('perm', [1, 'y'])
-                            ->orWhere('expire', '>', now());
-                    })
-                    ->orderByDesc('id')->first();
-                if ($activeBan) {
-                    if (parse_url(env('APP_URL'), PHP_URL_HOST) != $request->getHost()) {
+                if($this->db->table('bans')->where('username', $this->request['data']['user']['username'])->where('reactivated', \App\Admin\Workbench::flag('bans', 'reactivated', false))->exists()) {
+                    if(parse_url(env('APP_URL'), PHP_URL_HOST) != $request->getHost()) {
                         return response()->json(['code' => 403, 'message' => 'Access denied'], 403);
                     }
                     $this->request['data']['embeds']['title'] = 'Moderation' . $this->request['data']['embeds']['title'];
-                    $this->request['data']['isCurrentlyBanned'] = true;
+                    $this->request['data']['isCurrentlyBanned'] = $this->db->table('bans')->where('username', $this->request['data']['user']['username'])->where('reactivated', \App\Admin\Workbench::flag('bans', 'reactivated', false))->where('expire', '>', now())->exists();
                     $this->request['data']['moderationType'] = 2;
-                    $this->request['data']['ban_info'] = (array) $activeBan;
+                    $this->request['data']['ban_info'] = (array) $this->db->table('bans')
+                        ->where('username', $this->request['data']['user']['username'])
+                        ->where('reactivated', \App\Admin\Workbench::flag('bans', 'reactivated', false))
+                        ->first();
+                        
+                    $currentDateTime = new \DateTime('now', new \DateTimeZone('America/Los_Angeles'));
+                    $futureDateTime = new \DateTime($this->request['data']['ban_info']['expire'], new \DateTimeZone('America/Los_Angeles'));
+                        
+                    $timeDifference = $currentDateTime->diff($futureDateTime);
+                            
+                    $days = $timeDifference->d;
+                    $hours = $timeDifference->h;
+                    $minutes = $timeDifference->i;
+                    $seconds = $timeDifference->s;
 
                     if (in_array((string) $activeBan->perm, ['1', 'y'], true)) {
                         $this->request['data']['expiration'] = 'Permanent';

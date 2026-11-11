@@ -1,0 +1,7 @@
+{% if admin_flair.title or admin_flair.effect or admin_flair.accent %}
+<link rel="stylesheet" href="/s/admin/profile-flair.css">
+<div class="finobe-flair finobe-flair-{{ admin_flair.effect|e('html_attr') }}"{% if admin_flair.accent %} style="--flair-accent:{{ admin_flair.accent|e('html_attr') }}"{% endif %}>
+{% if admin_flair.effect == 'party' %}<span class="finobe-party" aria-label="Party hat">◭</span>{% endif %}
+{% if admin_flair.title %}<span>{{ admin_flair.title|e }}</span>{% else %}<span>Finobe member</span>{% endif %}
+</div>
+{% endif %}

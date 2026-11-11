@@ -36,7 +36,7 @@ class MessagesController extends Controller
         ];
 
         $messages = Message::where('touser', $this->request['data']['user']['id'])
-            ->where('archived', 'n')
+            ->where('archived', false)
             ->count();
 
         $results_per_page = 12;
@@ -45,7 +45,7 @@ class MessagesController extends Controller
         $offset = ($currentPage - 1) * $results_per_page;
 
         $messages = Message::where('touser', $this->request['data']['user']['id'])
-            ->where('archived', 'n')
+            ->where('archived', false)
             ->orderBy('date', 'DESC')
             ->offset($offset)
             ->limit($results_per_page)
@@ -53,7 +53,7 @@ class MessagesController extends Controller
             ->map(fn($item) => $item->toArray());
         
         foreach($messages as $message) {
-            $message['message'] = strip_tags(htmlspecialchars($message['message']));
+            $message['message'] = strip_tags(htmlspecialchars(\App\Services\CurseFilter::forViewer($message['message'])));
             $message['subject'] = strip_tags(htmlspecialchars($message['subject']));
             $message['author'] = htmlspecialchars(User::where('id', $message['author'])->value('username'));
             $message['date'] = date('M j, Y | g:i A', strtotime($message['date']));
@@ -82,7 +82,7 @@ class MessagesController extends Controller
         ];
 
         $messages = Message::where('author', $this->request['data']['user']['id'])
-            ->where('archived', 'n')
+            ->where('archived', false)
             ->count();
 
         $results_per_page = 12;
@@ -91,7 +91,7 @@ class MessagesController extends Controller
         $offset = ($currentPage - 1) * $results_per_page;
 
         $messages = Message::where('author', $this->request['data']['user']['id'])
-            ->where('archived', 'n')
+            ->where('archived', false)
             ->orderBy('date', 'DESC')
             ->offset($offset)
             ->limit($results_per_page)
@@ -99,7 +99,7 @@ class MessagesController extends Controller
             ->map(fn($item) => $item->toArray());
         
         foreach($messages as $message) {
-            $message['message'] = strip_tags(htmlspecialchars($message['message']));
+            $message['message'] = strip_tags(htmlspecialchars(\App\Services\CurseFilter::forViewer($message['message'])));
             $message['subject'] = strip_tags(htmlspecialchars($message['subject']));
             $message['author'] = htmlspecialchars(User::where('id', $message['author'])->value('username'));
             $message['date'] = date('M j, Y | g:i A', strtotime($message['date']));
@@ -128,7 +128,7 @@ class MessagesController extends Controller
         ];
 
         $messages = Message::where('touser', $this->request['data']['user']['id'])
-            ->where('archived', 'y')
+            ->where('archived', true)
             ->count();
 
         $results_per_page = 12;
@@ -137,7 +137,7 @@ class MessagesController extends Controller
         $offset = ($currentPage - 1) * $results_per_page;
 
         $messages = Message::where('touser', $this->request['data']['user']['id'])
-            ->where('archived', 'y')
+            ->where('archived', true)
             ->orderBy('date', 'DESC')
             ->offset($offset)
             ->limit($results_per_page)
@@ -145,7 +145,7 @@ class MessagesController extends Controller
             ->map(fn($item) => $item->toArray());
         
         foreach($messages as $message) {
-            $message['message'] = strip_tags(htmlspecialchars($message['message']));
+            $message['message'] = strip_tags(htmlspecialchars(\App\Services\CurseFilter::forViewer($message['message'])));
             $message['subject'] = strip_tags(htmlspecialchars($message['subject']));
             $message['author'] = htmlspecialchars(User::where('id', $message['author'])->value('username'));
             $message['date'] = date('M j, Y | g:i A', strtotime($message['date']));
@@ -186,15 +186,15 @@ class MessagesController extends Controller
                 return redirect('/app/inbox/message?id=' . $message['id']);
             }
 
-            if($message['archived'] == 'n') {
+            if(!$message['archived']) {
                 $message2 = Message::find($data['id']);
-                $message2->archived = 'y';
+                $message2->archived = true;
                 $message2->save();
                 
                 Session::put('success', 'Successfully archived');
             } else {
                 $message2 = Message::find($data['id']);
-                $message2->archived = 'n';
+                $message2->archived = false;
                 $message2->save();
                 
                 Session::put('success', 'Successfully unarchived');
@@ -204,15 +204,19 @@ class MessagesController extends Controller
         }
 
         $message['uid'] = $message['author'];
-        $message['message'] = nl2br(preg_replace('/\b((?:https?|ftp):\/\/\S+)/i', '<a href="$1" target="_blank">$1</a>', strip_tags(htmlspecialchars($message['message']))));
+        $message['message'] = nl2br(preg_replace('/\b((?:https?|ftp):\/\/\S+)/i', '<a href="$1" target="_blank">$1</a>', strip_tags(htmlspecialchars(\App\Services\CurseFilter::forViewer($message['message'])))));
         $message['subject'] = strip_tags(htmlspecialchars($message['subject']));
         $message['author'] = htmlspecialchars(User::where('id', $message['author'])->value('username'));
         $message['date'] = date('M j, g:ia', strtotime($message['date']));
 
-        if($message['readed'] == 'n' && $this->request['data']['user']['id'] != $message['uid']) {
+        if(!$message['readed'] && $this->request['data']['user']['id'] != $message['uid']) {
             $message2 = Message::find($message['id']);
-            $message2->readed = 'y';
+            $message2->readed = true;
             $message2->save();
+            // the count was worked out before this, so the badge on this page goes down too
+            if(isset($this->request['data']['notifications']['info']['inbox'])) {
+                $this->request['data']['notifications']['info']['inbox'] = max(0, $this->request['data']['notifications']['info']['inbox'] - 1);
+            }
         }
 
         $this->request['data']['embeds']['title'] = $message['subject'] . $this->request['data']['embeds']['title'];
@@ -233,7 +237,7 @@ class MessagesController extends Controller
             $validator = Validator::make($data, [
                 'username' => 'required|string|exists:finobe.users,username',
                 'subject' => 'required|string|min:3|max:255',
-                'message' => 'required|string|min:3|max:8192'
+                'message' => 'required|string|min:3|max:50000'
             ]);
 
             if($validator->fails()) {
@@ -248,6 +252,17 @@ class MessagesController extends Controller
 
             if($this->request['data']['user']['username'] == $data['username']) {
                 Session::put('error', 'You cannot send a message to yourself');
+                return redirect('/app/inbox/compose');
+            }
+
+            if($restricted = \App\Services\Restrictions::message((int) $this->request['data']['user']['id'], 'chat')) {
+                Session::put('error', $restricted);
+                return redirect('/app/inbox/compose');
+            }
+
+            $recipient = User::where('username', $data['username'])->first();
+            if(!\App\Services\Privacy::allows($recipient, 'messages', \Illuminate\Support\Facades\Auth::user())) {
+                Session::put('error', $recipient->username . " isn't accepting messages from you.");
                 return redirect('/app/inbox/compose');
             }
 

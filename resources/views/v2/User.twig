@@ -17,15 +17,11 @@
 				{% endif %}
                 <div class="row">
                     <div class="col-md-12 mt-3">
-                        <div class="card">
+                        <div class="card finobe-profile-effect-{{ admin_flair.effect|e('html_attr') }}">
                             <div class="card-body">
                                 <div class="d-flex row justify-content-around">
                                     <div class="offset-md-1">
-                                      {% if data.profile.pfp == "" %}
-                                        <img src="/s/img/spinnerv2.gif" style="width: 17rem; height: auto;">
-                                      {% else %}
-                                        <img src="https://cdn.finobe.wtf/{{ data.profile.pfp }}" style="width: 19rem; height: auto;">
-                                      {% endif %}
+                                      <img src="{{ avatar_url(data.profile.pfp) }}" style="width: 19rem; height: auto;">
                                     </div>
                                     <style>
                                         .nowrap {
@@ -34,7 +30,8 @@
                                     </style>
                                     <div class="d-flex flex-column">
                                         <div style="margin-bottom: auto;">
-                                            <h4><i class='fal fa-mars fa-1x'></i> {{ data.profile.username | raw }}</h4>
+                                            <h4>{% if data.profile.gender == 'f' %}<i class='fal fa-venus fa-1x'></i> {% elseif data.profile.gender != 'n' %}<i class='fal fa-mars fa-1x'></i> {% endif %}{{ data.profile.username | raw }}</h4>
+{% include 'admin/profile-flair.twig' %}
                                             <p class="mb-1 text-{{ (data.profile.status == "admin") ? "danger" : "primary" }}">
                                                 <strong>{{ (data.profile.status == "admin") ? "Admin" : "Member" }}</strong>
                                             </p>
@@ -44,12 +41,12 @@
                                             <div class="d-flex justify-content-start mt-5">
                                                 <p>
                                                     <a href="/app/inbox/compose?user={{ data.profile.username }}" class="btn btn-theme mr-2 nowrap">
-                                                        Send Message
+                                                        send message
                                                     </a>
                                                 </p>
                                                 <p>
-                                                    <a href="#" class="btn btn-theme mr-2 nowrap">
-                                                        Trade
+                                                    <a href="/trade/new/{{ data.profile.id }}" class="btn btn-theme mr-2 nowrap">
+                                                        trade
                                                     </a>
                                                 </p>
                                                 {% for friend in data.user.friends %}
@@ -150,7 +147,7 @@
                                         {% for user in data.profile.CurrentFriends|slice(0, 3) %}
                                             <div class="col-md-4 text-center">
                                                 <a class="d-flex flex-column align-items-center" href="/user/{{ user.userid }}">
-                                                    <img src="{% if user.pfp %}{{ "https://cdn.finobe.wtf/" ~ user.pfp }}{% else %}{{ "/s/img/spinnerv2.gif" }}{% endif %}" height="64" width="64">
+                                                    <img src="{{ avatar_url(user.pfp) }}" height="64" width="64">
                                                     <span class="full-width">{{ user.username }}</span>
                                                 </a>
                                             </div>
@@ -305,6 +302,12 @@
                             fetch('/api/inventory?type=' + type + '&user={{ data.profile.username }}&page=' + page)
                                 .then(response => response.json())
                                 .then(json => {
+                                    if(json.code == 403) {
+                                        const p = document.createElement('p');
+                                        p.textContent = json.message;
+                                        document.getElementById('inventory').replaceChildren(p);
+                                        return;
+                                    }
                                     const data = json.data.items.data;
                                     const totalPages = json.data.items.pagination.number_of_pages == 0 ? 1 : json.data.items.pagination.number_of_pages;
 

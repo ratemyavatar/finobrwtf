@@ -1,0 +1,32 @@
+<html>
+  <head>
+    {% include ('v2/Modules/head.twig') %}
+  </head>
+  <body>
+    <div id="app">
+      {% include ('v2/Modules/nav.twig') %}
+      <div class="container mt-4">
+        <div class="row justify-content-center">
+          <div class="col-md-10">
+            <div class="card">
+              <div class="card-header">2FA Backup Codes</div>
+              <div class="card-body">
+                <p>Your backup codes are below. If you lose access to your 2FA authenticator, you can log in with one of these instead (each works once). Write these codes down in a secure place and don't give them to anyone.</p>
+                {% if data.backup.replaced %}
+                  <p>Your old backup codes have been invalidated and are no longer usable. Only the codes on this page will work.</p>
+                {% endif %}
+                <ul>
+                  {% for code in data.backup.codes %}
+                    <li><code>{{ code }}</code></li>
+                  {% endfor %}
+                </ul>
+                <a href="/app/security" class="btn btn-light"><i class="far fa-chevron-left mr-2"></i>back</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% include ('v2/Modules/footer.twig') %}
+  </body>
+</html>

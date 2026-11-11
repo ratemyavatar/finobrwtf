@@ -188,10 +188,13 @@ return [
         |
         */
         'functions' => [
+            'avatar_url' => ['callback' => [\App\Support\AvatarImage::class, 'url']],
             'elixir',
             'head',
             'last',
             'mix',
+            'public_path',
+            'filemtime',
         ],
 
         /*

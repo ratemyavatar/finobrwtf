@@ -1,0 +1,78 @@
+<html>
+  <head>
+    {% include ('v2/Modules/head.twig') %}
+    {% include ('v2/Trade/_style.twig') %}
+  </head>
+  <body>
+    <div id="app">
+      {% include ('v2/Modules/nav.twig') %}
+      {% set p = data.partner %}
+      <div class="container mt-4">
+        <div class="d-flex align-items-center mb-3">
+          <a href="/user/{{ p.id }}" class="btn btn-light border mr-3"><i class="far fa-chevron-left"></i></a>
+          <h3 class="mb-0 font-weight-light">Trade</h3>
+        </div>
+        <form method="POST" action="/trade/new/{{ p.id }}" id="trade-form" class="row">
+          <input type="hidden" name="_token" value="{{ data.csrf_token }}">
+          <div class="col-md-3 text-center mb-3">
+            <a href="/user/{{ p.id }}"><img src="{{ p.pfp ? 'https://cdn.finobe.wtf/' ~ p.pfp : '/s/img/spinnerv2.gif' }}" alt="{{ p.username }}" class="trade-avatar"></a>
+            <h4 class="font-weight-light mt-3">{{ p.username }}</h4>
+          </div>
+          <div class="col-md-9">
+            {% for side, items in {'give': data.mine, 'receive': data.theirs} %}
+              <h4 class="font-weight-light">{{ side == 'give' ? 'Give' : 'Receive' }}</h4>
+              <p class="mb-2"><strong>Value:</strong> <img src="/s/img/diu_16.png" alt="Diu" class="align-middle"> <span id="value-{{ side }}">0</span>
+                <small class="text-muted ml-2">pick up to {{ data.maxItems }}</small></p>
+              <div class="d-flex flex-wrap mb-2">
+                {% for item in items %}
+                  {% include ('v2/Trade/_card.twig') with {item: item, selectable: true, side: side} %}
+                {% else %}
+                  <p class="text-muted">{{ side == 'give' ? "You don't" : p.username ~ " doesn't" }} have any Limited or Unique items to trade.</p>
+                {% endfor %}
+              </div>
+            {% endfor %}
+            <div id="trade-inputs"></div>
+            <button type="submit" class="btn btn-primary btn-block" id="trade-send" disabled>send</button>
+          </div>
+        </form>
+      </div>
+    </div>
+    <script>
+      (function () {
+        const max = {{ data.maxItems }};
+        const picked = { give: new Set(), receive: new Set() };
+        function refresh() {
+          const inputs = document.getElementById('trade-inputs');
+          inputs.innerHTML = '';
+          ['give', 'receive'].forEach(function (side) {
+            let value = 0;
+            document.querySelectorAll('.trade-pick[data-side="' + side + '"]').forEach(function (card) {
+              const on = picked[side].has(card.dataset.id);
+              card.classList.toggle('picked', on);
+              if (on) {
+                value += parseInt(card.dataset.value, 10) || 0;
+                const input = document.createElement('input');
+                input.type = 'hidden'; input.name = side + '[]'; input.value = card.dataset.id;
+                inputs.appendChild(input);
+              }
+            });
+            document.getElementById('value-' + side).textContent = value;
+          });
+          document.getElementById('trade-send').disabled = !(picked.give.size && picked.receive.size);
+        }
+        document.querySelectorAll('.trade-pick').forEach(function (card) {
+          function toggle() {
+            const set = picked[card.dataset.side];
+            if (set.has(card.dataset.id)) set.delete(card.dataset.id);
+            else if (set.size < max) set.add(card.dataset.id);
+            refresh();
+          }
+          card.addEventListener('click', toggle);
+          card.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); } });
+        });
+        refresh();
+      })();
+    </script>
+    {% include ('v2/Modules/footer.twig') %}
+  </body>
+</html>

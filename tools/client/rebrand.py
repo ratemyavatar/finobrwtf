@@ -13,7 +13,7 @@ Run after patch_client.py (any order with set_key.py). Safe to run again.
 - CoreScripts inside the exe: purchase prompt (ROBUX -> Dius), developer console title, help menu text
 - content/textures: the Roblox logo images
 """
-import codecs, io, struct, sys
+import codecs, io, re, struct, sys
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -194,6 +194,20 @@ def replace_icon(b: bytearray):
 # CreateWindowExA is pointed at a "Finobe" string in .rdata instead: `lea eax,[ebp-0x280]` becomes
 # `mov eax,<"Finobe">; nop`, with a base relocation for the new address (the exe is ASLR-enabled)
 TITLE_SITE = bytes.fromhex("8d8580fdffff" "6a00" "57" "6a00" "6a00" "6858020000" "6820030000")
+# the stack offset of the title buffer differs per build (2016: ebp-0x280, 2017: ebp-0x290)
+TITLE_TAIL = TITLE_SITE[6:]
+
+
+def _find_title_site(b):
+    i = -1
+    while True:
+        i = b.find(TITLE_TAIL, i + 1)
+        if i == -1:
+            return -1, None
+        if b[i - 6:i - 4] == b"\x8d\x85" and b[i - 2:i] == b"\xff\xff":   # lea eax,[ebp-x]
+            return i - 6, "lea"
+        if b[i - 6] == 0xB8:
+            return i - 6, "done"
 
 
 def _pe(b):
@@ -214,11 +228,11 @@ def replace_window_title(b: bytearray):
     base = struct.unpack_from("<I", b, opt + 28)[0]
     to_rva = lambda off: next(va + off - raw for _, va, _, raw, rs, _ in secs if raw <= off < raw + rs)
 
-    i = b.find(TITLE_SITE)
+    i, kind = _find_title_site(b)
+    if kind == "done":
+        print("  window title: already Finobe")
+        return
     if i == -1:
-        if b.find(TITLE_SITE[6:]) != -1 and b[b.find(TITLE_SITE[6:]) - 6] == 0xB8:
-            print("  window title: already Finobe")
-            return
         print("  window title: patch site not found, skipped")
         return
     s = b.find(b"\0Finobe\0") + 1
@@ -286,18 +300,24 @@ def corescript_entries(b: bytes):
 
 def replace_corescript_text(b: bytearray):
     for entry, name, off, size, room in corescript_entries(bytes(b)):
-        if name not in CORESCRIPT_TEXT:
-            continue
         prefix, strings = rsb1.split_strings(rsb1.decode(bytes(b[off:off + size])))
         changed = 0
         for i, s in enumerate(strings):
             t = s.decode("latin1")
+            # player thumbnails (in-game menu, player dropdown, friend notifications) would load from roblox.com
+            if "www.roblox.com/thumbs/" in t.lower():
+                strings[i] = re.sub("www.roblox.com", "www.finobe.wtf", t, flags=re.I).encode("latin1"); changed += 1
+                continue
+            if name not in CORESCRIPT_TEXT:
+                continue
             # sentences/titles only: identifiers (RobloxGui, com.roblox.client.) and asset URLs stay
             if " " in t and ("roblox" in t.lower() or "ROBUX" in t):
                 # sentences only: Robux/PriceInRobux/ROBUX_ICON are keys and names the scripts use
                 strings[i] = finobe(t).replace("ROBUX", "Dius").encode("latin1"); changed += 1
         if not changed:
-            print(f"  {name}: already done"); continue
+            if name in CORESCRIPT_TEXT:
+                print(f"  {name}: already done")
+            continue
         blob = rsb1.encode(rsb1.join_strings(prefix, strings))
         if len(blob) > room:
             sys.exit(f"{name}: {len(blob)} bytes, only {room} fit")

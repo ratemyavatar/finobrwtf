@@ -1,0 +1,28 @@
+{# 403: the real site's "Error" card (finobe.com, e.g. opening the settings of a place you don't own) #}
+<html>
+  <head>
+    {% include ('v2/Modules/head.twig') %}
+  </head>
+  <body>
+    <div id="app">
+      {% include ('v2/Modules/nav.twig') %}
+      <div class="container mt-4">
+        <div class="container">
+          <div class="card">
+            <div class="card-header bg-danger text-light text-center">Error</div>
+            <div class="card-body text-center">
+              <img src="/s/img/cry.svg" class="img-fluid mt-4 mb-0 text-center">
+              <h3 class="font-light mt-4">You can't do it</h3>
+              <p class="mb-0">Go away, pk</p>
+              <div class="mt-4">
+                <a href="/" class="btn btn-theme btn-lg mr-2">Home ›</a>
+                <a href="/forum/home" class="btn btn-primary btn-lg">Forum ›</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% include ('v2/Modules/footer.twig') %}
+  </body>
+</html>

@@ -20,6 +20,7 @@ use Illuminate\Support\Facades\Http;
 class ItemImporter
 {
     const HAT = 8;
+    const HEAD = 17;
     const GEAR = 19;
 
     /** classes a 2016 client doesn't have (dropped with everything under them) */
@@ -35,7 +36,7 @@ class ItemImporter
     }
 
     /**
-     * @param int|null $expectType self::HAT / self::GEAR, or null to go by what the model is
+     * @param int|null $expectType self::HAT / self::HEAD / self::GEAR, or null to go by what the model is
      * @return int the new asset id
      */
     public static function import(string $file, string $title, int $author, string $description, int $price, bool $onSale, ?int $expectType = null): int
@@ -54,7 +55,11 @@ class ItemImporter
 
         // a failed render (arbiter down) shouldn't undo the upload
         try {
-            $type === self::HAT ? AssetHelper::renderHat($assetId) : AssetHelper::renderGear($assetId);
+            match ($type) {
+                self::HAT => AssetHelper::renderHat($assetId),
+                self::HEAD => AssetHelper::renderHead($assetId),
+                default => AssetHelper::renderGear($assetId),
+            };
         } catch (\Throwable $e) {
             report($e);
         }
@@ -72,9 +77,15 @@ class ItemImporter
         }
         $xp = new DOMXPath($doc);
 
+        // A head is a bare SpecialMesh (MeshType "Head") saved from Studio, with no
+        // Hat/Accessory/Tool wrapper around it.
         $root = $xp->query('//Item[@class="Hat" or @class="Accessory" or @class="Accoutrement" or @class="Tool" or @class="HopperBin"]')->item(0);
         if (!$root instanceof DOMElement) {
-            throw new ImportException('The model has no Accessory, Hat or Tool in it.');
+            $mesh = $xp->query('//Item[@class="SpecialMesh" or @class="FileMesh"]')->item(0);
+            if ($mesh instanceof DOMElement) {
+                return $this->head($xp, $mesh, $expectType);
+            }
+            throw new ImportException('The model has no Accessory, Hat, Tool or Head mesh in it.');
         }
         $type = in_array($root->getAttribute('class'), ['Tool', 'HopperBin'], true) ? self::GEAR : self::HAT;
         if ($expectType !== null && $expectType !== $type) {
@@ -151,7 +162,7 @@ class ItemImporter
         $robloxEl->appendChild($out->importNode($root, true));
 
         // the 2016 loader doesn't expect an XML declaration
-        return [preg_replace('/^<\?xml[^>]*>\s*/', '', $out->saveXML()), $type];
+        return [preg_replace('/^<\?xml[^>]*>\s*/', '', $out->saveXML(null, LIBXML_NOEMPTYTAG)), $type];
     }
 
     /** MeshPart (2016 has none that loads from a file) -> Part with a SpecialMesh scaled to the part's size */
@@ -201,6 +212,54 @@ class ItemImporter
     {
         $n = $xp->query("./Properties/*[@name='{$name}']", $item)->item(0);
         return $n?->textContent;
+    }
+
+    /*
+        head
+         - the model is just a SpecialMesh (a custom head): store the mesh on the site
+           and hand back a 2016-style XML holding the mesh with its MeshType/Scale kept
+    */
+    private function head(DOMXPath $xp, DOMElement $mesh, ?int $expectType): array
+    {
+        if ($expectType !== null && $expectType !== self::HEAD) {
+            throw new ImportException('That model is a head mesh, pick "Head" as the asset type.');
+        }
+
+        $props = $xp->query('./Properties', $mesh)->item(0);
+        $meshId = $this->robloxAssetId($this->contentUrl($xp, $props, 'MeshId'));
+        $textureId = $this->robloxAssetId($this->contentUrl($xp, $props, 'TextureId'));
+
+        $out = new DOMDocument('1.0', 'utf-8');
+        $out->formatOutput = true;
+        $robloxEl = $out->appendChild($out->createElement('roblox'));
+        foreach (['xmlns:xmime' => 'http://www.w3.org/2005/05/xmlmime', 'xmlns:xsi' => 'http://www.w3.org/2001/XMLSchema-instance',
+            'xsi:noNamespaceSchemaLocation' => 'http://www.roblox.com/roblox.xsd', 'version' => '4'] as $k => $v) {
+            $robloxEl->setAttribute($k, $v);
+        }
+        $robloxEl->appendChild($out->createElement('External', 'null'));
+        $robloxEl->appendChild($out->createElement('External', 'nil'));
+
+        $item = $robloxEl->appendChild($out->createElement('Item'));
+        $item->setAttribute('class', 'SpecialMesh');
+        $item->setAttribute('referent', 'RBX0');
+        $mp = $item->appendChild($out->createElement('Properties'));
+        $add = function (string $tag, string $name, string $inner) use ($out, $mp) {
+            $f = $out->createDocumentFragment();
+            $f->appendXML("<{$tag} name=\"{$name}\">{$inner}</{$tag}>");
+            $mp->appendChild($f);
+        };
+        // keep the source MeshType (a custom head is usually a FileMesh); a mesh with no
+        // id falls back to "Head" so the client still swaps the default head shape
+        $meshType = $this->prop($xp, $mesh, 'MeshType');
+        $add('token', 'MeshType', $meshType !== null && $meshType !== '' ? $meshType : ($meshId === null ? '0' : '5'));
+        $add('Content', 'MeshId', $meshId === null ? '<null></null>' : '<url>' . $this->siteUrl($this->mesh($meshId)) . '</url>');
+        $add('Content', 'TextureId', $textureId === null ? '<null></null>' : '<url>' . $this->siteUrl($this->texture($textureId)) . '</url>');
+        $add('string', 'Name', 'Mesh');
+        $scale = $this->vector($xp, $props, 'Scale') ?? [1, 1, 1];
+        $add('Vector3', 'Scale', RbxmReader::vec(...$scale));
+        $add('Vector3', 'VertexColor', RbxmReader::vec(1, 1, 1));
+
+        return [preg_replace('/^<\?xml[^>]*>\s*/', '', $out->saveXML(null, LIBXML_NOEMPTYTAG)), self::HEAD];
     }
 
     private function contentUrl(DOMXPath $xp, $props, string $name): string

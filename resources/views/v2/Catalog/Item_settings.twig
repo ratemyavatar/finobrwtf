@@ -717,6 +717,20 @@ input[type='number'][data-v-e236382e]:hover::-webkit-outer-spin-button {
                                     <input type="number" name="price" value="{{ data.item.additional.price }}" placeholder="Price"
                                         class="form-control"><br>
                                 </div>
+                                {% if data.isAdmin %}
+                                {% set kind = data.item.additional.isUnique ? 'unique' : (data.item.additional.isLimited ? 'limited' : 'none') %}
+                                <p class="col-form-label mt-2"><strong>Economy</strong> <small class="text-muted">(admins only)</small></p>
+                                <label for="limited" class="col-form-label"><strong>Type</strong></label>
+                                <select id="limited" name="limited" class="form-control">
+                                    <option value="none"{{ kind == 'none' ? ' selected' : '' }}>Normal (can't be traded)</option>
+                                    <option value="limited"{{ kind == 'limited' ? ' selected' : '' }}>Limited</option>
+                                    <option value="unique"{{ kind == 'unique' ? ' selected' : '' }}>Unique (numbered copies)</option>
+                                </select>
+                                <label for="stock" class="col-form-label"><strong>Stock</strong> <small class="text-muted">Unique only, 0 = no limit</small></label>
+                                <input type="number" id="stock" name="stock" min="0" value="{{ data.item.additional.stock ?? 0 }}" class="form-control">
+                                <label for="value" class="col-form-label"><strong>Value</strong> <small class="text-muted">shown in trades, blank = the price</small></label>
+                                <input type="number" id="value" name="value" min="0" value="{{ data.item.additional.value ?? '' }}" class="form-control">
+                                {% endif %}
                                 <button type="submit" class="btn btn-primary mt-3">update</button>
                             </div>
                         </form>

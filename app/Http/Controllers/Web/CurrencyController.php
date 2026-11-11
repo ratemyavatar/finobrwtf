@@ -45,6 +45,12 @@ class CurrencyController extends Controller
                     ));
                     break;
             
+                case 6:
+                    $result['assetname'] = strip_tags(htmlspecialchars(
+                        Asset::where('id', $result['assetid'])->value('title')
+                    )) . ' (traded)';
+                    break;
+
                 case 3:
                     $result['assetname'] = 'Place Slot';
                     break;

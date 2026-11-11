@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Patch a stock 2016 Roblox Windows player (RobloxPlayerBeta.exe, 0.257) for Finobe.
+Patch a stock Roblox Windows player (RobloxPlayerBeta.exe: 2016 0.257, 2017 0.285) for Finobe.
 
   * roblox.com -> finobe.wtf everywhere in the exe (www., assetgame., api hosts...; same length,
     so nothing moves)
@@ -71,6 +71,9 @@ def skip_cert_subject_check(b: bytearray) -> None:
     old, new = CERT_SUBJECT_CHECK
     if b.count(new) == 1:
         print("cert subject check: already skipped")
+        return
+    if b.count(old) == 0 and b"\0mc\0" not in b:
+        print("cert subject check: not in this build (nothing to skip)")
         return
     if b.count(old) != 1:
         sys.exit(f"cert subject check: expected 1 match, found {b.count(old)}")

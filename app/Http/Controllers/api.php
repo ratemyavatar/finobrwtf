@@ -5,12 +5,14 @@ namespace App\Http\Controllers;
 use Carbon\Carbon;
 use App\Models\User;
 use App\Models\Asset;
+use App\Http\Controllers\Asset as AssetHelper;
 use App\Models\Server;
 use App\Models\Message;
 use App\Models\Purchases;
 use App\Models\Notification;
 use App\Jobs\RenderAvatar;
 use App\Services\AvatarRenderer;
+use App\Services\OutfitPreviewRenderer;
 use App\Models\Forum\Reply;
 use App\Models\Forum\Rating;
 use Illuminate\Http\Request;
@@ -38,6 +40,14 @@ class api extends Controller
         if(!Auth::check() || !isset($data['type']) || !isset($data['user']) || !User::where('username', $data['user'])->exists()) {
             $this->response['code'] = 403;
             $this->response['message'] = 'Access denied';
+
+            return response()->json($this->response, 403);
+        }
+
+        $owner = User::where('username', $data['user'])->first();
+        if(!\App\Services\Privacy::allows($owner, 'inventory', Auth::user())) {
+            $this->response['code'] = 403;
+            $this->response['message'] = $owner->username . ' keeps their inventory private.';
 
             return response()->json($this->response, 403);
         }
@@ -227,7 +237,7 @@ class api extends Controller
         $user = Auth::user();
 
         if($data['id'] == 'all') {
-            Notification::where('touser', $user->id)->update(['readed' => 'y']);
+            Notification::where('touser', $user->id)->update(['readed' => true]);
             
             return redirect('/');
         }
@@ -238,7 +248,7 @@ class api extends Controller
             return redirect('/');
         }
 
-        $notification->readed = 'y';
+        $notification->readed = true;
         $notification->save();
         
         $results_per_page = 10;
@@ -275,7 +285,7 @@ class api extends Controller
 
         $item = Asset::find($data['assetid']);
 
-        if(!in_array($item->asset_type, [2, 3, 8, 11, 12, 18, 19]) || $item->visibility != 'n') {
+        if(!in_array($item->asset_type, [2, 3, 8, 11, 12, 17, 18, 19, 32]) || $item->visibility != 'n') {
             $this->response['code'] = 400;
             $this->response['message'] = 'Invalid item type';
 
@@ -308,15 +318,27 @@ class api extends Controller
                 return;
             }
 
-            if(Purchases::where('username', $user->username)->where('assetid', $item->id)->where('serial', 0)->where('type', 1)->exists()) {
+            if(Purchases::where('username', $user->username)->where('assetid', $item->id)->where('type', 1)->exists()) {
                 $error = 'This item has already been purchased';
                 return;
+            }
+
+            // a Unique hands out the next serial (#1, #2, ...) until its stock runs out
+            $serial = 0;
+            if(\App\Services\Trading::kind($item->additional) === 'unique') {
+                Asset::where('id', $item->id)->lockForUpdate()->first();
+                $serial = (int) Purchases::where('assetid', $item->id)->max('serial') + 1;
+                $stock = (int) ($item->additional['stock'] ?? 0);
+                if($stock > 0 && $serial > $stock) {
+                    $error = 'This item is sold out';
+                    return;
+                }
             }
 
             Purchases::create([
                 'username' => $user->username,
                 'assetid' => $item->id,
-                'serial' => 0,
+                'serial' => $serial,
                 'author' => $item->author,
                 'amount' => -1 * $price,
                 'type' => 1
@@ -349,6 +371,162 @@ class api extends Controller
             $this->response['message'] = $error;
 
             return response()->json($this->response, 400);
+        }
+
+        // a package hands out everything it contains, not just the package row
+        if((int) $item->asset_type === 32) {
+            $this->grantPackageContents($item, Auth::id());
+        }
+
+        return response()->json($this->response, 200);
+    }
+
+    /*
+        grantPackageContents
+         - give the buyer a copy of every asset inside a package. Items the buyer
+           already owns are left alone, and the creator's own items are skipped
+           (you already own what you made). No Dius changes hands for the contents.
+    */
+    private function grantPackageContents(Asset $package, int $buyerId): void
+    {
+        $buyer = User::find($buyerId);
+        if(!$buyer) {
+            return;
+        }
+
+        foreach(AssetHelper::getPackageAssets((int) $package->id) as $assetId) {
+            $contained = Asset::find($assetId);
+            if(!$contained || (int) $contained->author === $buyerId) {
+                continue;
+            }
+
+            $already = Purchases::where('username', $buyer->username)
+                ->where('assetid', $assetId)
+                ->where('type', 1)
+                ->exists();
+            if($already) {
+                continue;
+            }
+
+            Purchases::create([
+                'username' => $buyer->username,
+                'assetid' => $assetId,
+                'serial' => 0,
+                'author' => $contained->author,
+                'amount' => 0,
+                'type' => 1,
+            ]);
+        }
+    }
+
+    private function outfit(array $data) {
+        $user = Auth::user();
+        $outfits = \Illuminate\Support\Facades\DB::connection('finobe')->table('outfits');
+
+        if ($data['type'] == 'outfit-create') {
+            $name = trim((string) ($data['name'] ?? ''));
+            if ($name === '' || mb_strlen($name) > 50) {
+                $this->response['code'] = 400;
+                $this->response['message'] = 'Outfit names are 1 to 50 characters.';
+                return response()->json($this->response, 400);
+            }
+            if ((clone $outfits)->where('user_id', $user->id)->count() >= 50) {
+                $this->response['code'] = 400;
+                $this->response['message'] = 'You can have up to 50 outfits. Delete one first.';
+                return response()->json($this->response, 400);
+            }
+
+            $avatar = $user->avatar[0] ?? [];
+            // Save an explicit six-part colour snapshot. RCC must not have to
+            // guess the colours from the avatar the user is wearing later.
+            $defaults = [
+                'headColorId' => 24,
+                'torsoColorId' => 23,
+                'leftArmColorId' => 24,
+                'rightArmColorId' => 24,
+                'leftLegColorId' => 119,
+                'rightLegColorId' => 119,
+            ];
+            $currentColors = is_array($avatar['bodyColors'] ?? null) ? $avatar['bodyColors'] : [];
+            $savedColors = [];
+            foreach ($defaults as $key => $default) {
+                $value = filter_var($currentColors[$key] ?? $default, FILTER_VALIDATE_INT);
+                $savedColors[$key] = $value !== false && $value > 0 ? $value : $default;
+            }
+
+            $this->response['id'] = (clone $outfits)->insertGetId([
+                'user_id' => $user->id,
+                'name' => $name,
+                'avatar' => json_encode([
+                    'equippedGearVersionIds' => array_values(array_map('intval', $avatar['equippedGearVersionIds'] ?? [])),
+                    'backpackGearVersionIds' => array_values(array_map('intval', $avatar['backpackGearVersionIds'] ?? [])),
+                    'bodyColors' => $savedColors,
+                    'pose' => AvatarRenderer::poseFor($user),
+                ]),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+            $this->response['name'] = $name;
+            return response()->json($this->response, 200);
+        }
+
+        $outfit = (clone $outfits)->where('id', (int) ($data['id'] ?? 0))->where('user_id', $user->id)->first();
+        if (!$outfit) {
+            $this->response['code'] = 404;
+            $this->response['message'] = 'That outfit doesn\'t exist.';
+            return response()->json($this->response, 404);
+        }
+
+        if ($data['type'] == 'outfit-preview') {
+            try {
+                $path = OutfitPreviewRenderer::render($user, (int) $outfit->id);
+                $this->response['image'] = 'https://cdn.' . env('FINOBE_DOMAIN', 'finobe.wtf') . '/' . $path;
+            } catch (\Throwable $e) {
+                report($e);
+                $this->response['code'] = 503;
+                $this->response['message'] = 'Could not render this outfit preview right now.';
+                return response()->json($this->response, 503);
+            }
+            return response()->json($this->response, 200);
+        }
+
+        if ($data['type'] == 'outfit-delete') {
+            (clone $outfits)->where('id', $outfit->id)->delete();
+            OutfitPreviewRenderer::delete((int) $outfit->id);
+            return response()->json($this->response, 200);
+        }
+
+        // wear: only items you still own and that are approved go back on
+        $saved = json_decode($outfit->avatar, true) ?: [];
+        $ids = array_values(array_unique(array_map('intval', $saved['equippedGearVersionIds'] ?? [])));
+        $backpackIds = array_values(array_unique(array_map('intval', $saved['backpackGearVersionIds'] ?? [])));
+        $allIds = array_values(array_unique(array_merge($ids, $backpackIds)));
+        $owned = $allIds ? Purchases::where('username', $user->username)->whereIn('assetid', $allIds)->where('type', 1)->pluck('assetid')->map(fn ($id) => (int) $id)->all() : [];
+        $approved = $owned ? Asset::whereIn('id', $owned)->where('visibility', 'n')->pluck('id')->map(fn ($id) => (int) $id)->all() : [];
+
+        $avatar = $user->avatar;
+        $avatar[0]['equippedGearVersionIds'] = array_values(array_filter($ids, fn ($id) => in_array($id, $approved, true)));
+        if (array_key_exists('backpackGearVersionIds', $saved)) {
+            $avatar[0]['backpackGearVersionIds'] = array_values(array_filter($backpackIds, fn ($id) => in_array($id, $approved, true)));
+        }
+        if (!empty($saved['bodyColors'])) {
+            $avatar[0]['bodyColors'] = $saved['bodyColors'];
+        }
+        if (isset($saved['pose']) && isset(AvatarRenderer::POSES[$saved['pose']])) {
+            $avatar[0]['pose'] = $saved['pose'];
+        }
+        $user->avatar = $avatar;
+        $user->save();
+
+        $missing = count($ids) - count($avatar[0]['equippedGearVersionIds']);
+        try {
+            $this->response['image'] = 'https://cdn.' . env('FINOBE_DOMAIN', 'finobe.wtf') . '/' . AvatarRenderer::render($user);
+            $user->render_cooldown = now();
+            $user->save();
+            $this->response['message'] = $missing ? "Outfit on. {$missing} item(s) you no longer own were left off." : 'Outfit on.';
+        } catch (\Throwable $e) {
+            report($e);
+            $this->response['message'] = 'Outfit on, but the render failed. Press regen in a bit.';
         }
 
         return response()->json($this->response, 200);
@@ -391,6 +569,11 @@ class api extends Controller
             }
 
             return response()->json($this->response, 200);
+        }
+
+        // Character > Outfits: save what you're wearing, put a saved outfit back on, or delete one
+        if (in_array($data['type'], ['outfit-create', 'outfit-wear', 'outfit-delete', 'outfit-preview'], true)) {
+            return $this->outfit($data);
         }
 
         // movement animations used in game (doesn't change the render, so no re-render)
@@ -814,6 +997,104 @@ class api extends Controller
                 return response()->json($this->response, 400);
             }
 
+            $user->avatar = $avatar;
+            $user->save();
+        } elseif($data['type'] == 'head-asset') {
+            // a custom head (asset type 17). Only one at a time; it lives in the same
+            // worn-items list as hats, faces and gear so CharacterFetch picks it up.
+            if(!isset($data['assetid'])) {
+                $this->response['code'] = 400;
+                $this->response['message'] = 'Bad request';
+
+                return response()->json($this->response, 400);
+            }
+
+            $user = Auth::user();
+            $avatar = $user->avatar;
+
+            $data['assetid'] = intval($data['assetid']);
+            $item = Asset::find($data['assetid']);
+
+            if(!$item || $item->asset_type != 17) {
+                $this->response['code'] = 400;
+                $this->response['message'] = 'Bad request';
+
+                return response()->json($this->response, 400);
+            }
+
+            if($item->visibility != 'n' && !in_array($data['assetid'], $avatar[0]['equippedGearVersionIds'])) {
+                $this->response['code'] = 400;
+                $this->response['message'] = 'Item has not been approved or is under review';
+
+                return response()->json($this->response, 400);
+            }
+
+            if(!Purchases::where('username', $user->username)->where('assetid', $data['assetid'])->where('type', 1)->exists()) {
+                $this->response['code'] = 400;
+                $this->response['message'] = 'You do not own this item';
+
+                return response()->json($this->response, 400);
+            }
+
+            $worn = $avatar[0]['equippedGearVersionIds'];
+            $equipped = in_array($data['assetid'], $worn);
+
+            // drop any other head already worn
+            $worn = array_values(array_filter($worn, fn($id) => (int) Asset::where('id', $id)->value('asset_type') !== 17));
+            if(!$equipped) {
+                $worn[] = $data['assetid'];
+            }
+
+            $avatar[0]['equippedGearVersionIds'] = array_values($worn);
+            $user->avatar = $avatar;
+            $user->save();
+        } elseif($data['type'] == 'package') {
+            // a package (asset type 32). Only one at a time; it is expanded into its
+            // contents by CharacterFetch, so it never reaches the client itself.
+            if(!isset($data['assetid'])) {
+                $this->response['code'] = 400;
+                $this->response['message'] = 'Bad request';
+
+                return response()->json($this->response, 400);
+            }
+
+            $user = Auth::user();
+            $avatar = $user->avatar;
+
+            $data['assetid'] = intval($data['assetid']);
+            $item = Asset::find($data['assetid']);
+
+            if(!$item || $item->asset_type != 32) {
+                $this->response['code'] = 400;
+                $this->response['message'] = 'Bad request';
+
+                return response()->json($this->response, 400);
+            }
+
+            if($item->visibility != 'n' && !in_array($data['assetid'], $avatar[0]['equippedGearVersionIds'])) {
+                $this->response['code'] = 400;
+                $this->response['message'] = 'Item has not been approved or is under review';
+
+                return response()->json($this->response, 400);
+            }
+
+            if(!Purchases::where('username', $user->username)->where('assetid', $data['assetid'])->where('type', 1)->exists()) {
+                $this->response['code'] = 400;
+                $this->response['message'] = 'You do not own this item';
+
+                return response()->json($this->response, 400);
+            }
+
+            $worn = $avatar[0]['equippedGearVersionIds'];
+            $equipped = in_array($data['assetid'], $worn);
+
+            // drop any other package already worn
+            $worn = array_values(array_filter($worn, fn($id) => (int) Asset::where('id', $id)->value('asset_type') !== 32));
+            if(!$equipped) {
+                $worn[] = $data['assetid'];
+            }
+
+            $avatar[0]['equippedGearVersionIds'] = array_values($worn);
             $user->avatar = $avatar;
             $user->save();
         }

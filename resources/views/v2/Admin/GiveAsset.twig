@@ -1,0 +1,10 @@
+{% extends 'v2/Admin/_layout.twig' %}
+{% block tool %}
+<p class="text-muted">{{ data.dependent ? "Counts like a purchase: a Unique gets the next serial and can't go past its stock." : "A copy outside the stock: a Unique given this way shows serial N/A." }}</p>
+<form method="POST" style="max-width: 480px;">
+  <input type="hidden" name="_token" value="{{ data.csrf_token }}">
+  <div class="form-group"><label for="user"><strong>Username</strong></label><input type="text" id="user" name="user" class="form-control" required></div>
+  <div class="form-group"><label for="asset"><strong>Asset ID</strong></label><input type="number" id="asset" name="asset" class="form-control" required></div>
+  <button class="btn btn-primary">give</button>
+</form>
+{% endblock %}

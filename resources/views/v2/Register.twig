@@ -15,7 +15,9 @@
                   <h4>Welcome to Finobe!</h4>
                   <p class="mb-1">Remember to read our <a href="/legal/rules">rules</a> and <a
                           href="/legal/terms">terms of service</a> first.</p>
+                  {% if data.invitekeys %}
                   <p class="mb-4">In addition, Finobe is currently <strong>invite-only</strong>.</p>
+                  {% endif %}
                   <p class="mb-1">Now, a question before we start: <strong>Are you 13 years of age or
                           older?</strong></p>
                   <p class="mt-4"><a href="https://google.com" class="btn btn-outline-danger mr-1"

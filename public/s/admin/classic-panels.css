@@ -1,0 +1,60 @@
+/* Layout enhancements only. Color, typography, cards and controls come from Finobe's light/night CSS. */
+.admin-user-side .card{overflow:hidden}
+.admin-profile-card .user-avatar{height:172px;width:100%;object-fit:contain;padding:12px;aspect-ratio:auto}
+.admin-profile-card .card-body{font-size:12px}
+.admin-profile-card dl{font-size:12px}
+.admin-profile-card dt,.admin-profile-card dd{margin-bottom:8px;overflow-wrap:anywhere}
+.admin-user-menu .card-header{font-size:14px}
+.admin-user-navigation{padding:8px 0 12px}
+.admin-nav-heading{font-size:10px;font-weight:700;letter-spacing:1px;color:#9299a1;padding:14px 17px 6px}
+.admin-nav-link{display:flex;align-items:center;gap:10px;padding:9px 15px;border-left:3px solid transparent;color:inherit;text-decoration:none;font-size:13px;min-height:38px}
+.admin-nav-link>i:first-child{width:17px;flex:none;text-align:center;color:#939da7}
+.admin-nav-link span{flex:1}
+.admin-nav-link:hover{background:rgba(90,110,132,.085);text-decoration:none;color:inherit}
+.admin-nav-link.is-active{background:rgba(90,110,132,.13);border-left-color:transparent;color:inherit;font-weight:700}
+.admin-nav-link.is-active>i:first-child{color:inherit}
+.admin-nav-link .admin-nav-current{font-size:10px;color:inherit}
+.admin-diu-logo{object-fit:contain;max-width:100%}
+.admin-servers .server-stat{display:flex;align-items:center;gap:15px;min-height:100px}
+.admin-servers .server-stat i{font-size:30px;width:36px;text-align:center}
+.admin-servers .server-stat strong{display:block;font-size:26px;line-height:1.2}
+.admin-servers .server-stat span{display:block;font-size:12px;color:#818b94}
+.admin-servers .server-table td,.admin-servers .server-table th{vertical-align:middle;white-space:nowrap}
+.admin-servers .server-table code{font-size:12px;overflow-wrap:anywhere;white-space:normal}
+.admin-servers .server-table td:nth-child(2){white-space:normal}
+.admin-servers .server-danger{border-top:3px solid #dc3545}
+@media(min-width:992px){.admin-user-side{position:sticky;top:16px;align-self:flex-start}}
+@media(max-width:991px){.admin-servers .server-stat{min-height:80px}}
+@media(max-width:575px){.admin-nav-heading{padding-left:12px}.admin-nav-link{padding:10px 12px}.admin-servers .server-table{font-size:12px}}
+
+/* Compact, readable account summary on the left of the Syntax-style menu. */
+.admin-account-summary{overflow:hidden}
+.admin-account-summary .card-body{padding:18px 20px}
+.admin-summary-top{display:flex;align-items:center;gap:18px;min-width:0}
+.admin-summary-avatar{width:104px;height:104px;flex:0 0 104px;object-fit:contain;border:1px solid rgba(130,140,150,.18);border-radius:4px;padding:6px}
+.admin-summary-person{flex:1;min-width:0}
+.admin-summary-name{font-size:24px;font-weight:700;line-height:1.2;margin:0 0 10px;overflow-wrap:anywhere}
+.admin-summary-identity{display:flex;align-items:center;flex-wrap:wrap;gap:8px;font-size:13px;color:inherit}
+.admin-summary-identity .badge{font-size:11px}
+.admin-summary-separator{opacity:.5}
+.admin-summary-public-link{display:inline-block;margin-top:11px;font-size:12px}
+.admin-summary-balance{flex:0 0 auto;min-width:124px;text-align:right;padding-left:16px;border-left:1px solid rgba(130,140,150,.2)}
+.admin-summary-label{display:block;font-size:12px;color:#89929b;margin-bottom:7px}
+.admin-summary-amount{display:flex;align-items:center;justify-content:flex-end;gap:4px;font-size:24px;font-weight:700;line-height:1.2;white-space:nowrap}
+.admin-summary-amount img{width:32px;height:32px;object-fit:contain}
+.admin-summary-facts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;padding-top:17px;margin-top:17px;border-top:1px solid rgba(130,140,150,.17)}
+.admin-summary-facts>div{min-width:0}
+.admin-summary-facts span{display:block;font-size:11px;color:#89929b;margin-bottom:3px}
+.admin-summary-facts strong{display:block;font-size:13px;font-weight:600;overflow-wrap:anywhere}
+.admin-overview-card .card-header{font-size:14px}
+.admin-overview-card .card-body{padding:14px}
+.admin-overview-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.admin-overview-action{display:flex;align-items:center;gap:11px;min-height:68px;padding:12px;border:1px solid rgba(130,140,150,.2);border-radius:4px;color:inherit;text-decoration:none}
+.admin-overview-action:hover{background:rgba(90,110,132,.085);color:inherit;text-decoration:none;border-color:rgba(130,140,150,.45)}
+.admin-overview-action-icon{display:flex;align-items:center;justify-content:center;flex:0 0 35px;width:35px;height:35px;border-radius:4px;background:rgba(90,110,132,.10);color:inherit;font-size:16px}
+.admin-overview-action-copy{min-width:0;flex:1}
+.admin-overview-action-copy strong{display:block;font-size:13px;font-weight:600}
+.admin-overview-action-copy small{display:block;color:#89929b;font-size:11px;line-height:1.4;margin-top:3px}
+.admin-overview-chevron{font-size:10px;opacity:.55}
+@media(max-width:767px){.admin-overview-actions{grid-template-columns:1fr}.admin-summary-top{flex-wrap:wrap}.admin-summary-balance{min-width:auto;margin-left:auto}}
+@media(max-width:479px){.admin-account-summary .card-body{padding:15px}.admin-summary-avatar{width:76px;height:76px;flex-basis:76px}.admin-summary-name{font-size:21px}.admin-summary-balance{width:100%;border-left:0;border-top:1px solid rgba(130,140,150,.17);padding:12px 0 0;text-align:left}.admin-summary-amount{justify-content:flex-start}.admin-summary-facts{grid-template-columns:1fr 1fr}}

@@ -31,8 +31,8 @@ class frontEnd extends Controller
                 'user' => [
                     'version' => 'v2'
                 ],
-                'page' => strtok(request()->getRequestUri(), '?'),
-				'dir' => str_replace('\\', '', '/' . explode('/', trim(request()->getRequestUri(), '/'))[0] . '/'),
+                'page' => strtok($request->getRequestUri(), '?'),
+				'dir' => str_replace('\\', '', '/' . explode('/', trim($request->getRequestUri(), '/'))[0] . '/'),
                 'alerts' => [
                     'successv2' => Session::get('successv2', false),
 					'success' => Session::get('success', false),
@@ -40,6 +40,8 @@ class frontEnd extends Controller
 					'announcements' => []
 				],
                 'lucky_number' => rand(0, Cache::remember('user_count', 3600, fn() => User::count())) . '/' . Cache::remember('user_count', 3600, fn() => User::count()),
+                'social' => config('finobe.social'),
+                'server_name' => config('finobe.server_name'), // shown after the lucky number, e.g. "(bumpy)"; blank hides it
                 'string_replacements' => [
                     'phrasesToReplace' => [
                         'fuck',
@@ -85,6 +87,8 @@ class frontEnd extends Controller
             }
 
             $this->request['data']['user'] = $this->request['data']['user']->toArray();
+            // the real site had no version picker: everyone gets the v2 pages
+            $this->request['data']['user']['version'] = 'v2';
             $this->request['data']['user']['formattedDius'] = DataController::formatNumber($this->request['data']['user']['Dius']);
             $this->request['data']['embeds']['title'] .= 'Finobe';
             
@@ -105,8 +109,9 @@ class frontEnd extends Controller
                 'data' => [],
                 'ads' => (bool)env('FINOBE_ADS'),
                 'info' => [
-                    'number' => $this->db->table('pms')->where('touser', $this->request['data']['user']['id'])->where('readed', 'n')->count(),
-                    'inbox' => $this->db->table('messages')->where('touser', $this->request['data']['user']['id'])->where('readed', 'n')->count(),
+                    'number' => $this->db->table('pms')->where('touser', $this->request['data']['user']['id'])->where('readed', false)->count(),
+                    'inbox' => $this->db->table('messages')->where('touser', $this->request['data']['user']['id'])->where('readed', false)->where('archived', false)->count(),
+                    'trades' => \App\Services\Trading::pendingIncoming((int) $this->request['data']['user']['id']),
                     'incomingFriends' => 0
                 ]
             ];
@@ -133,7 +138,7 @@ class frontEnd extends Controller
                 }
             }
             
-            if(strtotime($this->request['data']['user']['lastdiu']) <= time() && $this->request['data']['user']['diubanned'] == 'n') {
+            if(strtotime($this->request['data']['user']['lastdiu'] ?? '') <= time() && ($this->request['data']['user']['diubanned'] ?? 'n') == 'n') {
                 /*
                 $this->db->table('users')
                     ->where('username', $this->request['data']['user']['username'])

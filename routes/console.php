@@ -4,6 +4,7 @@ use App\Models\User;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Schedule;
 use Illuminate\Support\Facades\DB;
 
 Artisan::command('inspire', function () {
@@ -179,3 +180,14 @@ Artisan::command('something', function () {
     
     $this->info('Ran successfully');
 });
+/*
+    A game server that dies without calling /shutdown leaves its `servers` row and its RCC job
+    (or 2012 RobloxApp) running. PlaceLauncher::cleanup() only ran when a player launched a game,
+    so with no games starting those leaks piled up and pinned the arbiter's CPU. Reap on a timer.
+*/
+Artisan::command('finobe:reap-servers', function () {
+    $reaped = \App\Services\Matchmaking\PlaceLauncher::cleanup();
+    $this->info($reaped > 0 ? "Reaped {$reaped} stale server(s)." : 'No stale servers.');
+})->purpose('Stop game servers whose process died without shutting down');
+
+Schedule::command('finobe:reap-servers')->everyMinute()->withoutOverlapping(10);

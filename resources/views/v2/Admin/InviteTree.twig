@@ -1,0 +1,8 @@
+{% extends 'v2/Admin/_layout.twig' %}
+{% block tool %}
+{% for n in data.tree %}
+  <div style="padding-left: {{ n.depth * 1.5 }}rem;">{{ n.depth ? '└ ' : '' }}<a href="/user/{{ n.id }}">{{ n.username }}</a>{% if n.count %} <span class="text-muted small">({{ n.count }} invited)</span>{% endif %}</div>
+{% else %}
+  <p class="text-muted">No invite keys have been used yet.</p>
+{% endfor %}
+{% endblock %}

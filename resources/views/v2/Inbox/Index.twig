@@ -15,7 +15,7 @@
           </div>
           <div class="col-md-9">
             {% for message in data.messages.data %}
-            <a href="/app/inbox/message?id={{ message.id }}" class="forum-post overflow-hidden{{ (message.readed == "y") ? " text-muted" : ""}} {{ (loop.index > 1) ? "pt-2 pb-2" : "" }}">
+            <a href="/app/inbox/message?id={{ message.id }}" class="forum-post overflow-hidden{{ (message.readed) ? " text-muted" : ""}} {{ (loop.index > 1) ? "pt-2 pb-2" : "" }}">
               <span class="d-flex flex-row"><p class="mt-0 mb-0 " style="height: 20px;">{{ message.author | raw }} </p><p class="small mb-0 mt-1" style="margin-left: 0.5%">{{ message.date }}</p></span>
               <p class="my-0"><strong><span>{{ message.subject | raw }}</span></strong> - {{ message.message|slice(0, 50) ~ (message.message|length > 50 ? '...' : '') }}</p>
             </a>

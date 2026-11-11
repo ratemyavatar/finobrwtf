@@ -6,9 +6,10 @@
     <div id="app">
       {% include ('v2/Modules/nav.twig') %}
       <div class="container mt-4">
-                <strong><h3 class="mb-3">Oui/Non Decider</h3></strong>
-                <strong><h2 class="mb-5">{{ random(0, 1) == 1 ? 'True' : 'False' }}</h2></strong>
-            </div>
+        <h4 class="mb-1"><a href="/admin">Admin Panel</a></h4>
+        <h5 class="mb-4"><a href="/admin/decider">Yes/No Decider</a></h5>
+        <h2 class="mb-5">{{ random(0, 1) == 1 ? 'YES' : 'NO' }}</h2>
+      </div>
     </div>
     {% include ('v2/Modules/footer.twig') %}
   </body>

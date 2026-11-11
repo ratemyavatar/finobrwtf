@@ -39,7 +39,7 @@ class AvatarController extends Controller
             
             $item = Asset::find($result['assetid'])->toArray();
 
-            if(!in_array($item['asset_type'], [2, 8, 11, 12, 18, 19])) {
+            if(!in_array($item['asset_type'], [2, 8, 11, 12, 17, 18, 19, 32])) {
                 continue;
             }
 
@@ -55,7 +55,7 @@ class AvatarController extends Controller
             $result['author'] = User::where('id', $item['author'])->value('username');
             $result['equipped'] = in_array($result['assetid'], $this->request['data']['user']['avatar'][0]['equippedGearVersionIds']);
 
-            if(in_array($item['asset_type'], [2, 8, 11, 12, 18, 19])) {
+            if(in_array($item['asset_type'], [2, 8, 11, 12, 17, 18, 19, 32])) {
                 $result['thumbnail'] = $item['additional']['media']['thumbnail'];
             }
 
@@ -63,10 +63,8 @@ class AvatarController extends Controller
         }
 
         $this->request['data']['purchases'] = $purchases;
-        $this->request['data']['poses'] = \App\Services\AvatarRenderer::POSES;
-        $this->request['data']['pose'] = \App\Services\AvatarRenderer::poseFor(\Illuminate\Support\Facades\Auth::user());
-        $this->request['data']['animationPacks'] = \App\Services\AnimationPacks::PACKS;
-        $this->request['data']['animationPack'] = \App\Services\AnimationPacks::forUser(\Illuminate\Support\Facades\Auth::user());
+        $this->request['data']['outfits'] = \Illuminate\Support\Facades\DB::connection('finobe')->table('outfits')
+            ->where('user_id', $this->request['data']['user']['id'])->orderByDesc('id')->get(['id', 'name']);
         
         return view($this->request['data']['user']['version'] . '/Character', $this->request);
     }

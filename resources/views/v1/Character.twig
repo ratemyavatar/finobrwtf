@@ -14,7 +14,7 @@
                          </div>
                          <div class="card-body" style="height: auto;">
                              <button class="btn btn-primary full-width"><i class="fa fa-sync-alt"></i> regen</button>
-                             <img src="{{ (user.pfp == "") ? "/s/img/spinnerv2.gif" : "https://cdn.finobe.wtf/" ~ user.pfp }}" class="full-width mt-2" style="height: auto;">
+                             <img src="{{ avatar_url(user.pfp) }}" class="full-width mt-2" style="height: auto;">
                          </div>
                      </div>
                  </div>
@@ -61,7 +61,7 @@
                                       <div class="card">
                                           <div class="card-body">
                                               <div class="d-flex justify-content-center">
-                                                 <img src="https://cdn.finobe.wtf/{{ user.pfp }}" style="width: 50%; height: auto;">
+                                                 <img src="{{ avatar_url(user.pfp) }}" style="width: 50%; height: auto;">
                                               </div>
                                               <p class="mt-2 mb-0"><a href="/item/0">Test</a></p>
                                               <p class="mt-0 mb-0">by {% if item.uuid == false %}{{ "test" }}{% else %}<a href="/user/{{ item.uuid }}">{{ "winsupermario1234" }}</a>{% endif %}</p>

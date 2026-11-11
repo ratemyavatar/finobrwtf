@@ -7,6 +7,7 @@ use FFMpeg\Format\Audio\Mp3;
 use FFMpeg\FFMpeg;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redis;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Validator;
@@ -59,13 +60,39 @@ class CatalogController extends Controller
         $pages_to_show = 10;
         $results_per_page = 12;
 
-        // approved and on sale (items without an onSale flag, like old audio, count as on sale)
-        $listed = function () use ($data, $sections, $section) {
+        // the Filters box, like the real catalog: sort, price range and tradables
+        $filters = [
+            'sort' => in_array($data['sort'] ?? '', ['price_asc', 'price_desc'], true) ? $data['sort'] : 'unsorted',
+            'min' => isset($data['min']) && $data['min'] !== '' ? max(0, (int) $data['min']) : null,
+            'max' => isset($data['max']) && $data['max'] !== '' ? max(0, (int) $data['max']) : null,
+            'tradables' => in_array($data['tradables'] ?? '', ['hide', 'only'], true) ? $data['tradables'] : 'all',
+        ];
+        // "Price sorting sorts using the original price for limiteds and uniques."
+        $price = DB::connection('finobe')->getDriverName() === 'sqlite'
+            ? "CAST(json_extract(additional, '$.price') AS INTEGER)"
+            : "CAST(JSON_UNQUOTE(JSON_EXTRACT(additional, '$.price')) AS SIGNED)";
+
+        // approved, and on sale or tradable (items without an onSale flag, like old audio, count as on sale)
+        $listed = function () use ($data, $sections, $section, $filters, $price) {
             $query = Asset::where('asset_type', $sections[$section])
                 ->where('visibility', 'n')
-                ->where(fn($q) => $q->whereNull('additional->onSale')->orWhere('additional->onSale', true));
+                ->where(fn($q) => $q->whereNull('additional->onSale')->orWhere('additional->onSale', true)->orWhere('additional->isLimited', true));
             if (isset($data['q'])) {
                 $query->whereRaw('LOWER(title) LIKE LOWER(?)', ['%' . htmlspecialchars($data['q']) . '%']);
+            }
+            if ($filters['tradables'] === 'only') {
+                $query->where('additional->isLimited', true);
+            } elseif ($filters['tradables'] === 'hide') {
+                $query->where(fn($q) => $q->whereNull('additional->isLimited')->orWhere('additional->isLimited', false));
+            }
+            if ($filters['min'] !== null) {
+                $query->whereRaw("COALESCE($price, 0) >= ?", [$filters['min']]);
+            }
+            if ($filters['max'] !== null) {
+                $query->whereRaw("COALESCE($price, 0) <= ?", [$filters['max']]);
+            }
+            if ($filters['sort'] !== 'unsorted') {
+                $query->orderByRaw("COALESCE($price, 0) " . ($filters['sort'] === 'price_asc' ? 'ASC' : 'DESC'));
             }
             return $query->orderBy('id', 'DESC');
         };
@@ -135,6 +162,15 @@ class CatalogController extends Controller
         $this->request['data']['items']['data'] = $items;
         $this->request['data']['section'] = $section;
         $this->request['data']['search'] = isset($data['q']) ? $data['q'] : false;
+        $this->request['data']['filters'] = $filters;
+        // search + filters carried over by the page links
+        $keep = array_filter([
+            'q' => $data['q'] ?? null,
+            'sort' => $filters['sort'] !== 'unsorted' ? $filters['sort'] : null,
+            'min' => $filters['min'], 'max' => $filters['max'],
+            'tradables' => $filters['tradables'] !== 'all' ? $filters['tradables'] : null,
+        ], fn($v) => $v !== null && $v !== '');
+        $this->request['data']['qs'] = $keep ? '&' . http_build_query($keep) : '';
 
         return view($this->request['data']['user']['version'] . '/Catalog/Index', $this->request);
     }
@@ -180,6 +216,19 @@ class CatalogController extends Controller
         $item['isOwned'] = Purchases::where('username', $this->request['data']['user']['username'])->where('assetid', $id)->where('type', 1)->exists();
         $item['sales'] = number_format(Purchases::where('assetid', $id)->count());
 
+        // a package has no thumbnail of its own; show what it contains on the item page
+        $item['contents'] = [];
+        if((int) $item['asset_type'] === 32) {
+            $item['contents'] = Asset::whereIn('id', AssetHelper::getPackageAssets((int) $id))
+                ->get(['id', 'title', 'asset_type'])
+                ->map(fn($a) => [
+                    'id' => (int) $a->id,
+                    'title' => htmlspecialchars($a->title),
+                    'asset_type' => (int) $a->asset_type,
+                ])
+                ->all();
+        }
+
         if($item['visibility'] == 'd') {
             $item['title'] = "[Not Approved]";
             $item['description'] = "[Not Approved]";
@@ -221,8 +270,8 @@ class CatalogController extends Controller
             $ids[] = (int) $additional['media']['textureAssetId'];
         }
 
-        // meshes / textures a hat or gear points at, if they were uploaded with it (same author, mesh/image)
-        if(in_array($asset->asset_type, [8, 19])) {
+        // meshes / textures a hat, gear or head points at, if they were uploaded with it (same author, mesh/image)
+        if(in_array($asset->asset_type, [8, 17, 19])) {
             $file = config('finobe.cdn_path') . '/assets/' . $asset->file;
             $domain = preg_quote(env('FINOBE_DOMAIN', 'finobe.wtf'), '#');
             if(is_file($file) && preg_match_all('#https?://(?:www\.)?' . $domain . '/asset/\?id=(\d+)#i', (string) file_get_contents($file), $m)) {
@@ -259,6 +308,7 @@ class CatalogController extends Controller
         }
 
         \App\Models\Purchases::whereIn('assetid', $ids)->delete();
+        DB::connection('finobe')->table('asset_package')->whereIn('package_asset_id', $ids)->delete();
         Asset::whereIn('id', $ids)->delete();
 
         Session::put('success', 'Item deleted.');
@@ -279,12 +329,13 @@ class CatalogController extends Controller
 
         $item = Asset::find($id)->toArray();
         
-        if($item['author'] != $this->request['data']['user']['id']) {
+        $isAdmin = ($this->request['data']['user']['status'] ?? '') === 'admin';
+        if($item['author'] != $this->request['data']['user']['id'] && !$isAdmin) {
             Session::put('error', 'You do not own this item');
             return redirect('/item/' . $id);
         }
 
-        if(!in_array($item['asset_type'], [2, 3, 8, 11, 12, 18, 19])) {
+        if(!in_array($item['asset_type'], [2, 3, 8, 11, 12, 17, 18, 19, 32])) {
             abort(404);
         }
 
@@ -311,6 +362,15 @@ class CatalogController extends Controller
             $item['additional']['onSale'] = isset($data['onsale']);
             $item['additional']['price'] = intval($data['price']);
 
+            // only admins decide what's Limited / Unique (tradable) and what it's worth
+            if($isAdmin && isset($data['limited'])) {
+                $kind = in_array($data['limited'], ['none', 'limited', 'unique'], true) ? $data['limited'] : 'none';
+                $item['additional']['isLimited'] = $kind !== 'none';
+                $item['additional']['isUnique'] = $kind === 'unique';
+                $item['additional']['stock'] = max(0, (int) ($data['stock'] ?? 0));
+                $item['additional']['value'] = ($data['value'] ?? '') === '' ? null : max(0, (int) $data['value']);
+            }
+
             $item2 = Asset::find($id);
             $item2->title = $data['title'];
             $item2->description = $data['description'] ?? '';
@@ -323,6 +383,7 @@ class CatalogController extends Controller
 
         $this->request['data']['embeds']['title'] = $item['title'] . $this->request['data']['embeds']['title'];
         $this->request['data']['item'] = $item;
+        $this->request['data']['isAdmin'] = $isAdmin;
 
         return view($this->request['data']['user']['version'] . '/Catalog/Item_settings', $this->request);
     }

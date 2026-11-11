@@ -1,0 +1,57 @@
+<html>
+  <head>
+    {% include ('v2/Modules/head.twig') %}
+    {% include ('v2/Trade/_style.twig') %}
+  </head>
+  <body>
+    <div id="app">
+      {% include ('v2/Modules/nav.twig') %}
+      {% set t = data.trade %}
+      <div class="container mt-4">
+        <div class="d-flex align-items-center mb-3">
+          <a href="/trades" class="btn btn-light border mr-3"><i class="far fa-chevron-left"></i></a>
+          <h3 class="mb-0 font-weight-light">Trade Details</h3>
+        </div>
+        <div class="row">
+          <div class="col-md-3 text-center mb-3">
+            {% if t.partner %}
+              <a href="/user/{{ t.partner.id }}"><img src="{{ t.partner.pfp ? 'https://cdn.finobe.wtf/' ~ t.partner.pfp : '/s/img/spinnerv2.gif' }}" alt="{{ t.partner.username }}" class="trade-avatar"></a>
+              <h4 class="font-weight-light mt-3">{{ t.partner.username }}</h4>
+            {% endif %}
+          </div>
+          <div class="col-md-9">
+            {% for label, side in {'Give': t.give, 'Receive': t.receive} %}
+              <h4 class="font-weight-light">{{ label }}</h4>
+              <p class="mb-2"><strong>Value:</strong> <img src="/s/img/diu_16.png" alt="Diu" class="align-middle"> {{ side.value }}</p>
+              <div class="d-flex flex-wrap mb-2">
+                {% for item in side.items %}
+                  {% include ('v2/Trade/_card.twig') with {item: item, selectable: false} %}
+                {% endfor %}
+              </div>
+            {% endfor %}
+
+            {% if t.status == 'pending' %}
+              <form method="POST" action="/trade/info/{{ t.id }}" class="row">
+                <input type="hidden" name="_token" value="{{ data.csrf_token }}">
+                {% if t.incoming %}
+                  <div class="col-6"><button type="submit" name="action" value="decline" class="btn btn-outline-danger btn-block">decline</button></div>
+                  <div class="col-6"><button type="submit" name="action" value="accept" class="btn btn-primary btn-block">accept</button></div>
+                {% else %}
+                  <div class="col-6"><button type="submit" name="action" value="revoke" class="btn btn-outline-danger btn-block">revoke trade</button></div>
+                {% endif %}
+              </form>
+            {% else %}
+              <p class="mb-0">
+                {% if t.status == 'accepted' %}<span class="text-success">Accepted</span>
+                {% elseif t.status == 'declined' %}<span class="text-danger">Declined</span>
+                {% elseif t.status == 'revoked' %}<span class="text-muted">Revoked</span>
+                {% else %}<span class="text-muted">Inactive: some of these items changed hands.</span>{% endif %}
+              </p>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+    {% include ('v2/Modules/footer.twig') %}
+  </body>
+</html>

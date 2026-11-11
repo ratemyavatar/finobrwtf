@@ -597,9 +597,9 @@
                                 Who are we?
                             </div>
                             <div class="card-body">
-                                <p>Welcome to Finobe! We aim to be the best and most reliable asset hosting service out there. We currently
-                                    offer audios. Developers are free to do anything that conforms
-                                    to our <a
+                                <p>Welcome to Finobe! Finobe is a revival of the 2020 Finobe, an old brick-builder: you can play
+                                    games on the 2012 and 2016 clients, make your own places, dress up your character and talk with
+                                    everyone else on the forum. Developers are free to do anything that conforms to our <a
                                         href="/legal/rules">rules</a>.
                                 </p>
                                 <p>In general, these are the limitations we impose on our users:</p>
@@ -611,13 +611,10 @@
                                             panel</a>.</li>
                                     <li>Games can have blood and gore.</li>
                                 </ul>
-                                <p>If you want to see moderation actions on users, we have a ban log that you can access <a
+                                <p class="mb-0">If you want to see moderation actions on users, we have a ban log that you can access <a
                                         href="/transparency/bans">here</a>.
                                     In addition, many additions or changes to the site are done by polling active users and
                                     asking them to vote in a semi-democratic way.</p>
-                                <p class="mb-0">Generally speaking, Finobe is a <strong>not-for-profit website</strong>. While
-                                    we don't have advertisements on the website, no revenue is used to pay for any of our monthly server
-                                    costs.</p>
                             </div>
                         </div>
                         <div class="card mt-4">
@@ -625,75 +622,43 @@
                                 What is unique about Finobe?
                             </div>
                             <div class="card-body">
-                                <p>Finobe has many features developed over the span of 2 years, like trading and reselling
-                                    items. We have a virtual currency called Diu (denoted by the <img
-                                        src="/s/img/diu_16.png"
-                                        alt="Diu" title="Diu" class="img-responsive align-middle "> icon) which controls all of
-                                    these features.</p>
-                                <p>We also have a <a
-                                        href="/forum/home">forum</a>,
+                                <p>Finobe has features like trading and reselling items. We have a virtual currency called Diu
+                                    (denoted by the <img src="/s/img/diu_16.png" alt="Diu" title="Diu"
+                                        class="img-responsive align-middle "> icon) which controls all of these features.</p>
+                                <p>We also have a <a href="/forum/home">forum</a>,
                                     where users can talk and discuss things that are going on.</p>
-                                <p class="mb-0">Finally, we have a fully-fledged and feature-packed <a
-                                        href="/catalog">catalog
+                                <p class="mb-0">Finally, we have a fully-fledged and feature-packed <a href="/catalog">catalog
                                         system</a> where you can obtain items familiar to you. We aim to have one of the largest
                                     collections of wearable items for your character.</p>
                             </div>
                         </div>
-                        <div class="card mt-4">
-                            <div class="card-header bg-primary text-white">
-                                Why is Finobe still a thing?
-                            </div>
-                            <div class="card-body">
-                                <p>As stated above, we aim to be the asset hosting service. </p>
-                                <p class="mb-0">We believe that there is no true competitor to Finobe at this very moment.
-                                Finobe is very stable as well, as it does not follow the "cycle of projects" that leaves
-                                    projects dead after a month.</p>
-                            </div>
-                        </div>
+                        {% if data.about.team %}
                         <div class="card mt-4 mb-0">
                             <div class="card-header bg-primary text-white">
                                 Who works on Finobe?
                             </div>
                             <div class="card-body">
-                                <p>We have 4 developers that work on different areas of the website.</p>
-                                <p class="mb-0">Owner: <a
-                                        href="/user/4790">Instance (confirm)</a>
-                                </p>
-                                <p class="mb-0">Co-owner/Web developer: <a
-                                        href="/user/1">Aesthetiful</a>
-                                </p>
-                                <p class="mb-0">Client developer 2012/2016: <a
-                                        href="/user/4812">notaku</a>
-                                </p>
-                                <p class="mb-0">Client adviser: <a
-                                        href="/user/2394">vf9r (marsoc)</a>
-                                </p>
-                                <p class="mb-0">Media Contribution: <a
-                                        href="/user/873">donatelo071</a>
-                                </p>
-                                <p class="mb-0">Media Contribution: <a
-                                        href="/user/412">chip</a>
-                                </p>
-                                <p class="mb-0">Media Contribution: <a
-                                        href="/user/395">Osha</a>
-                                </p>
-                                <p class="mb-0">Media Contribution: <a
-                                        href="/user/568">wescarmant</a>
-                                </p>
-								<p class="mt-3">Framework: <a href="https://github.com/laravel/laravel">Laravel</a></p>
-								<p class="mt-3">This project was made possible through the collaborative efforts of the Finobe team. Thank you to everyone who contributed to our website.</p>
+                                {% for member in data.about.team %}
+                                <p class="mb-0">{{ member.role }}: {% if member.id %}<a href="/user/{{ member.id }}">{{ member.name }}</a>{% else %}{{ member.name }}{% endif %}</p>
+                                {% endfor %}
+                                <p class="mt-3 mb-0">Thank you to everyone who contributed to our website.</p>
                             </div>
                         </div>
+                        {% endif %}
                         <div class="card mt-4 mb-0">
                             <div class="card-header bg-primary text-white">
                                 How do I get started?
                             </div>
                             <div class="card-body">
-                                <p>Unfortunately, Finobe is not currently <strong>invite-only</strong>. To join, you'll need an
+                                {% if data.invitekeys %}
+                                <p>Finobe is currently <strong>invite-only</strong>. To join, you'll need an
                                     <i>invite key</i>.</p>
                                 <p class="mb-0">The administrators do not give out invite keys. To join Finobe, you'll need to
                                     obtain one from a friend. If you do not have a friend that is in Finobe, there is
                                     unfortunately no other way to join.</p>
+                                {% else %}
+                                <p class="mb-0">Just <a href="/auth/register">make an account</a>, then pick a game and press play.</p>
+                                {% endif %}
                             </div>
                         </div>
                         <div class="align-items-center d-flex ending flex-row justify-content-between mb-4 mt-5">

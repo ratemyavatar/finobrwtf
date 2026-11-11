@@ -1,0 +1,17 @@
+<html>
+  <head>
+    {% include ('v2/Modules/head.twig') %}
+  </head>
+  <body>
+    <div id="app">
+      {% include ('v2/Modules/nav.twig') %}
+      <div class="container mt-4">
+        {# like the real tool pages: "Admin Panel" then the tool's name, both links #}
+        <h4 class="mb-1"><a href="/admin">Admin Panel</a></h4>
+        <h5 class="mb-4"><a href="{{ data.tool.url }}">{{ data.tool.title }}</a></h5>
+        {% block tool %}{% endblock %}
+      </div>
+    </div>
+    {% include ('v2/Modules/footer.twig') %}
+  </body>
+</html>

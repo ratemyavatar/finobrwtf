@@ -13,11 +13,19 @@ use App\Http\Controllers\rbxAPIs;
 Route::group(['as' => 'client-routes.'], function(){
     // paths are lowercase: NormalizeClientPaths lowercases client requests before routing
     Route::get('/asset', [rbxAPIs::class, 'asset'])->name('asset');
+    // the 2012 client asks for these on startup (script-state polling + the studio cmd-bar/core setup)
+    Route::get('/asset/getscriptstate.ashx', [rbxAPIs::class, 'getScriptStateAshx']);
+    Route::get('/game/studio.ashx', [rbxAPIs::class, 'studioAshx']);
     Route::get('/thumbs/asset.ashx', [rbxAPIs::class, 'assetThumbnail']);
     Route::get('/asset-thumbnail/image', [rbxAPIs::class, 'assetThumbnail']);
+    Route::get('/thumbs/avatar.ashx', [rbxAPIs::class, 'avatarThumbnail']);
+    Route::get('/thumbs/avatar-headshot.ashx', [rbxAPIs::class, 'avatarThumbnail']);
     Route::group(['prefix' => 'asset'], function() {
         Route::get('/characterfetch.ashx', [CharacterAppearanceController::class, 'characterFetch'])->name('character-fetch');
         Route::get('/bodycolors.ashx', [CharacterAppearanceController::class, 'bodyColors'])->name('body-colors');
+        // Dedicated preview URLs: if a token is lost, fail instead of rendering the live avatar.
+        Route::get('/outfitcharacterfetch.ashx', [CharacterAppearanceController::class, 'outfitCharacterFetch'])->name('outfit-character-fetch');
+        Route::get('/outfitbodycolors.ashx', [CharacterAppearanceController::class, 'outfitBodyColors'])->name('outfit-body-colors');
     });
 
     Route::group(['prefix'=> 'game', 'as'=> 'game.'], function() { 
@@ -25,6 +33,13 @@ Route::group(['as' => 'client-routes.'], function(){
         Route::get('join.ashx', [GameJoinControlller::class,'joinScript'])->name('join-script');
         Route::get('gameserver2012.ashx', [GameServer2012Controller::class, 'script']);
         Route::get('visit.ashx', [StudioJoinController::class,'visit'])->name('visit-script');
+        // which client year a place uses (FinobeLauncher asks when a Play link doesn't say)
+        Route::get('clientversion.ashx', function (\Illuminate\Http\Request $request) {
+            $place = \Illuminate\Support\Facades\DB::connection('finobe')->table('assets')
+                ->where('id', (int) $request->query('placeId', $request->query('placeid', 0)))->where('asset_type', 9)->first();
+            return response($place ? \App\Services\ClientVersions::of($place) : \App\Services\ClientVersions::DEFAULT, 200)
+                ->header('Content-Type', 'text/plain');
+        });
         Route::get('getcurrentuser.ashx', [AuthenticationController::class,'getCurrentUser'])->name('get-current-user');
         // things the 2016 client/RCC ask for while joining (same answers as bubbablox-v2)
         Route::post('validate-machine', fn() => response()->json(['success' => true, 'message' => '']));

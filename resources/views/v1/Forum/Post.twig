@@ -12,11 +12,7 @@
 			  <div class="card-body">
 				 <div class="row">
 					<div class="col-md-2 b-right">
-					   <p><a href="/user/{{ post.uuid }}"> {% if post.status == "admin" %}<span style="color: rgb(255, 82, 82); font-weight: bold;">{{ post.author }}</span>{% else %}{{ post.author }}{% endif %}</a> <span style="color: grey;">[-]</span></p>{% if post.pfp == "" %}
-                                            <img src="/s/img/spinnerv2.gif" style="max-width: 75px;">
-                                        {% else %}
-                                            <img src="https://cdn.finobe.wtf/{{ post.pfp }}" style="max-width: 75px;">
-                                        {% endif %}
+					   <p><a href="/user/{{ post.uuid }}"> {% if post.status == "admin" %}<span style="color: rgb(255, 82, 82); font-weight: bold;">{{ post.author }}</span>{% else %}{{ post.author }}{% endif %}</a> <span style="color: grey;">[-]</span></p><img src="{{ avatar_url(post.pfp) }}" style="max-width: 75px;">
 					   {% if post.status == "admin" %}<p class="text-danger mb-0"><i class="fa fa-gavel"></i> Admin</p>{% endif %}
 					   <p><b>Posts:</b> {{ post.posts }}</p>
 					</div>
@@ -33,11 +29,7 @@
 				 <div class="row">
 					<div class="col-md-2 b-right">
 					   <p><a href="/user/{{ reply.uuid }}"> {#<span style="color: rgb(76, 175, 80); font-weight: bold;">Ruin</span>#}{% if reply.status == "admin" %}<span style="color: rgb(255, 82, 82); font-weight: bold;">{{ reply.author }}</span>{% else %}{{ reply.author }}{% endif %}</a> <span style="color: grey;">[-]</span></p>
-					   {% if reply.pfp == "" %}
-                                            <img src="/s/img/spinnerv2.gif" style="max-width: 75px;">
-                                        {% else %}
-                                            <img src="https://cdn.finobe.wtf/{{ reply.pfp }}" style="max-width: 75px;">
-                                        {% endif %}
+					   <img src="{{ avatar_url(reply.pfp) }}" style="max-width: 75px;">
 					   {#<p class="text-success mb-0"><i class="fa fa-shield text-success"></i> Mod</p>#}
 					   <p><b>Posts:</b> {{ reply.posts }}</p>
 					</div>

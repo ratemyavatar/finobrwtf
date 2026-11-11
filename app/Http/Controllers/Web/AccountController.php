@@ -303,6 +303,40 @@ class AccountController extends Controller
         }
 
         if($request->isMethod('post')) {
+            if(isset($data['new_username']) && !$request->hasFile('file')) {
+                $user = Auth::user();
+                $name = trim((string) $data['new_username']);
+
+                if($problem = \App\Services\UsernameChange::problem($user, $name)) {
+                    Session::put('error', $problem);
+                    return redirect('/app/settings');
+                }
+
+                try {
+                    \App\Services\UsernameChange::apply($user, $name);
+                } catch(\RuntimeException $e) {
+                    Session::put('error', $e->getMessage());
+                    return redirect('/app/settings');
+                }
+
+                Session::put('success', 'Your username is now ' . $name . '.');
+                return redirect('/app/settings');
+            }
+
+            if(isset($data['gender']) && !$request->hasFile('file')) {
+                if(!in_array($data['gender'], ['m', 'f', 'n'], true)) {
+                    Session::put('error', 'Pick a gender from the list.');
+                    return redirect('/app/settings');
+                }
+
+                $user = User::find($this->request['data']['user']['id']);
+                $user->gender = $data['gender'];
+                $user->save();
+
+                Session::put('success', 'Successfully updated.');
+                return redirect('/app/settings');
+            }
+
             if(isset($data['blurb']) && !$request->hasFile('file')) {
                 $validator = Validator::make($data, [
                     'blurb' => 'required|string|max:8192'
@@ -373,7 +407,256 @@ class AccountController extends Controller
             return redirect('/app/settings');
         }
 
+        $this->request['data']['nameChange'] = [
+            'cost' => \App\Services\UsernameChange::cost(),
+            'next' => ($next = \App\Services\UsernameChange::nextAllowed(Auth::user())) ? $next->format('m/d/Y h:i A') : null,
+        ];
+
         return view($this->request['data']['user']['version'] . '/Settings/Index', $this->request);
+    }
+
+    /* Settings > Security: two-factor authentication, curse filter, restrictions */
+    public function security(Request $request) {
+        $this->request['data']['embeds']['title'] = 'Security' . $this->request['data']['embeds']['title'];
+
+        if(!$this->request['data']['siteusername']) {
+            return redirect('/');
+        }
+
+        $user = Auth::user();
+        $tf = \App\Services\TwoFactor::class;
+
+        if($request->isMethod('post')) {
+            $action = (string) $request->input('action');
+            $back = redirect('/app/security');
+
+            if($action === 'curse-filter') {
+                $user->curse_filter = !$user->curse_filter;
+                $user->save();
+                Session::put('success', $user->curse_filter ? 'Curse filter on.' : 'Curse filter off.');
+                return $back;
+            }
+
+            if($action === '2fa-start' && !$tf::enabled($user)) {
+                // a new secret, not active until a code from the app confirms it
+                $user->two_factor_secret = \Illuminate\Support\Facades\Crypt::encryptString($tf::newSecret());
+                $user->two_factor_confirmed_at = null;
+                $user->save();
+                return $back;
+            }
+
+            if($action === '2fa-confirm' && !$tf::enabled($user)) {
+                $secret = $tf::secret($user);
+                if(!$secret || !$tf::verifyCode($user, $secret, (string) $request->input('code'))) {
+                    Session::put('error', "That code isn't right. Check your phone's clock and try the newest code.");
+                    return $back;
+                }
+                $user->two_factor_confirmed_at = now();
+                $user->save();
+                Session::flash('backup_codes', ['codes' => $tf::regenerateBackupCodes($user), 'replaced' => false]);
+                Session::put('success', 'Two-factor authentication is on.');
+                return redirect('/app/security/backup-codes');
+            }
+
+            if($action === '2fa-cancel' && !$tf::enabled($user)) {
+                $user->two_factor_secret = null;
+                $user->save();
+                return $back;
+            }
+
+            // turning it off or making new backup codes needs your password and a current code
+            if(in_array($action, ['2fa-disable', '2fa-backup'], true) && $tf::enabled($user)) {
+                if(!Hash::check((string) $request->input('password'), $user->password) || !$tf::verify($user, (string) $request->input('code'))) {
+                    Session::put('error', 'Your password or code is wrong.');
+                    return $back;
+                }
+                if($action === '2fa-disable') {
+                    $user->two_factor_secret = null;
+                    $user->two_factor_backup_codes = null;
+                    $user->two_factor_confirmed_at = null;
+                    $user->save();
+                    Session::put('success', 'Two-factor authentication is off.');
+                } else {
+                    Session::flash('backup_codes', ['codes' => $tf::regenerateBackupCodes($user), 'replaced' => true]);
+                    return redirect('/app/security/backup-codes');
+                }
+                return $back;
+            }
+
+            return $back;
+        }
+
+        $pending = !$tf::enabled($user) && $user->two_factor_secret ? $tf::secret($user) : null;
+        $restrictions = [];
+        foreach(\App\Services\Restrictions::TYPES as $type => $label) {
+            $restrictions[$type] = ['label' => $label, 'message' => \App\Services\Restrictions::message($user->id, $type)];
+        }
+        $others = [];
+        foreach(\App\Models\Warning::where('username', $user->username)->orderByDesc('id')->limit(10)->get() as $w) {
+            $others[] = 'Warning on ' . date('m/d/Y', strtotime($w->date)) . ': ' . $w->reason;
+        }
+
+        $this->request['data']['security'] = [
+            'enabled' => $tf::enabled($user),
+            'pending' => $pending ? ['secret' => trim(chunk_split($pending, 4, ' ')), 'url' => $tf::otpauthUrl($user, $pending)] : null,
+            'backupLeft' => $tf::backupCodesLeft($user),
+            'curseFilter' => (bool) $user->curse_filter,
+            'restrictions' => $restrictions,
+            'otherRestrictions' => $others,
+        ];
+
+        return view('v2/Settings/Security', $this->request);
+    }
+
+    /* Settings > Security > 2FA Backup Codes: shown once, right after they're made */
+    public function backupCodes(Request $request) {
+        if(!$this->request['data']['siteusername'] || !($codes = Session::get('backup_codes'))) {
+            return redirect('/app/security');
+        }
+        $this->request['data']['embeds']['title'] = '2FA Backup Codes' . $this->request['data']['embeds']['title'];
+        $this->request['data']['backup'] = $codes;
+        return view('v2/Settings/BackupCodes', $this->request);
+    }
+
+    /* the second login step for accounts with two-factor authentication (/2fa/validate) */
+    public function twoFactorChallenge(Request $request) {
+        $pending = Session::get('2fa_login');
+        if(!$pending || $pending['expires'] < time() || !($user = User::find($pending['id']))) {
+            Session::forget('2fa_login');
+            return redirect('/auth/login');
+        }
+
+        if($request->isMethod('post')) {
+            if(!\App\Services\TwoFactor::verify($user, (string) $request->input('code'))) {
+                Session::put('error', "That token isn't right.");
+                return redirect('/2fa/validate');
+            }
+            Session::forget('2fa_login');
+            // like the real site: "Your session will not be remembered."
+            Auth::login($user, false);
+            $request->session()->regenerate();
+            Session::put('success', 'Successfully logged in.');
+            return redirect('/');
+        }
+
+        $this->request['data']['embeds']['title'] = '2FA Validation' . $this->request['data']['embeds']['title'];
+        return view('v2/TwoFactor', $this->request);
+    }
+
+    const LOCALES = [
+        // the real site's list from mid-2020 on (English (Canada) was replaced by Deutsch)
+        'en' => 'English (US)', 'zh-hk' => '中文(繁體)', 'pt-br' => 'Português (Brasil)',
+        'es-us' => 'Español (Estados Unidos)', 'de-de' => 'Deutsch', 'pl-pl' => 'Polski (Polska)', 'tl' => 'Tagalog', 'th-th' => 'ไทย',
+    ];
+
+    /* Settings > Privacy */
+    public function privacy(Request $request) {
+        $this->request['data']['embeds']['title'] = 'Privacy' . $this->request['data']['embeds']['title'];
+
+        if(!$this->request['data']['siteusername']) {
+            return redirect('/');
+        }
+
+        $user = Auth::user();
+        if($request->isMethod('post')) {
+            foreach(\App\Services\Privacy::SETTINGS as $key => $setting) {
+                $value = (string) $request->input($key, 'everyone');
+                if(in_array($value, $setting['levels'], true)) {
+                    $user->{'privacy_' . $key} = $value;
+                }
+            }
+            $user->save();
+            Session::put('success', 'Successfully updated.');
+            return redirect('/app/privacy');
+        }
+
+        $settings = [];
+        foreach(\App\Services\Privacy::SETTINGS as $key => $setting) {
+            $settings[$key] = $setting + ['value' => \App\Services\Privacy::level($user, $key)];
+        }
+        $this->request['data']['privacy'] = ['settings' => $settings, 'levels' => \App\Services\Privacy::LEVELS];
+
+        return view('v2/Settings/Privacy', $this->request);
+    }
+
+    /* Settings > Language (also what the footer's globe menu sets) */
+    public function language(Request $request) {
+        if($request->isMethod('post')) {
+            $locale = (string) $request->input('locale');
+            if(isset(self::LOCALES[$locale])) {
+                Session::put('locale', $locale);
+                if($this->request['data']['siteusername']) {
+                    $user = Auth::user();
+                    $user->locale = $locale;
+                    $user->save();
+                }
+            }
+            return $request->expectsJson() ? response()->json(['code' => 200]) : redirect('/app/language');
+        }
+
+        if(!$this->request['data']['siteusername']) {
+            return redirect('/');
+        }
+
+        $this->request['data']['embeds']['title'] = 'Language' . $this->request['data']['embeds']['title'];
+        $this->request['data']['languages'] = self::LOCALES;
+        $this->request['data']['locale'] = Auth::user()->locale ?: Session::get('locale', 'en');
+
+        return view('v2/Settings/Language', $this->request);
+    }
+
+    /* Settings > Password */
+    public function password(Request $request) {
+        $this->request['data']['embeds']['title'] = 'Password' . $this->request['data']['embeds']['title'];
+
+        if(!$this->request['data']['siteusername']) {
+            return redirect('/');
+        }
+
+        if($request->isMethod('post')) {
+            $validator = Validator::make($request->all(), [
+                'current_password' => 'required|string',
+                'password' => 'required|string|confirmed|alpha_dash|min:8|max:255',
+            ]);
+
+            if($validator->fails()) {
+                Session::put('error', $validator->errors()->first());
+                return redirect('/app/password');
+            }
+
+            $user = Auth::user();
+            if(!Hash::check($request->input('current_password'), $user->password)) {
+                Session::put('error', 'Your current password is wrong.');
+                return redirect('/app/password');
+            }
+
+            $user->password = Hash::make($request->input('password'));
+            $user->save();
+            // anyone else logged in as you is logged out
+            Auth::logoutOtherDevices($request->input('password'));
+
+            Session::put('success', 'Password changed.');
+            return redirect('/app/password');
+        }
+
+        return view('v2/Settings/Password', $this->request);
+    }
+
+    /* Settings > Character: the pose in your character's picture and the animations it uses in game */
+    public function characterSettings(Request $request) {
+        $this->request['data']['embeds']['title'] = 'Character Settings' . $this->request['data']['embeds']['title'];
+
+        if(!$this->request['data']['siteusername']) {
+            return redirect('/');
+        }
+
+        $user = \Illuminate\Support\Facades\Auth::user();
+        $this->request['data']['poses'] = \App\Services\AvatarRenderer::POSES;
+        $this->request['data']['pose'] = \App\Services\AvatarRenderer::poseFor($user);
+        $this->request['data']['animationPacks'] = \App\Services\AnimationPacks::PACKS;
+        $this->request['data']['animationPack'] = \App\Services\AnimationPacks::forUser($user);
+
+        return view('v2/Settings/Character', $this->request);
     }
 
     public function theme(Request $request) {
@@ -425,27 +708,6 @@ class AccountController extends Controller
                 
                 Session::put('successv2', 'Successfully updated.');
                 return redirect('/app/' . ($this->request['data']['user']['version'] == 'v1' ? 'settings' : 'theme'));
-            } elseif(isset($data['version'])) {
-                $validator = Validator::make($data, [
-                    'version' => 'required|string|in:v1,v2'
-                ]);
-
-                if($validator->fails()) {
-                    Session::put('error', $validator->errors()->first());
-                    return redirect('/app/theme');
-                }
-
-                User::where('id', $this->request['data']['user']['id'])
-                    ->update([
-                        'gary' => 0,
-                        'upsidedown' => 0,
-                        'theme' => 0,
-                        'logo' => 'v1',
-                        'version' => $data['version']
-                    ]);
-                
-                Session::put('success', 'Successfully changed');
-                return redirect('/app/' . ($this->request['data']['user']['version'] == 'v1' ? 'settings' : 'theme'));
             }
 
             return redirect('/app/theme');
@@ -491,7 +753,9 @@ class AccountController extends Controller
 
     public function form() {
         $this->request['data']['embeds']['title'] = 'Form' . $this->request['data']['embeds']['title'];
-        $this->request['data']['invitekeys'] = (bool) env('FINOBE_INVITE_KEYS');
+        $this->request['data']['invitekeys'] = \App\Admin\Settings::invitesRequired();
+        $this->request['data']['turnstile'] = (bool) env('TURNSTILE_SECRET');
+        $this->request['data']['turnstile_sitekey'] = env('TURNSTILE_SITEKEY');
 
         if($this->request['data']['siteusername']) {
             return redirect('/');
@@ -502,7 +766,9 @@ class AccountController extends Controller
 
     public function register(Request $request) {
         $this->request['data']['embeds']['title'] = 'Register' . $this->request['data']['embeds']['title'];
-        $this->request['data']['invitekeys'] = (bool) env('FINOBE_INVITE_KEYS');
+        $this->request['data']['invitekeys'] = \App\Admin\Settings::invitesRequired();
+        $this->request['data']['turnstile'] = (bool) env('TURNSTILE_SECRET');
+        $this->request['data']['turnstile_sitekey'] = env('TURNSTILE_SITEKEY');
         $data = $request->all();
 
         if($this->request['data']['siteusername']) {
@@ -511,7 +777,7 @@ class AccountController extends Controller
 
         if($request->isMethod('post')) {
             $forbiddenPhrases = [
-                'raped', 'dick', 'aesthetiful', 'instance', 'fuck', 'shit', 'fag', 'f@g', 'd1ck', 'pussy',
+                'raped', 'dick', 'fuck', 'shit', 'fag', 'f@g', 'd1ck', 'pussy',
                 'jew', 'tranny', 'tr@nny', 'goon', 'g@@n', 'g00n', 'gyat', 'gy@t', 'r@ped', 'tities', 't1t1es',
                 'nigg', 'n!gger', 'nigga', 'n1gga', 'n1gger', 'pedo', 'fag', 'faggot'
             ];
@@ -521,7 +787,7 @@ class AccountController extends Controller
                 'password' => 'required|string|confirmed|alpha_dash|min:8|max:255',
                 'email' => 'required|email|confirmed|unique:finobe.users,email',
                 'invite_key' => ($this->request['data']['invitekeys'] ? 'required' : 'nullable') . '|string',
-                'g-recaptcha-response' => 'required'
+                'cf-turnstile-response' => env('TURNSTILE_SECRET') ? 'required' : 'nullable'
             ]);
 
             if($validator->fails()) {
@@ -529,7 +795,7 @@ class AccountController extends Controller
                 return redirect('/auth/form');
             }
 
-            if(!$this->request['data']['invitekeys']) {
+            if(!(bool) config('admin.invites_enabled')) {
                 Session::put('error', 'Account creation is currently disabled');
                 return redirect('/auth/form');
             }
@@ -542,23 +808,30 @@ class AccountController extends Controller
                 }
             }
 
-            $response = Http::asForm()->post('https://www.google.com/recaptcha/api/siteverify', [
-				'secret' => env('GOOGLE_RECAPTCHA_SECRET'),
-				'response' => $data['g-recaptcha-response']
-			])->json();
+            if(env('TURNSTILE_SECRET')) {
+                $response = Http::asForm()->post('https://challenges.cloudflare.com/turnstile/v0/siteverify', [
+                                    'secret' => env('TURNSTILE_SECRET'),
+                                    'response' => $data['cf-turnstile-response'] ?? null,
+                                    'remoteip' => $request->ip(),
+                            ])->json();
 
-            if(!($response['success'] ?? false)) {
-                Session::put('error', 'reCAPTCHA failed.');
-                return redirect('/auth/form');
+                if(!($response['success'] ?? false)) {
+                    Session::put('error', 'CAPTCHA failed.');
+                    return redirect('/auth/form');
+                }
             }
 
-            if($this->request['data']['invitekeys'] && isset($data['invite_key']) && !Keys::where('IID', $data['invite_key'])->where('used', 'n')->exists()) {
+            // A key is only mandatory when invites are required, but any key that is
+            // supplied still has to be a real, unused one.
+            $inviteKey = trim((string) ($data['invite_key'] ?? ''));
+
+            if($inviteKey !== '' && !Keys::where('IID', $inviteKey)->where('used', 'n')->exists()) {
                 Session::put('error', 'Invalid invite key.');
                 return redirect('/auth/form');
             }
 
-            if(isset($data['invite_key']) && $this->request['data']['invitekeys']) {
-                $claimed = Keys::where('IID', $data['invite_key'])
+            if($inviteKey !== '') {
+                $claimed = Keys::where('IID', $inviteKey)
                     ->where('used', 'n')
                     ->update([
                         'used' => 'y',
@@ -646,7 +919,14 @@ class AccountController extends Controller
                 return redirect('/auth/login');
             }
 
-            Auth::login($user, isset($data['remember']));
+            // accounts with two-factor authentication need a code from the app first
+            if(\App\Services\TwoFactor::enabled($user)) {
+                $request->session()->regenerate();
+                Session::put('2fa_login', ['id' => $user->id, 'expires' => time() + 600]);
+                return redirect('/2fa/validate');
+            }
+
+            Auth::login($user, !empty($data['remember_me']) || !empty($data['remember']));
             $request->session()->regenerate();
             Session::put('success', 'Successfully logged in.');
             return redirect('/');

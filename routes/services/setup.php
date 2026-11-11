@@ -11,6 +11,8 @@ Route::group(['as' => 'prod-setup.'], function(){
 
     Route::get('/version-{hash}-BootstrapperVersion.txt', [SetupController::class, 'getCurrentBootstrapperVersion'])->name('get-bootstrapper-version');
 
+    Route::get('/launcher-build', [SetupController::class, 'getLauncherBuild'])->name('get-launcher-build');
+
     Route::get('/cdn.txt', [SetupController::class,'getCurrentActiveCDN'])->name('get-cdn');
 
     Route::get('/{file}', [SetupController::class,'getFile'])->name('get-file');

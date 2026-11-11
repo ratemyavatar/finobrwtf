@@ -1,0 +1,14 @@
+{% extends 'v2/Admin/_layout.twig' %}
+{% block tool %}
+<table class="table table-striped">
+  <thead class="thead-dark"><tr><th>Date</th><th>Asset</th><th>Action</th><th>Moderator</th></tr></thead>
+  <tbody>
+  {% for r in data.log %}
+    <tr><td>{{ r.date }}</td><td><a href="/item/{{ r.asset_id }}">{{ r.title }}</a></td>
+      <td><span class="text-{{ r.action == 'approved' ? 'success' : 'danger' }}">{{ r.action|capitalize }}</span></td><td>{{ r.moderator }}</td></tr>
+  {% else %}
+    <tr><td colspan="4" class="text-center text-muted">Nothing approved or denied yet.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

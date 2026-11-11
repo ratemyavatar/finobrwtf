@@ -11,28 +11,22 @@
                 .close-modal {
                     left: 100%;
                 }
+                /* jquery-modal (the e-mail box) styles every .modal; undo that for the Bootstrap one */
+                #name-change-modal { z-index: 1050; position: fixed; max-width: none; width: 100%; padding: 0; background: transparent; box-shadow: none; border-radius: 0; }
                 </style>
             <div class="container mt-4">
                 <div class="row">
                     <div class="col-lg-2 mb-2">
-                        <div>
-                            <strong>
-                                <p>Settings</p>
-                            </strong>
-                            <p class="mb-1 text-primary"><strong>User Details</strong></p>
-                            <p class="mb-1">Password</p>
-                            <p class="mb-1">Security</p>
-                            <p class="mb-1">Privacy</p>
-                            <p class="mb-1"><a href="/app/theme">Theming</a></p>
-                            <p class="mb-1">Language</p>
-                            <p class="mb-1"><a href="/app/games">Places</a></p>
-                        </div>
+                        {% include ('v2/Settings/Menu.twig') with {active: 'details'} %}
                     </div>
                     <div class="col-lg-10 mb-2">
                         <div class="card">
                             <div class="card-body">
                                 <p class="mb-1" style="margin-bottom:0px;"><strong>Username: </strong>
                                     {{ data.user.username }}
+                                    <a href="#" data-toggle="modal" data-target="#name-change-modal" style="color:inherit" title="Name Change">
+                                        <i class="far align-middle fa-pen-square ml-1" style="float:right;margin-top:5px;"></i>
+                                    </a>
                                 </p>
                                 <p style="margin-bottom: 0px;">
                                     <strong>E-mail: </strong>
@@ -65,30 +59,43 @@
                                 </div>
                             </form>
                         </div>
-                        {% if data.user.status == "admin" %}
                         <div class="mt-3">
-                            <form role="form" method="POST" action="/app/settings" enctype="multipart/form-data">
+                            <h4 style="font-weight: 300;">Gender</h4>
+                            <form role="form" method="POST" action="/app/settings">
                                 <input type="hidden" name="_token" value="{{ data.csrf_token }}">
-                                <div class="form-group row">
-                                    <label for="pfp" class="col-form-label text-md-right" style="margin-left:15px;">
-                                        <h4 style="font-weight: 300;">Profile picture</h4>
-                                    </label>
-                                    <div class="col-md-12">
-                                        <input type="file" name="file" />
-                                    </div>
-                                    <label class="col-form-label text-md-right row"
-                                        style="margin-left:15px;"><strong style="margin:0 3px 0 0">Note:</strong>ratio of image must be 1:1
-                                    </label>
-                                </div>
-                                <div class="form-group col-md-2" style="margin-top: 40px; padding-left: 0px;">
-                                    <button type="submit" class="btn btn-success ">update</button>
-                                </div>
+                                <select name="gender" class="form-control" onchange="this.form.submit();">
+                                    <option value="m"{{ (data.user.gender ?? 'm') in ['m', ''] ? ' selected' : '' }}>Male</option>
+                                    <option value="f"{{ data.user.gender == 'f' ? ' selected' : '' }}>Female</option>
+                                    <option value="n"{{ data.user.gender == 'n' ? ' selected' : '' }}>Don't show</option>
+                                </select>
                             </form>
                         </div>
-                        {% endif %}
                     </div>
                 </div>
             </div>
+    </div>
+	<div class="modal fade" id="name-change-modal" tabindex="-1" role="dialog" aria-labelledby="name-change-title" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <form class="modal-content" role="form" method="POST" action="/app/settings">
+                <input type="hidden" name="_token" value="{{ data.csrf_token }}">
+                <div class="modal-header">
+                    <h4 class="modal-title" id="name-change-title">Name Change</h4>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group mb-0">
+                        <label for="new_username"><strong>New Name</strong></label>
+                        <input type="text" id="new_username" name="new_username" value="{{ data.user.username }}" required minlength="3" maxlength="20" pattern="[A-Za-z0-9_]+" class="form-control" autocomplete="off">
+                        <small class="form-text">It costs {{ data.nameChange.cost }} Dius to change your name, unless you only want to change capitalization.</small>
+                        {% if data.nameChange.next %}<small class="form-text text-muted">You can change your username again on {{ data.nameChange.next }}.</small>{% endif %}
+                    </div>
+                </div>
+                <div class="modal-footer justify-content-center">
+                    <button type="button" class="btn btn-link text-danger" data-dismiss="modal">cancel</button>
+                    <button type="submit" class="btn btn-outline-primary">change</button>
+                </div>
+            </form>
+        </div>
     </div>
 	<div id="ex1" class="modal container" style="padding:0">
             <div class="container" style="padding:0">

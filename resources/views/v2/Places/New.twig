@@ -36,8 +36,9 @@
                             <div class="form-group row">
                                 <label class="col-form-label text-md-right" style="margin-left:15px;">Client</label>
                                 <div class="col-md-12">
-                                    <div class="custom-control custom-radio"><input type="radio" id="version-2016" name="game-version" value="2016" class="custom-control-input" checked> <label for="version-2016" class="custom-control-label">2016</label></div>
-                                    <div class="custom-control custom-radio"><input type="radio" id="version-2012" name="game-version" value="2012" class="custom-control-input"> <label for="version-2012" class="custom-control-label">2012</label></div>
+                                    {% for v in client_versions %}
+                                    <div class="custom-control custom-radio"><input type="radio" id="version-{{ v }}" name="game-version" value="{{ v }}" class="custom-control-input"{{ v == "2016" ? " checked" : "" }}> <label for="version-{{ v }}" class="custom-control-label">{{ v }}</label></div>
+                                    {% endfor %}
                                 </div>
                             </div>
                             <div class="form-group" style="margin-top: 40px;">

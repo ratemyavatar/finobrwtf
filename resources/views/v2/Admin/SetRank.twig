@@ -1,0 +1,10 @@
+{% extends 'v2/Admin/_layout.twig' %}
+{% block tool %}
+<form method="POST" class="form-row mb-3" style="max-width: 640px;">
+  <input type="hidden" name="_token" value="{{ data.csrf_token }}">
+  <div class="col-md-5 mb-2"><input type="text" name="user" class="form-control" placeholder="Username" required></div>
+  <div class="col-md-4 mb-2"><select name="rank" class="form-control"><option value="member">Member</option><option value="admin">Admin</option>{% if data.can_owner %}<option value="owner">Owner</option>{% endif %}{% for role in data.roles %}<option value="{{ role }}">{{ role }}</option>{% endfor %}</select></div>
+  <div class="col-md-3 mb-2"><button class="btn btn-primary btn-block">set</button></div>
+</form>
+<p><strong>Admins:</strong> {% for id, name in data.admins %}<a href="/user/{{ id }}">{{ name }}</a>{{ not loop.last ? ', ' : '' }}{% endfor %}</p>
+{% endblock %}

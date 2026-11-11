@@ -6,7 +6,7 @@
 <meta property="og:description" content="{{ data.embeds.description }}">
 <meta property="og:image" content="{{ data.embeds.image }}">
 <link rel="shortcut icon" type="image/png" href="{{ data.embeds.image }}">
-<link rel="stylesheet" href="/s/css/{{ (data.user.theme == 1 or data.user.gary == 1) ? "night" : "light" }}.css">
+{% set theme_css = (data.user.theme == 1 or data.user.gary == 1) ? "night" : "light" %}<link rel="stylesheet" href="/s/css/{{ theme_css }}.css?v={{ filemtime(public_path("s/css/" ~ theme_css ~ ".css")) }}">
 {# <link rel="stylesheet" href="https://pro.fontawesome.com/releases/v5.15.3/css/all.css" integrity="..."> #}
 <link rel="stylesheet" href="https://pro.fontawesome.com/releases/v5.10.0/css/all.css" integrity="" crossorigin="anonymous">
 <link rel="stylesheet" href="https://pro.fontawesome.com/releases/v5.10.0/css/fontawesome.css" integrity="" crossorigin="anonymous">
@@ -119,9 +119,9 @@ body {
     background: url(/s/img/background.png) no-repeat center center, -webkit-linear-gradient(top left, #312a6c, #852d91);
     background: url(/s/img/background.png) no-repeat center center, -moz-linear-gradient(top left, #312a6c, #852d91);
     */
-    background: url(/s/img/xmas_small.jpg) no-repeat center center;
-    background: url(/s/img/xmas_small.jpg) no-repeat center center, -webkit-linear-gradient(top left, #312a6c, #852d91);
-    background: url(/s/img/xmas_small.jpg) no-repeat center center, -moz-linear-gradient(top left, #312a6c, #852d91);
+    background: url(/s/img/bannerlate2019-2.jpg) no-repeat center center;
+    background: url(/s/img/bannerlate2019-2.jpg) no-repeat center center, -webkit-linear-gradient(top left, #312a6c, #852d91);
+    background: url(/s/img/bannerlate2019-2.jpg) no-repeat center center, -moz-linear-gradient(top left, #312a6c, #852d91);
     {#background: url(https://cdn.finobe.wtf/forum/media/chinese.jpg) no-repeat center center, #fff;#}
     background-size: cover;
     {#background-size: contain;#}

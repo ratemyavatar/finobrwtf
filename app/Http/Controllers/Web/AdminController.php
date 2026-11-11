@@ -32,17 +32,90 @@ class AdminController extends Controller
 {
     protected $request;
 
+    /* Which scope each tool needs. Admins hold every scope, so they keep full access. */
+    private const TOOL_SCOPES = [
+        'assets' => 'Catalog', 'accept' => 'Catalog', 'deny' => 'Catalog',
+        'createxml' => 'Items', 'rbxcreatexml' => 'Items',
+        'bans' => 'Moderation', 'warn' => 'Moderation', 'decider' => 'Moderation', 'elections' => 'Moderation',
+        'prune_posts' => 'Forum',
+        'lock' => 'Forum', 'unlock' => 'Forum', 'pin' => 'Forum', 'unpin' => 'Forum', 'stick' => 'Forum', 'unstick' => 'Forum',
+        'give_dius' => 'Economy', 'give_badges' => 'Economy',
+        'announcements' => 'Announcements',
+        'servers' => 'Operations', 'changeversions' => 'Operations', 'deployClient' => 'Operations',
+    ];
+
     public function __construct(Request $request) {
+        \App\Admin\Access::authorize($request->user());
         $frontend = new frontEnd($request);
         $this->request = $frontend->getData();
 
-        if(!$this->request['data']['siteusername'] || $this->request['data']['user']['status'] != 'admin') {
+        if(!$this->request['data']['siteusername']) {
             abort(404);
+        }
+
+        $method = $request->route() ? $request->route()->getActionMethod() : null;
+        $scope = self::TOOL_SCOPES[$method] ?? null;
+        if($scope) {
+            \App\Admin\Access::authorize($request->user(), ['group' => $scope, 'kind' => 'inspect']);
+        } elseif($method !== 'index') {
+            abort(404);
+        }
+    }
+
+    /* Admin Panel > Asset Approval Log */
+    private function logApproval($assetId, string $action): void {
+        if(!$assetId) {
+            return;
+        }
+        try {
+            \Illuminate\Support\Facades\DB::connection('finobe')->table('asset_approval_log')->insert([
+                'asset_id' => $assetId, 'moderator_id' => $this->request['data']['user']['id'], 'action' => $action, 'created_at' => now(),
+            ]);
+        } catch(\Throwable $e) {
+            report($e); // not migrated yet: approving still works
         }
     }
 
     public function index(Request $request) {
         $this->request['data']['embeds']['title'] = 'Admin Panel' . $this->request['data']['embeds']['title'];
+
+        $scopes = \App\Admin\Access::scopes($request->user());
+        $tools = [
+            ['url' => '/admin/ipbans', 'label' => 'IP Bans', 'icon' => 'gavel', 'scope' => 'Access restrictions'],
+            ['url' => '/admin/users', 'label' => 'Users', 'icon' => 'user', 'scope' => 'Accounts'],
+            ['url' => '/admin/assets', 'label' => 'Assets', 'icon' => 'tshirt', 'scope' => 'Catalog'],
+            ['url' => '/admin/bans', 'label' => 'Bans', 'icon' => 'ban', 'scope' => 'Moderation'],
+            ['url' => '/admin/decider', 'label' => 'Oui/Non Decider', 'icon' => 'question', 'scope' => 'Moderation'],
+            ['url' => '/admin/force-regen', 'label' => 'Force Regen Character', 'icon' => 'sync', 'scope' => 'Avatar'],
+            ['url' => '/admin/prune-posts', 'label' => 'Prune Forum Posts', 'icon' => 'trash', 'scope' => 'Forum'],
+            ['url' => '/admin/purge-games', 'label' => 'Purge Inactive Game Servers', 'icon' => 'minus-octagon', 'scope' => 'Operations'],
+            ['url' => '/admin/createxml', 'label' => 'New XML Asset', 'icon' => 'layer-plus', 'scope' => 'Items'],
+            ['url' => '/admin/rbxcreatexml', 'label' => 'Create XML Asset (Roblox)', 'image' => '/s/img/roblox-r.png', 'scope' => 'Items'],
+            ['url' => '/admin/purchase-log', 'label' => 'Item Purchase Log', 'icon' => 'shopping-cart', 'scope' => 'Economy'],
+            ['url' => '/admin/give_dius', 'label' => 'Give Dius', 'icon' => 'donate', 'scope' => 'Economy'],
+            ['url' => '/admin/give-asset/non-dependent', 'label' => 'Give Asset (Non-dependent)', 'icon' => 'plus-octagon', 'scope' => 'Economy'],
+            ['url' => '/admin/give-asset/dependent', 'label' => 'Give Asset (Dependent)', 'icon' => 'cart-plus', 'scope' => 'Economy'],
+            ['url' => '/admin/approval-log', 'label' => 'Asset Approval Log', 'icon' => 'book', 'scope' => 'Catalog'],
+            ['url' => '/admin/player-thumbnails', 'label' => 'Player List Thumbnails', 'icon' => 'image', 'scope' => 'Avatar'],
+        ];
+        $links = [
+            ['url' => '/admin/rank', 'label' => 'Set User Rank', 'scope' => 'Staff'],
+            ['url' => '/admin/users', 'label' => 'Modify User Permissions', 'scope' => 'Accounts'],
+            ['url' => '/admin/clear-cache', 'label' => 'Clear Timed Cache', 'scope' => 'Operations'],
+            ['url' => '/admin/force-username', 'label' => 'Force Username Change', 'scope' => 'Accounts'],
+            ['url' => '/admin/invite-tree', 'label' => 'Invite Tree', 'scope' => 'Invites'],
+            ['url' => '/admin/give_badges', 'label' => 'Give Badges', 'scope' => 'Economy'],
+            ['url' => '/admin/warn', 'label' => 'Give Warning', 'scope' => 'Moderation'],
+            ['url' => '/admin/announcements', 'label' => 'Site Announcements', 'scope' => 'Announcements'],
+            ['url' => '/admin/servers', 'label' => 'Game Servers', 'scope' => 'Operations'],
+            ['url' => '/admin/changeversions', 'label' => 'Client Deployer', 'scope' => 'Operations'],
+            ['url' => '/admin/elections', 'label' => 'Elections', 'scope' => 'Moderation'],
+            ['url' => '/admin/blog', 'label' => 'Blog Management', 'scope' => 'Blog'],
+            ['url' => '/admin/invite-keys', 'label' => 'Create Invite Keys (temp)', 'scope' => 'Invites'],
+        ];
+        $allowed = fn(array $i) => in_array($i['scope'], $scopes, true);
+        $this->request['data']['tools'] = array_values(array_filter($tools, $allowed));
+        $this->request['data']['links'] = array_values(array_filter($links, $allowed));
 
         return view($this->request['data']['user']['version'] . '/Admin/Index', $this->request);
     }
@@ -132,6 +205,7 @@ class AdminController extends Controller
         // the creator owns their item (type 1 = owned, which is what the inventory and avatar editor look for)
         AssetHelper::grantToCreator((int) $data['id'], (int) $asset->author);
         
+        $this->logApproval($asset->id ?? null, 'approved');
         Session::put('success', 'Item accepted.');
         return redirect('/admin/assets');
     }
@@ -202,6 +276,7 @@ class AdminController extends Controller
         $asset->visibility = 'd';
         $asset->save();
         
+        $this->logApproval($asset->id ?? null, 'denied');
         Session::put('success', 'Item denied.');
         return redirect('/admin/assets');
     }
@@ -226,6 +301,7 @@ class AdminController extends Controller
                 $this->clearPendingThumbnail($asset);
             }
 
+            $this->logApproval($asset->id ?? null, 'denied');
             Session::put('success', 'Item denied.');
             return redirect('/admin/assets');
         }
@@ -245,6 +321,7 @@ class AdminController extends Controller
             $asset->additional = $additional;
             $asset->save();
 
+            $this->logApproval($asset->id ?? null, 'approved');
             Session::put('success', 'Badge accepted.');
             return redirect('/admin/assets');
         }
@@ -268,6 +345,7 @@ class AdminController extends Controller
             }
         }
 
+        $this->logApproval($asset->id ?? null, 'approved');
         Session::put('success', 'Thumbnail accepted.');
         return redirect('/admin/assets');
     }
@@ -481,7 +559,7 @@ class AdminController extends Controller
 
         $results = $paginator->toArray();
 
-        if (count($results)) {
+        if (count($results['data'] ?? [])) {
             $html['data'] = "<table border='1' style=\"width:100%;\"><tr>";
 
             foreach (array_keys((array) $results['data'][0]) as $key) {
@@ -668,6 +746,10 @@ class AdminController extends Controller
             }
 
             $type = $data['type'];
+            $author = (int) $this->request['data']['user']['id'];
+            $title = $data['title'];
+            $description = $data['description'] ?? '';
+
             $field = match ($type) {
                 'hat', 'gear' => 'rbxm',
                 'mesh' => 'mesh',
@@ -682,14 +764,11 @@ class AdminController extends Controller
                 return redirect('/admin/createxml');
             }
             $file = file_get_contents($request->file($field)->getPathname());
-            $author = (int) $this->request['data']['user']['id'];
-            $title = $data['title'];
-            $description = $data['description'] ?? '';
 
             try {
                 if(in_array($type, ['hat', 'gear'])) {
                     $id = ItemImporter::import($file, $title, $author, $description, intval($data['price']), isset($data['onsale']),
-                        $type === 'hat' ? ItemImporter::HAT : ItemImporter::GEAR);
+                        ['hat' => ItemImporter::HAT, 'gear' => ItemImporter::GEAR][$type]);
                 } elseif(in_array($type, ['face', 'shirt', 'pants', 'tshirt'])) {
                     $id = AssetCopier::fromImage($file, $type, $title, $author, $description, intval($data['price']), isset($data['onsale']));
                 } elseif($type === 'mesh') {
@@ -724,7 +803,7 @@ class AdminController extends Controller
         if($request->isMethod('post')) {
             $validator = Validator::make($data, [
                 'name' => 'required|string|max:255',
-                'amount' => 'required|numeric',
+                'amount' => isset($data['toggler']) ? 'nullable|numeric' : 'required|numeric',
                 'toggler' => 'nullable'
             ]);
 
@@ -744,7 +823,7 @@ class AdminController extends Controller
                         'diubanned' => DB::raw("CASE WHEN diubanned = 'n' THEN 'y' ELSE 'n' END")
                     ]);
                 
-                $user = User::where('username', $this->request['data']['user']['username'])->select('diubanned')->first();
+                $user = User::where('username', $data['name'])->select('diubanned')->first();
 
                 if($user->diubanned == 'y') {
                     Session::put('success', 'Successfully diu banned.');

@@ -36,14 +36,18 @@ class StartGameServer
 
         $place = $db->table('assets')->where('id', $server->placeid)->first();
 
+        $version = $place ? \App\Services\ClientVersions::of($place) : \App\Services\ClientVersions::DEFAULT;
+
         // 2012 places: no RCC, host2012.ps1 runs the 2012 client as the server (see App\Services\Host2012)
-        if ($place && (json_decode($place->additional ?? '{}', true)['version'] ?? '2016') === '2012') {
-            if (!\App\Services\Host2012::configured()) {
+        if ($place && !\App\Services\ClientVersions::usesRcc($version)) {
+            $node = \App\Services\GameNodes::forServer($server);
+            $controlUrl = $node?->control_url;
+            if (!\App\Services\Host2012::configured($controlUrl)) {
                 PlaceLauncher::startFailed($this->jobId, '2012 game servers are not set up yet, try again later.');
                 return;
             }
             try {
-                \App\Services\Host2012::start($this->jobId);
+                \App\Services\Host2012::start($this->jobId, $controlUrl);
             } catch (\Throwable $e) {
                 Log::warning("2012 game server {$this->jobId} for place {$server->placeid} failed to start: " . $e->getMessage());
                 PlaceLauncher::startFailed($this->jobId, "Couldn't reach the 2012 game server machine, try again in a bit.");
@@ -51,7 +55,10 @@ class StartGameServer
             return;
         }
 
-        $script = @file_get_contents(storage_path('rbx/files/scripts/gameserver2016.lua'));
+        // each RCC year has its own game server script and its own RCCService (config finobe.clients)
+        $scriptName = basename((string) (\App\Services\ClientVersions::get($version)['script'] ?? 'gameserver2016.lua'));
+        $script = @file_get_contents(storage_path('rbx/files/scripts/' . $scriptName));
+        [$rccHost, $rccPort] = \App\Services\ClientVersions::rcc($version);
 
         if (!$place || $script === false) {
             PlaceLauncher::startFailed($this->jobId);
@@ -62,7 +69,7 @@ class StartGameServer
         @ini_set('default_socket_timeout', '120');
 
         try {
-            $arbiter = new RobloxArbiterUtilities(config('finobe.arbiter.host'), (int) config('finobe.arbiter.port'));
+            $arbiter = new RobloxArbiterUtilities($rccHost, $rccPort);
             // long lease: the game server closes itself through /api/gameserver/shutdown once it's empty
             $job = $arbiter->ConstructJob($this->jobId, $script, 21600, 0, 1, 'GameServer', [
                 (int) $server->placeid,

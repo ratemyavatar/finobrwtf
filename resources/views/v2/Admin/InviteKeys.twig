@@ -1,0 +1,48 @@
+{% extends 'v2/Admin/_layout.twig' %}
+{% block tool %}
+<p class="text-muted">Invite keys let one person register. Create keys here, or let people make their own from the public <a href="/invites">Invites</a> page.</p>
+{% if not data.invitesEnabled %}
+<p class="text-danger">Heads up: invite keys are disabled site-wide (<code>FINOBE_INVITE_KEYS</code>), so a new key can't be redeemed until that is turned back on.</p>
+{% endif %}
+
+<div class="card mb-4" style="max-width: 640px;">
+  <div class="card-body">
+    <h5 class="mb-1">Require invite keys</h5>
+    <p class="mb-2">
+      Currently
+      {% if data.invitesRequired %}<strong class="text-danger">required</strong> &mdash; the invite key field is shown on the register form and nobody can sign up without a valid key.
+      {% else %}<strong class="text-success">not required</strong> &mdash; the invite key field is hidden and anyone can sign up without one.{% endif %}
+    </p>
+    <form method="POST" class="mb-0">
+      <input type="hidden" name="_token" value="{{ data.csrf_token }}">
+      <input type="hidden" name="action" value="toggle_required">
+      <button class="btn {{ data.invitesRequired ? 'btn-outline-secondary' : 'btn-success' }}">
+        {{ data.invitesRequired ? 'make invite keys optional' : 'require invite keys again' }}
+      </button>
+    </form>
+  </div>
+</div>
+
+<form method="POST" class="form-row mb-4" style="max-width: 640px;">
+  <input type="hidden" name="_token" value="{{ data.csrf_token }}">
+  <input type="hidden" name="action" value="create">
+  <div class="col-md-3 mb-2"><input type="number" name="quantity" class="form-control" value="1" min="1" max="50" aria-label="How many keys"></div>
+  <div class="col-md-4 mb-2"><button class="btn btn-primary btn-block">create key(s)</button></div>
+</form>
+<table class="table table-striped table-responsive-md">
+  <thead class="thead-dark"><tr><th>Key</th><th>Author</th><th>Created</th><th>Status</th><th></th></tr></thead>
+  <tbody>
+  {% for k in data.keys %}
+    <tr>
+      <td><code>{{ k.IID }}</code></td>
+      <td>{{ k.author }}</td>
+      <td>{{ k.creation }}</td>
+      <td>{% if k.used %}used by {{ k.usedBy ?: '?' }}{% if k.dateUsed %} on {{ k.dateUsed }}{% endif %}{% else %}<span class="text-success">unused</span>{% endif %}</td>
+      <td>{% if not k.used %}<form method="POST" class="mb-0"><input type="hidden" name="_token" value="{{ data.csrf_token }}"><input type="hidden" name="action" value="revoke"><input type="hidden" name="id" value="{{ k.id }}"><button class="btn btn-sm btn-outline-secondary">revoke</button></form>{% endif %}</td>
+    </tr>
+  {% else %}
+    <tr><td colspan="5" class="text-center text-muted">No invite keys yet.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

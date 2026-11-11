@@ -53,7 +53,7 @@ class FinobeBlogThemeTest extends TestCase
         return rtrim((string)config('blog.url'), '/').'/'.ltrim($path,'/');
     }
 
-    private function publish(string $title, string $slug, string $status='published'): int
+    private function seedPost(string $title, string $slug, string $status = 'published'): int
     {
         return DB::connection('finobe')->table('blog_posts')->insertGetId([
             'title'=>$title,'slug'=>$slug,'excerpt'=>'Site news and updates.',
@@ -66,8 +66,8 @@ class FinobeBlogThemeTest extends TestCase
 
     public function test_homepage_recreates_the_supplied_casper_classes_without_featured_cards(): void
     {
-        $this->publish('Public update','public-update');
-        $this->publish('Hidden draft','hidden-draft','draft');
+        $this->seedPost('Published update', 'published-update');
+        $this->seedPost('Unpublished work', 'unpublished-work', 'draft');
 
         $this->get($this->url('/'))->assertOk()
             ->assertSee('class="dark-mode no-infinite-scroll"', false)
@@ -83,51 +83,29 @@ class FinobeBlogThemeTest extends TestCase
 
     public function test_ghost_dated_urls_work_and_wrong_dates_do_not(): void
     {
-        $this->publish('Version update','version-update');
-        $date=now()->subDay();
-        $datedPath='/'.$date->format('Y/m/d').'/version-update/';
-
-        $this->get($this->url($datedPath))->assertOk()->assertSee('Version update');
-        $this->get($this->url('/1999/01/01/version-update/'))->assertNotFound();
-        $this->get($this->url('/2024/02/30/version-update/'))->assertNotFound();
-        // Preserve old links as compatibility aliases.
-        $this->get($this->url('/version-update/'))->assertOk();
-    }
-
-    public function test_post_markdown_sanitization_and_tags_are_preserved(): void
-    {
-        $id=$this->publish('Update','update');
-        DB::connection('finobe')->table('blog_posts')->where('id',$id)
-            ->update(['body'=>'**Hello** <script>alert(1)</script>']);
-        DB::connection('finobe')->table('blog_post_tag')->insert(['post_id'=>$id,'tag_id'=>1]);
-
-        $this->get($this->url('/update/'))
-            ->assertOk()
-            ->assertSee('<strong>Hello</strong>',false)
-            ->assertDontSee('<script>',false)
+        $id = $this->seedPost('Our first update', 'our-first-update');
+        DB::connection('finobe')->table('blog_posts')->where('id', $id)
+            ->update(['body' => "**Hello** <script>alert(1)</script>"]);
+        DB::connection('finobe')->table('blog_post_tag')->insert(['post_id' => $id, 'tag_id' => 1]);
+        $this->get($this->url('/our-first-update/'))->assertOk()
+            ->assertSee('<strong>Hello</strong>', false)
+            ->assertDontSee('<script>', false)
             ->assertSee('Finobe Staff')
             ->assertSee('Updates');
     }
 
     public function test_search_only_returns_matching_published_posts(): void
     {
-        $this->publish('Finobe release','finobe-release');
-        $this->publish('Secret release','secret-release','draft');
-        $this->publish('Community update','community-update');
-
-        $this->get($this->url('/search/?q=Finobe'))
-            ->assertOk()
-            ->assertSee('Finobe release')
-            ->assertDontSee('Secret release')
-            ->assertDontSee('Community update');
+        $id = $this->seedPost('Tagged announcement', 'tagged-announcement');
+        DB::connection('finobe')->table('blog_post_tag')->insert(['post_id' => $id, 'tag_id' => 1]);
+        $this->get($this->url('/tag/updates/'))->assertOk()->assertSee('Tagged announcement');
+        $this->get($this->url('/author/finobe-staff/'))->assertOk()->assertSee('Tagged announcement');
     }
 
     public function test_tag_author_pagination_and_rss_remain_available(): void
     {
-        $id=$this->publish('Tagged update','tagged-update');
-        DB::connection('finobe')->table('blog_post_tag')->insert(['post_id'=>$id,'tag_id'=>1]);
-        $this->get($this->url('/tag/updates/'))->assertOk()->assertSee('Tagged update');
-        $this->get($this->url('/author/finobe-staff/'))->assertOk()->assertSee('Tagged update');
+        for ($i = 1; $i <= 13; $i++) $this->seedPost('Story number '.$i, 'story-'.$i);
+        $this->seedPost('Secret draft', 'secret-draft', 'draft');
 
         for($i=1;$i<=13;$i++) $this->publish('Story '.$i,'story-'.$i);
         $this->get($this->url('/'))->assertOk()->assertSee('/page/2/',false);

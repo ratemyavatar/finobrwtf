@@ -25,12 +25,13 @@
          <div class="container mt-3 mb-5 ">
              <div class="container row">
                  <div class="col-md-4">
-                     <div class="card">
+                     <div class="card finobe-profile-effect-{{ admin_flair.effect|e('html_attr') }}">
                          <div class="card-header bg-primary text-white text-center">
                              {{ user_profile.username }}
+{% include 'admin/profile-flair.twig' %}
                          </div>
                          <div class="card-body text-center">
-                             <img src="{{ (user_profile.pfp == "") ? "/s/img/spinnerv2.gif" : "https://cdn.finobe.wtf/" ~ user_profile.pfp }}" style="width: 45%;height: auto;">
+                             <img src="{{ avatar_url(user_profile.pfp) }}" style="width: 45%;height: auto;">
                              <div class="custom-blockquote mt-2">
                                 <p class="mb-0">{{ user_profile.blurb | raw }}</p>
                             </div>

@@ -19,6 +19,10 @@ class AssetCopier
     /** @return array{id: int, name: string} */
     public static function copy(string $link, int $author, int $price, bool $onSale, ?string $title = null, ?string $description = null): array
     {
+        if (($bundleId = self::bundleIdFromLink($link)) !== null) {
+            return self::copyBundle($bundleId, $author, $price, $onSale, $title, $description);
+        }
+
         $id = self::idFromLink($link);
         $details = self::details($id);
         $name = trim((string) ($title ?: ($details['Name'] ?? "Item {$id}")));
@@ -31,12 +35,17 @@ class AssetCopier
             return ['id' => $siteId, 'name' => $name];
         }
 
+        if ($type === 17) {
+            $siteId = ItemImporter::import(ItemImporter::download($id), $name, $author, $desc, $price, $onSale, ItemImporter::HEAD);
+            return ['id' => $siteId, 'name' => $name];
+        }
+
         $kind = match ($type) {
             18 => ['face', 'Texture'],
             11 => ['shirt', 'ShirtTemplate'],
             12 => ['pants', 'PantsTemplate'],
             2 => ['tshirt', 'Graphic'],
-            default => throw new ImportException("That item's type ({$type}) can't be copied yet: hats, accessories, gear, faces, shirts, pants and t-shirts can."),
+            default => throw new ImportException("That item's type ({$type}) can't be copied yet: hats, accessories, gear, faces, shirts, pants, t-shirts, heads and bundles can."),
         };
 
         $xml = RbxmReader::toXml(ItemImporter::download($id));
@@ -46,6 +55,81 @@ class AssetCopier
 
         $siteId = self::fromImage(ItemImporter::download($imageId), $kind[0], $name, $author, $desc, $price, $onSale);
         return ['id' => $siteId, 'name' => $name];
+    }
+
+    /**
+     * a Roblox bundle (a character's parts, e.g. a head or a whole avatar) becomes a package
+     * holding the items this site can use; body shapes and animations are skipped
+     * @return array{id: int, name: string}
+     */
+    private static function copyBundle(int $bundleId, int $author, int $price, bool $onSale, ?string $title, ?string $description): array
+    {
+        $bundle = self::bundleDetails($bundleId);
+        $name = trim((string) ($title ?: ($bundle['name'] ?? "Bundle {$bundleId}")));
+        $desc = (string) ($description ?? ($bundle['description'] ?? ''));
+
+        $ids = [];
+        foreach (($bundle['items'] ?? []) as $item) {
+            $robloxId = (int) ($item['id'] ?? 0);
+            $type = self::finobeType((int) ($item['assetType'] ?? 0));
+            if ($robloxId === 0 || $type === null) {
+                continue;
+            }
+            try {
+                $ids[] = self::importItem($robloxId, $type, (string) ($item['name'] ?? $name), $author);
+            } catch (\Throwable $e) {
+                report($e); // one bad item shouldn't sink the whole bundle
+            }
+        }
+
+        if (!$ids) {
+            throw new ImportException("That Roblox bundle is all body shapes and animations, which this site can't use yet.");
+        }
+
+        $packageId = AssetHelper::createPackage($name, $ids, $author, $desc, $price, $onSale);
+        return ['id' => $packageId, 'name' => $name];
+    }
+
+    /** the site's type for a Roblox asset type, or null for parts this site can't hold (body shapes, animations) */
+    private static function finobeType(int $robloxType): ?string
+    {
+        return match (true) {
+            $robloxType === 19 => 'gear',
+            in_array($robloxType, self::HAT_TYPES, true) => 'hat',
+            $robloxType === 17, $robloxType === 79 => 'head',
+            $robloxType === 18 => 'face',
+            $robloxType === 11 => 'shirt',
+            $robloxType === 12 => 'pants',
+            $robloxType === 2 => 'tshirt',
+            default => null,
+        };
+    }
+
+    /** import one Roblox asset as the given site type and return its new site id */
+    private static function importItem(int $robloxId, string $type, string $name, int $author): int
+    {
+        if (in_array($type, ['hat', 'gear', 'head'], true)) {
+            $file = ItemImporter::download($robloxId);
+            $expect = ['hat' => ItemImporter::HAT, 'gear' => ItemImporter::GEAR, 'head' => ItemImporter::HEAD][$type];
+            try {
+                return ItemImporter::import($file, $name, $author, '', 0, false, $expect);
+            } catch (ImportException $e) {
+                if ($type !== 'head') {
+                    throw $e;
+                }
+                // a classic head arrives wrapped as an accessory, keep it as a hat
+                return ItemImporter::import($file, $name, $author, '', 0, false);
+            }
+        }
+
+        $kind = ['face' => ['face', 'Texture'], 'shirt' => ['shirt', 'ShirtTemplate'],
+            'pants' => ['pants', 'PantsTemplate'], 'tshirt' => ['tshirt', 'Graphic']][$type];
+        $xml = RbxmReader::toXml(ItemImporter::download($robloxId));
+        if (!preg_match('#<Content name="' . $kind[1] . '">\s*<url>([^<]+)</url>#', $xml, $m)
+            || ($imageId = ItemImporter::robloxAssetId($m[1])) === null) {
+            throw new ImportException("Couldn't find the image in that {$kind[0]}.");
+        }
+        return self::fromImage(ItemImporter::download($imageId), $kind[0], $name, $author, '', 0, false);
     }
 
     /** Face / shirt / pants / t-shirt from an image (also used for plain PNG uploads); approved straight away. */
@@ -92,6 +176,30 @@ class AssetCopier
         }
         if (!$r->ok() || !is_array($r->json())) {
             throw new ImportException("Roblox has no item {$id}.");
+        }
+        return $r->json();
+    }
+
+    /** the Roblox bundle id a /bundles/<id> link points at (null for anything else) */
+    public static function bundleIdFromLink(string $link): ?int
+    {
+        if (preg_match('#roblox\.com/(?:[a-z-]+/)?bundles/(\d+)#i', trim($link), $m)) {
+            return (int) $m[1];
+        }
+        return null;
+    }
+
+    private static function bundleDetails(int $id): array
+    {
+        try {
+            $r = Http::withHeaders(['User-Agent' => 'Roblox/WinInet'])
+                ->timeout(15)->retry(2, 500, throw: false)
+                ->get("https://catalog.roblox.com/v1/bundles/{$id}/details");
+        } catch (\Throwable $e) {
+            throw new ImportException("Couldn't reach Roblox to look up bundle {$id}, try again.");
+        }
+        if (!$r->ok() || !is_array($r->json())) {
+            throw new ImportException("Roblox has no bundle {$id}.");
         }
         return $r->json();
     }

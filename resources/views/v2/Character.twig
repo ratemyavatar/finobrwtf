@@ -73,6 +73,10 @@
 			0% { transform: rotate(0deg); }
 			100% { transform: rotate(360deg); }
 		}
+
+		.item-thumb { height: 150px; }
+		.item-search-icon { background-color: transparent; color: #6c757d; }
+		#item-search:focus { box-shadow: none; }
 	</style>
   </head>
   <body>
@@ -149,47 +153,7 @@
                          </div>
                          <div class="card-body" style="height: auto;">
                              <button id="renderbtn" onclick="regen();" class="btn btn-primary full-width"><i class="fa fa-sync-alt"></i> regen</button>
-                             <img id="renderimg" src="{{ (data.user.pfp == "") ? "/s/img/spinnerv2.gif" : "https://cdn.finobe.wtf/" ~ data.user.pfp }}" class="full-width mt-2" style="height: auto;">
-                             <label for="pose-select" class="mt-2 mb-1">Pose</label>
-                             <select id="pose-select" class="form-control" onchange="setPose(this.value);">
-                               {% for key, label in data.poses %}
-                                 <option value="{{ key }}" {{ data.pose == key ? 'selected' : '' }}>{{ label }}</option>
-                               {% endfor %}
-                             </select>
-                             <script>
-                               function setPose(pose) {
-                                 const select = document.getElementById('pose-select');
-                                 const formData = new FormData();
-                                 formData.append('type', 'pose');
-                                 formData.append('pose', pose);
-                                 formData.append('_token', '{{ data.csrf_token }}');
-                                 select.disabled = true;
-                                 const previous = avatarimg.src;
-                                 avatarimg.src = '/s/img/spinnerv2.gif';
-
-                                 fetch("/api/character", { method: 'POST', body: formData })
-                                   .then(response => response.json())
-                                   .then(response => {
-                                     select.disabled = false;
-                                     if (response.code != 200) {
-                                       avatarimg.src = previous;
-                                       alert(response.message);
-                                       return;
-                                     }
-                                     if (response.image) {
-                                       avatarimg.src = response.image;
-                                     } else {
-                                       avatarimg.src = previous;
-                                       alert(response.message);
-                                     }
-                                   })
-                                   .catch(() => {
-                                     select.disabled = false;
-                                     avatarimg.src = previous;
-                                     alert('Something went wrong, try again.');
-                                   });
-                               }
-                             </script>
+                             <img id="renderimg" src="{{ (data.user.pfp == "") ? "/s/img/spinnerv2.gif" : avatar_url(data.user.pfp) }}" class="full-width mt-2" style="height: auto;">
                          </div>
                      </div>
                  </div>
@@ -216,7 +180,7 @@
                                 <a class="nav-link" data-toggle="tab" href="#faces">Faces</a>
                               </li>
                               <li class="nav-item">
-                                <a class="nav-link" data-toggle="tab" href="#gear">Gear</a>
+                                <a class="nav-link" data-toggle="tab" href="#gear">Gears</a>
                               </li>
                               <li class="nav-item">
                                 <a class="nav-link" data-toggle="tab" href="#heads">Heads</a>
@@ -225,9 +189,17 @@
                                 <a class="nav-link" data-toggle="tab" href="#packages">Packages</a>
                               </li>
                               <li class="nav-item">
-                                <a class="nav-link" data-toggle="tab" href="#animations">Animations</a>
+                                <a class="nav-link" data-toggle="tab" href="#outfits">Outfits</a>
                               </li>
                              </ul>
+                         </div>
+                         <div class="card-body pb-0" id="item-search-row" style="display: none;">
+                           <div class="d-flex justify-content-end">
+                             <div class="input-group" style="max-width: 250px;">
+                               <input type="text" id="item-search" class="form-control form-control-sm border-right-0" placeholder="Search..." oninput="filterItems();">
+                               <div class="input-group-append"><span class="input-group-text item-search-icon border-left-0"><i class="far fa-search"></i></span></div>
+                             </div>
+                           </div>
                          </div>
                          <div class="card-body tab-content">
                             <div class="tab-pane show active" id="bodycolors">
@@ -251,8 +223,8 @@
 									<div class="col-md-4 mb-4 pr-3 {{ (item.equipped) ? 'equipped' : 'unequipped' }}" id="{{ item.assetid }}">
 										<div class="card">
 											<div class="card-body">
-												<div class="d-flex justify-content-center">
-													<img src="{{ (item.visibility != 'n') ? '/s/img/spinnerv2.gif' : item.thumbnail }}" style="width: 50%; height: auto;">
+												<div class="d-flex justify-content-center align-items-center item-thumb">
+													<img src="{{ (item.visibility != 'n') ? '/s/img/spinnerv2.gif' : item.thumbnail }}" style="max-width: 100%; max-height: 100%;">
 												</div>
 												<p class="mt-2 mb-0"><a href="/item/{{ item.assetid }}">{{ item.title|raw }}</a></p>
 												<p class="mt-0 mb-0">by {% if not item.uuid %}{{ "test" }}{% else %}<a href="/user/{{ item.uuid }}">{{ item.author }}</a>{% endif %}</p>
@@ -681,8 +653,8 @@
 									<div class="col-md-4 mb-4 pr-3 {{ (item.equipped) ? 'equipped' : 'unequipped' }}" id="{{ item.assetid }}">
 										<div class="card">
 											<div class="card-body">
-												<div class="d-flex justify-content-center">
-													<img src="{{ (item.visibility != 'n') ? '/s/img/spinnerv2.gif' : item.thumbnail }}" style="width: 50%; height: auto;">
+												<div class="d-flex justify-content-center align-items-center item-thumb">
+													<img src="{{ (item.visibility != 'n') ? '/s/img/spinnerv2.gif' : item.thumbnail }}" style="max-width: 100%; max-height: 100%;">
 												</div>
 												<p class="mt-2 mb-0"><a href="/item/{{ item.assetid }}">{{ item.title|raw }}</a></p>
 												<p class="mt-0 mb-0">by {% if not item.uuid %}{{ "test" }}{% else %}<a href="/user/{{ item.uuid }}">{{ item.author }}</a>{% endif %}</p>
@@ -704,8 +676,8 @@
 									<div class="col-md-4 mb-4 pr-3 {{ (item.equipped) ? 'equipped' : 'unequipped' }}" id="{{ item.assetid }}">
 										<div class="card">
 											<div class="card-body">
-												<div class="d-flex justify-content-center">
-													<img src="{{ (item.visibility != 'n') ? '/s/img/spinnerv2.gif' : item.thumbnail }}" style="width: 50%; height: auto;">
+												<div class="d-flex justify-content-center align-items-center item-thumb">
+													<img src="{{ (item.visibility != 'n') ? '/s/img/spinnerv2.gif' : item.thumbnail }}" style="max-width: 100%; max-height: 100%;">
 												</div>
 												<p class="mt-2 mb-0"><a href="/item/{{ item.assetid }}">{{ item.title|raw }}</a></p>
 												<p class="mt-0 mb-0">by {% if not item.uuid %}{{ "test" }}{% else %}<a href="/user/{{ item.uuid }}">{{ item.author }}</a>{% endif %}</p>
@@ -727,8 +699,8 @@
 										<div class="col-md-4 mb-4 pr-3 {{ (item.equipped) ? 'equipped' : 'unequipped' }}" id="{{ item.assetid }}">
 											<div class="card">
 												<div class="card-body">
-													<div class="d-flex justify-content-center">
-														<img src="{{ (item.visibility != 'n') ? '/s/img/spinnerv2.gif' : item.thumbnail }}" style="width: 50%; height: auto;">
+													<div class="d-flex justify-content-center align-items-center item-thumb">
+														<img src="{{ (item.visibility != 'n') ? '/s/img/spinnerv2.gif' : item.thumbnail }}" style="max-width: 100%; max-height: 100%;">
 													</div>
 													<p class="mt-2 mb-0"><a href="/item/{{ item.assetid }}">{{ item.title|raw }}</a></p>
 													<p class="mt-0 mb-0">by {% if not item.uuid %}{{ "test" }}{% else %}<a href="/user/{{ item.uuid }}">{{ item.author }}</a>{% endif %}</p>
@@ -750,8 +722,8 @@
 										<div class="col-md-4 mb-4 pr-3 {{ (item.equipped) ? 'equipped' : 'unequipped' }}" id="{{ item.assetid }}">
 											<div class="card">
 												<div class="card-body">
-													<div class="d-flex justify-content-center">
-														<img src="{{ (item.visibility != 'n') ? '/s/img/spinnerv2.gif' : item.thumbnail }}" style="width: 50%; height: auto;">
+													<div class="d-flex justify-content-center align-items-center item-thumb">
+														<img src="{{ (item.visibility != 'n') ? '/s/img/spinnerv2.gif' : item.thumbnail }}" style="max-width: 100%; max-height: 100%;">
 													</div>
 													<p class="mt-2 mb-0"><a href="/item/{{ item.assetid }}">{{ item.title|raw }}</a></p>
 													<p class="mt-0 mb-0">by {% if not item.uuid %}{{ "test" }}{% else %}<a href="/user/{{ item.uuid }}">{{ item.author }}</a>{% endif %}</p>
@@ -773,8 +745,8 @@
 										<div class="col-md-4 mb-4 pr-3 {{ (item.equipped) ? 'equipped' : 'unequipped' }}" id="{{ item.assetid }}">
 											<div class="card">
 												<div class="card-body">
-													<div class="d-flex justify-content-center">
-														<img src="{{ (item.visibility != 'n') ? '/s/img/spinnerv2.gif' : item.thumbnail }}" style="width: 50%; height: auto;">
+													<div class="d-flex justify-content-center align-items-center item-thumb">
+														<img src="{{ (item.visibility != 'n') ? '/s/img/spinnerv2.gif' : item.thumbnail }}" style="max-width: 100%; max-height: 100%;">
 													</div>
 													<p class="mt-2 mb-0"><a href="/item/{{ item.assetid }}">{{ item.title|raw }}</a></p>
 													<p class="mt-0 mb-0">by {% if not item.uuid %}{{ "test" }}{% else %}<a href="/user/{{ item.uuid }}">{{ item.author }}</a>{% endif %}</p>
@@ -790,55 +762,176 @@
 								</div>
                             </div>
                             <div class="tab-pane" id="heads">
-                              <p>heads</p>
+                                <div class="{{ (data.purchases|filter(p => p.asset_type == 17)|length) ? 'row' : '' }}">
+                                                                {% for item in data.purchases %}
+                                                                        {% if item.asset_type == 17 %}
+                                                                                <div class="col-md-4 mb-4 pr-3 {{ (item.equipped) ? 'equipped' : 'unequipped' }}" id="{{ item.assetid }}">
+                                                                                        <div class="card">
+                                                                                                <div class="card-body">
+                                                                                                        <div class="d-flex justify-content-center align-items-center item-thumb">
+                                                                                                                <img src="{{ (item.visibility != 'n') ? '/s/img/spinnerv2.gif' : item.thumbnail }}" style="max-width: 100%; max-height: 100%;">
+                                                                                                        </div>
+                                                                                                        <p class="mt-2 mb-0"><a href="/item/{{ item.assetid }}">{{ item.title|raw }}</a></p>
+                                                                                                        <p class="mt-0 mb-0">by {% if not item.uuid %}{{ "test" }}{% else %}<a href="/user/{{ item.uuid }}">{{ item.author }}</a>{% endif %}</p>
+                                                                                                        <button class="btn btn-{{ (item.equipped) ? 'danger' : 'primary' }} full-width mt-2" onclick=";wear('{{ item.assetid }}', 'head-asset');">{{ (item.equipped) ? 'unequip' : 'equip' }}</button>
+                                                                                                </div>
+                                                                                        </div>
+                                                                                </div>
+                                                                        {% endif %}
+                                                                {% endfor %}
+                                                                {% if not data.purchases|filter(p => p.asset_type == 17)|length %}
+                                                                        <p>No results</p>
+                                                                {% endif %}
+                                                                </div>
                             </div>
                             <div class="tab-pane" id="packages">
-                              <p>packages</p>
+                                <div class="{{ (data.purchases|filter(p => p.asset_type == 32)|length) ? 'row' : '' }}">
+                                                                {% for item in data.purchases %}
+                                                                        {% if item.asset_type == 32 %}
+                                                                                <div class="col-md-4 mb-4 pr-3 {{ (item.equipped) ? 'equipped' : 'unequipped' }}" id="{{ item.assetid }}">
+                                                                                        <div class="card">
+                                                                                                <div class="card-body">
+                                                                                                        <div class="d-flex justify-content-center align-items-center item-thumb">
+                                                                                                                <img src="{{ (item.visibility != 'n') ? '/s/img/spinnerv2.gif' : item.thumbnail }}" style="max-width: 100%; max-height: 100%;">
+                                                                                                        </div>
+                                                                                                        <p class="mt-2 mb-0"><a href="/item/{{ item.assetid }}">{{ item.title|raw }}</a></p>
+                                                                                                        <p class="mt-0 mb-0">by {% if not item.uuid %}{{ "test" }}{% else %}<a href="/user/{{ item.uuid }}">{{ item.author }}</a>{% endif %}</p>
+                                                                                                        <button class="btn btn-{{ (item.equipped) ? 'danger' : 'primary' }} full-width mt-2" onclick=";wear('{{ item.assetid }}', 'package');">{{ (item.equipped) ? 'unequip' : 'equip' }}</button>
+                                                                                                </div>
+                                                                                        </div>
+                                                                                </div>
+                                                                        {% endif %}
+                                                                {% endfor %}
+                                                                {% if not data.purchases|filter(p => p.asset_type == 32)|length %}
+                                                                        <p>No results</p>
+                                                                {% endif %}
+                                                                </div>
                             </div>
-                            <div class="tab-pane" id="animations">
-                              <p class="mb-3">Movement animations your character uses in game. Takes effect the next time you spawn.</p>
-                              <div class="row">
-                                {% for key, pack in data.animationPacks %}
-                                  <div class="col-md-6 mb-4 anim-pack" data-pack="{{ key }}">
+                            <div class="tab-pane" id="outfits">
+                              <div class="input-group mb-3">
+                                <input type="text" id="outfit-name" class="form-control" maxlength="50" placeholder="Outfit name">
+                                <div class="input-group-append">
+                                  <button class="btn btn-success" id="outfit-create" onclick="createOutfit();">save current outfit</button>
+                                </div>
+                              </div>
+                              <p class="text-center" id="outfits-empty" {{ data.outfits|length ? 'style="display:none;"' : '' }}>There is nothing here.</p>
+                              <div class="row" id="outfits-list">
+                                {% for outfit in data.outfits %}
+                                  <div class="col-md-4 mb-4 outfit" data-outfit="{{ outfit.id }}">
                                     <div class="card">
                                       <div class="card-body">
-                                        <h5 class="mb-1">{{ pack.label }}</h5>
-                                        <p class="mb-0 text-muted">{{ pack.description }}</p>
-                                        <button class="btn btn-{{ data.animationPack == key ? 'success' : 'primary' }} full-width mt-2" onclick="setAnimations('{{ key }}');" {{ data.animationPack == key ? 'disabled' : '' }}>{{ data.animationPack == key ? 'selected' : 'use' }}</button>
+                                        <div class="outfit-thumbnail d-flex justify-content-center align-items-center mb-2" style="height:190px;">
+                                          <img class="outfit-preview-image" src="/s/img/spinnerv2.gif" alt="Outfit preview" style="max-width:100%;max-height:100%;object-fit:contain;">
+                                        </div>
+                                        <p class="mb-2 text-truncate" title="{{ outfit.name }}">{{ outfit.name }}</p>
+                                        <button class="btn btn-primary full-width" onclick="outfitAction('outfit-wear', {{ outfit.id }}, this);">wear</button>
+                                        <button class="btn btn-danger full-width mt-2" onclick="outfitAction('outfit-delete', {{ outfit.id }}, this);">delete</button>
                                       </div>
                                     </div>
                                   </div>
                                 {% endfor %}
                               </div>
                               <script>
-                                function setAnimations(pack) {
+                                function outfitRequest(fields) {
                                   const formData = new FormData();
-                                  formData.append('type', 'animations');
-                                  formData.append('pack', pack);
+                                  for (const k in fields) formData.append(k, fields[k]);
                                   formData.append('_token', '{{ data.csrf_token }}');
+                                  return fetch("/api/character", { method: 'POST', body: formData }).then(r => r.json());
+                                }
 
-                                  document.querySelectorAll('.anim-pack button').forEach(b => b.disabled = true);
+                                function outfitCard(id, name) {
+                                  const col = document.createElement('div');
+                                  col.className = 'col-md-4 mb-4 outfit';
+                                  col.dataset.outfit = id;
+                                  col.innerHTML = '<div class="card"><div class="card-body">'
+                                    + '<div class="outfit-thumbnail d-flex justify-content-center align-items-center mb-2" style="height:190px;">'
+                                    + '<img class="outfit-preview-image" src="/s/img/spinnerv2.gif" alt="Outfit preview" style="max-width:100%;max-height:100%;object-fit:contain;"></div>'
+                                    + '<p class="mb-2 text-truncate"></p>'
+                                    + '<button class="btn btn-primary full-width">wear</button>'
+                                    + '<button class="btn btn-danger full-width mt-2">delete</button></div></div>';
+                                  const label = col.querySelector('p');
+                                  label.textContent = name; label.title = name;
+                                  const [wearBtn, deleteBtn] = col.querySelectorAll('button');
+                                  wearBtn.onclick = () => outfitAction('outfit-wear', id, wearBtn);
+                                  deleteBtn.onclick = () => outfitAction('outfit-delete', id, deleteBtn);
+                                  return col;
+                                }
 
-                                  fetch("/api/character", { method: 'POST', body: formData })
-                                    .then(response => response.json())
+                                function outfitPreviewError(card) {
+                                  card.dataset.previewState = 'error';
+                                  const container = card.querySelector('.outfit-thumbnail');
+                                  if (container) {
+                                    container.textContent = 'Preview unavailable';
+                                    container.classList.add('text-muted');
+                                  }
+                                }
+
+                                async function loadOutfitPreview(card) {
+                                  if (!card || card.dataset.previewState) return;
+                                  card.dataset.previewState = 'loading';
+                                  try {
+                                    const response = await outfitRequest({ type: 'outfit-preview', id: card.dataset.outfit });
+                                    if (response.code != 200 || !response.image) throw new Error(response.message || 'Render unavailable');
+                                    const image = card.querySelector('.outfit-preview-image');
+                                    if (!image) return;
+                                    image.onerror = () => outfitPreviewError(card);
+                                    image.onload = () => { card.dataset.previewState = 'done'; };
+                                    image.src = response.image;
+                                  } catch (error) {
+                                    outfitPreviewError(card);
+                                  }
+                                }
+
+                                let outfitPreviewsLoading = false;
+                                async function loadOutfitPreviews() {
+                                  if (outfitPreviewsLoading) return;
+                                  outfitPreviewsLoading = true;
+                                  try {
+                                    // One RCC job at a time to avoid flooding the render service.
+                                    for (const card of document.querySelectorAll('#outfits-list .outfit')) {
+                                      if (card.isConnected) await loadOutfitPreview(card);
+                                    }
+                                  } finally {
+                                    outfitPreviewsLoading = false;
+                                  }
+                                }
+
+                                function createOutfit() {
+                                  const input = document.getElementById('outfit-name');
+                                  const btn = document.getElementById('outfit-create');
+                                  const name = input.value.trim();
+                                  if (!name) { input.focus(); return; }
+                                  btn.disabled = true;
+                                  outfitRequest({ type: 'outfit-create', name: name })
                                     .then(response => {
-                                      if (response.code != 200) {
-                                        alert(response.message);
-                                      }
-                                      const selected = response.code == 200 ? pack : null;
-                                      document.querySelectorAll('.anim-pack').forEach(el => {
-                                        const btn = el.querySelector('button');
-                                        const isSelected = selected ? el.dataset.pack === selected : btn.innerHTML === 'selected';
-                                        btn.disabled = isSelected;
-                                        btn.classList.toggle('btn-success', isSelected);
-                                        btn.classList.toggle('btn-primary', !isSelected);
-                                        btn.innerHTML = isSelected ? 'selected' : 'use';
-                                      });
+                                      btn.disabled = false;
+                                      if (response.code != 200) { alert(response.message); return; }
+                                      const card = outfitCard(response.id, response.name);
+                                      document.getElementById('outfits-list').prepend(card);
+                                      loadOutfitPreview(card);
+                                      document.getElementById('outfits-empty').style.display = 'none';
+                                      input.value = '';
                                     })
-                                    .catch(() => {
-                                      alert('Something went wrong, try again.');
-                                      document.querySelectorAll('.anim-pack button').forEach(b => b.disabled = b.innerHTML === 'selected');
-                                    });
+                                    .catch(() => { btn.disabled = false; alert('Something went wrong, try again.'); });
+                                }
+
+                                function outfitAction(type, id, btn) {
+                                  if (type === 'outfit-delete' && !confirm('Delete this outfit?')) return;
+                                  btn.disabled = true;
+                                  if (type === 'outfit-wear') avatarimg.src = '/s/img/spinnerv2.gif';
+                                  outfitRequest({ type: type, id: id })
+                                    .then(response => {
+                                      btn.disabled = false;
+                                      if (response.code != 200) { alert(response.message); return; }
+                                      if (type === 'outfit-delete') {
+                                        document.querySelector('[data-outfit="' + id + '"]').remove();
+                                        if (!document.querySelector('.outfit')) document.getElementById('outfits-empty').style.display = '';
+                                        return;
+                                      }
+                                      // the items and colours changed: reload so every tab shows what's worn now
+                                      location.reload();
+                                    })
+                                    .catch(() => { btn.disabled = false; alert('Something went wrong, try again.'); });
                                 }
                               </script>
                             </div>
@@ -848,6 +941,22 @@
              </div>
          </div>
       </div>
+      <script>
+        // the search box filters the item tabs (not Body Colors or Outfits)
+        function filterItems() {
+          const q = document.getElementById('item-search').value.trim().toLowerCase();
+          document.querySelectorAll('.tab-pane.active .equipped, .tab-pane.active .unequipped').forEach(el => {
+            el.style.display = !q || el.textContent.toLowerCase().includes(q) ? '' : 'none';
+          });
+        }
+        $('a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
+          const tab = $(e.target).attr('href');
+          $('#item-search-row').toggle(tab !== '#bodycolors' && tab !== '#outfits');
+           if (tab === '#outfits') loadOutfitPreviews();
+          document.getElementById('item-search').value = '';
+          document.querySelectorAll('.equipped, .unequipped').forEach(el => el.style.display = '');
+        });
+      </script>
       {% include ('v2/Modules/footer.twig') %}
   </body>
 </html>

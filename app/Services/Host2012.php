@@ -10,16 +10,18 @@ use Illuminate\Support\Facades\Http;
      - 2012 game servers: there's no 2012 RCC, so tools/gameserver2012/host2012.ps1 (on the game server
        machine) starts the 2012 client with -script <GameServer2012.ashx URL> and ends it again
      - the script URL carries a one-time token instead of the access key (Client\GameServer2012Controller)
+     - the machine to talk to comes from the server's node (App\Services\GameNodes); $controlUrl is that
+       node's control_url, or null to fall back to the single FINOBE_HOST2012_URL
 */
 class Host2012
 {
-    public static function configured(): bool
+    public static function configured(?string $controlUrl = null): bool
     {
-        return config('finobe.host2012.url') !== '';
+        return self::base($controlUrl) !== '';
     }
 
     /** Asks host2012 to start a server for this job. Throws on failure. */
-    public static function start(string $jobId): void
+    public static function start(string $jobId, ?string $controlUrl = null): void
     {
         $token = bin2hex(random_bytes(24));
         Cache::put("gameserver2012_{$token}", $jobId, 600);
@@ -28,18 +30,23 @@ class Host2012
         // http: the 2012 client's old libcurl/OpenSSL can't be relied on for modern TLS
         $scriptUrl = "http://assetgame.{$domain}/game/gameserver2012.ashx?token={$token}";
 
-        $r = self::client()->post(config('finobe.host2012.url') . '/start', ['jobId' => $jobId, 'scriptUrl' => $scriptUrl]);
+        $r = self::client()->post(self::base($controlUrl) . '/start', ['jobId' => $jobId, 'scriptUrl' => $scriptUrl]);
         if (!$r->successful()) {
             throw new \RuntimeException("host2012 /start answered {$r->status()}: " . substr($r->body(), 0, 200));
         }
     }
 
     /** Ends the server process for this job (no error if it's already gone). */
-    public static function stop(string $jobId): void
+    public static function stop(string $jobId, ?string $controlUrl = null): void
     {
-        if (self::configured()) {
-            self::client()->post(config('finobe.host2012.url') . '/stop', ['jobId' => $jobId]);
+        if (self::configured($controlUrl)) {
+            self::client()->post(self::base($controlUrl) . '/stop', ['jobId' => $jobId]);
         }
+    }
+
+    private static function base(?string $controlUrl): string
+    {
+        return rtrim((string) ($controlUrl ?: config('finobe.host2012.url')), '/');
     }
 
     private static function client()

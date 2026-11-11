@@ -1,0 +1,17 @@
+{
+  "capture": "https://web.archive.org/web/20210125203354/https://blog.finobe.com/",
+  "generator": "Ghost 3.40",
+  "assets": {
+    "cover.jpg": "9f68a0b9ab9168521b3d79249b6cbf930c8273c13cfea1ac9145e3df64688dba",
+    "screen.css": "3590fc7afcb236fe36f17acdba1440524e9341b4c7c7093247895e0f84852ebb",
+    "favicon.png": "a7d175c241316746da3808c5720cfa5b5fdc6832e00624f500f1a17f6cbc295f",
+    "logo.png": "612d0142808eb4d14fb4bed866956719ef1332c3904ffe6147b927a631f2dd4e",
+    "casper.js": "d288855742e82e5cbe6fb8d3079b7a5387be0f810b8d63a4a7348648ef2c224f"
+  },
+  "changes": [
+    "Patched content and URL slots to local Laravel data.",
+    "Original Casper CSS and built JavaScript retained.",
+    "Original analytics and inactive subscription initialization omitted.",
+    "Original historical articles are not seeded as new site content."
+  ]
+}

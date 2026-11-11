@@ -6,40 +6,35 @@
     <div id="app">
       {% include ('v2/Modules/nav.twig') %}
       <div class="container mt-4">
-        <h3>Admin Panel</h3>
-        {% set tools = [
-          {url: '/admin/users', label: 'Manage users', icon: 'users', color: 'primary'},
-          {url: '/admin/createxml', label: 'Create item', icon: 'plus-square', color: 'success'},
-          {url: '/admin/rbxcreatexml', label: 'Import Roblox item', icon: 'download', color: 'success'},
-          {url: '/admin/assets', label: 'Asset approval', icon: 'check-square', color: 'success'},
-          {url: '/admin/bans', label: 'Bans', icon: 'ban', color: 'danger'},
-          {url: '/admin/warn', label: 'Give warning', icon: 'exclamation-triangle', color: 'warning'},
-          {url: '/admin/prune-posts', label: 'Prune forum posts', icon: 'trash', color: 'danger'},
-          {url: '/admin/give_dius', label: 'Give Dius', icon: 'dollar-sign', color: 'warning'},
-          {url: '/admin/give_badges', label: 'Give badges', icon: 'award', color: 'success'},
-          {url: '/admin/announcements', label: 'Site announcements', icon: 'bullhorn', color: 'warning'},
-          {url: '/admin/servers', label: 'Game servers', icon: 'server', color: 'primary'},
-          {url: '/admin/changeversions', label: 'Client deployer', icon: 'desktop', color: 'primary'},
-          {url: '/admin/blog', label: 'Blog management', icon: 'newspaper', color: 'primary'},
-          {url: '/admin/elections', label: 'Elections', icon: 'vote-yea', color: 'primary'},
-          {url: '/admin/decider', label: 'Oui/Non Decider', icon: 'question', color: 'warning'}
-        ] %}
-        <div class="catalog_container mt-4">
-          <div class="row">
-            {% for tool in tools %}
-              <div class="col-6 col-md-4 col-lg-2 mb-3">
-                <a class="catalog-card" href="{{ tool.url }}">
-                  <div class="card h-100 text-center">
-                    <div class="card-body">
-                      <i class="fas fa-fw fa-{{ tool.icon }} fa-3x text-{{ tool.color }} mb-3" aria-hidden="true"></i>
-                      <p class="mb-0 text-{{ tool.color }}">{{ tool.label }}</p>
-                    </div>
-                  </div>
-                </a>
-              </div>
-            {% endfor %}
-          </div>
+        <h3 class="font-weight-light">Admin Panel</h3>
+        <div class="row mt-4 admin-tiles">
+          {% for tool in data.tools %}
+            <div class="col-6 col-md-3 col-lg-2 mb-4">
+              <a href="{{ tool.url }}" class="card admin-tile text-center h-100" title="{{ tool.label }}">
+                <div class="card-body px-2 py-4">
+                  {% if tool.image %}
+                    <img src="{{ tool.image }}" alt="" class="admin-tile-icon mb-3">
+                  {% else %}
+                    <i class="far fa-fw fa-{{ tool.icon }} fa-3x mb-3" aria-hidden="true"></i>
+                  {% endif %}
+                  <p class="mb-0 text-truncate">{{ tool.label }}</p>
+                </div>
+              </a>
+            </div>
+          {% endfor %}
         </div>
+        <div class="mt-5 mb-4">
+          {% for link in data.links %}
+            <p class="mb-3">- <a href="{{ link.url }}">{{ link.label }}</a></p>
+          {% endfor %}
+        </div>
+        <style>
+          .admin-tile { color: inherit; border: 0; border-radius: 0; }
+          .admin-tile:hover { color: inherit; text-decoration: none; filter: brightness(1.15); }
+          .admin-tile .fa-3x { font-size: 2.6em; }
+          .admin-tile p { white-space: nowrap !important; overflow: hidden; text-overflow: ellipsis; }
+          .admin-tile-icon { height: 2.6em; width: auto; }
+        </style>
       </div>
     </div>
     {% include ('v2/Modules/footer.twig') %}

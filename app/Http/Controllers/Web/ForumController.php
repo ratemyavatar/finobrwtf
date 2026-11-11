@@ -311,9 +311,10 @@ class ForumController extends Controller
         $post['date'] = date('m/d/Y h:i A', strtotime($post['date']));
         $post['edited_date'] = date('m/d/Y h:i A', strtotime($post['edited_date']));
 
-        $user = User::where('username', $post['author'])->select('id', 'status', 'pfp', 'lastlogin', 'badges')->first()?->toArray();
+        $user = User::where('username', $post['author'])->select(array_merge(['id', 'status', 'pfp', 'lastlogin', 'badges'], User::hasGender() ? ['gender'] : []))->first()?->toArray();
         $post['uuid'] = $user['id'];
         $post['status'] = $user['status'];
+        $post['gender'] = $user['gender'] ?? null;
         $post['pfp'] = $user['pfp'];
         $post['posts'] = Thread::where('author', $post['author'])->count() + Thread::where('author', $post['author'])->count();
         $post['badges'] = $user['badges']['data']['custom_badges'] ?? [];
@@ -330,6 +331,7 @@ class ForumController extends Controller
             $converter = new MarkdownConverter($environment);
 
             $post['title'] = preg_replace_callback('/\b(' . implode('|', array_map('preg_quote', $phrasesToReplace)) . ')\b/i', fn() => $replacements[array_rand($replacements)], $post['title']);
+            $post['comment'] = \App\Services\CurseFilter::forViewer($post['comment']);
             $post['comment'] = preg_replace_callback('/\b(' . implode('|', array_map('preg_quote', $phrasesToReplace)) . ')\b/i', fn() => $replacements[array_rand($replacements)], $post['comment']);
 
             if($post['status'] != "admin") {
@@ -350,6 +352,8 @@ class ForumController extends Controller
             }, $post['comment']);
         } else {
             $post['title'] = preg_replace_callback('/\b(' . implode('|', array_map('preg_quote', $phrasesToReplace)) . ')\b/i', fn() => $replacements[array_rand($replacements)], $post['title']);
+
+            $post['comment'] = \App\Services\CurseFilter::forViewer($post['comment']);
 
             $post['comment'] = preg_replace_callback('/\b(' . implode('|', array_map('preg_quote', $phrasesToReplace)) . ')\b/i', fn() => $replacements[array_rand($replacements)], $post['comment']);
 
@@ -384,12 +388,14 @@ class ForumController extends Controller
             $sticked['date'] = date('m/d/Y h:i A', strtotime($sticked['date']));
             $sticked['edited_date'] = date('m/d/Y h:i A', strtotime($sticked['edited_date']));
 
-            $user = User::where('username', $sticked['author'])->select('id', 'status', 'pfp', 'lastlogin', 'badges')->first()?->toArray();
+            $user = User::where('username', $sticked['author'])->select(array_merge(['id', 'status', 'pfp', 'lastlogin', 'badges'], User::hasGender() ? ['gender'] : []))->first()?->toArray();
             $sticked['uuid'] = $user['id'];
             $sticked['status'] = $user['status'];
+            $sticked['gender'] = $user['gender'] ?? null;
             $sticked['pfp'] = $user['pfp'];
             $sticked['posts'] = Thread::where('author', $sticked['author'])->count() + Reply::where('author', $sticked['author'])->count();
             $sticked['badges'] = $user['badges']['data']['custom_badges'] ?? [];
+            $sticked['comment'] = \App\Services\CurseFilter::forViewer($sticked['comment']);
             $sticked['comment'] = preg_replace_callback('/\b(' . implode('|', array_map('preg_quote', $phrasesToReplace)) . ')\b/i', fn() => $replacements[array_rand($replacements)], $sticked['comment']);
 
             $environment = new Environment([
@@ -476,12 +482,14 @@ class ForumController extends Controller
             $reply['date'] = date('m/d/Y h:i A', strtotime($reply['date']));
             $reply['edited_date'] = date('m/d/Y h:i A', strtotime($reply['edited_date']));
 
-            $user = User::where('username', $reply['author'])->select('id', 'status', 'pfp', 'lastlogin', 'badges')->first()?->toArray();
+            $user = User::where('username', $reply['author'])->select(array_merge(['id', 'status', 'pfp', 'lastlogin', 'badges'], User::hasGender() ? ['gender'] : []))->first()?->toArray();
             $reply['uuid'] = $user['id'];
             $reply['status'] = $user['status'];
+            $reply['gender'] = $user['gender'] ?? null;
             $reply['pfp'] = $user['pfp'];
             $reply['posts'] = Thread::where('author', $reply['author'])->count() + Reply::where('author', $reply['author'])->count();
             $reply['badges'] = $user['badges']['data']['custom_badges'] ?? [];
+            $reply['comment'] = \App\Services\CurseFilter::forViewer($reply['comment']);
             $reply['comment'] = preg_replace_callback('/\b(' . implode('|', array_map('preg_quote', $phrasesToReplace)) . ')\b/i', fn() => $replacements[array_rand($replacements)], $reply['comment']);
 
             $environment = new Environment([
@@ -555,6 +563,11 @@ class ForumController extends Controller
             return redirect('/forum/home');
         }
 
+        if($restricted = \App\Services\Restrictions::message((int) $this->request['data']['user']['id'], 'forum')) {
+            Session::put('error', $restricted);
+            return redirect('/forum/home');
+        }
+
         if(!Thread::find($data['id'])) {
             Session::put('error', 'This post does not exist');
             return redirect('/forum/home');
@@ -575,7 +588,7 @@ class ForumController extends Controller
                 return redirect('/forum/home');
             }
 
-            if(Carbon::parse($this->request['data']['user']['post_cooldown'])->gt(Carbon::now()->subMinutes(5))) {
+            if(($cooldown = $this->request['data']['user']['post_cooldown'] ?? null) && Carbon::parse($cooldown)->gt(Carbon::now()->subMinutes(5))) {
                 Session::put('error', 'You are posting too often');
                 return redirect('/forum/post?id=' . $data['id']);
             }
@@ -832,6 +845,11 @@ class ForumController extends Controller
         }
 
         if($request->isMethod('post')) {
+            if($restricted = \App\Services\Restrictions::message((int) $this->request['data']['user']['id'], 'forum')) {
+                Session::put('error', $restricted);
+                return redirect('/forum/home');
+            }
+
             if($request->hasFile('file')) {
                 if($this->request['data']['user']['status'] != 'admin') {
                     return redirect('/app/forum/new/post');
@@ -874,7 +892,7 @@ class ForumController extends Controller
                     return redirect('/app/forum/new/post');
                 }
 
-                if(Carbon::parse($this->request['data']['user']['post_cooldown'])->gt(Carbon::now()->subMinutes(5))) {
+                if(($cooldown = $this->request['data']['user']['post_cooldown'] ?? null) && Carbon::parse($cooldown)->gt(Carbon::now()->subMinutes(5))) {
                     Session::put('error', 'You are posting too often');
                     return redirect('/app/forum/new/post');
                 }

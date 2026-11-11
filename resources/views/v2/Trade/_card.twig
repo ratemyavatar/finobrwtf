@@ -1,0 +1,14 @@
+{# one item copy in a trade: title, thumbnail, Limited or Unique #serial #}
+<div class="card trade-item{{ selectable ? ' trade-pick' : '' }}"{% if selectable %} data-id="{{ item.id }}" data-value="{{ item.value }}" data-side="{{ side }}" role="button" tabindex="0"{% endif %}>
+  <div class="card-body text-center px-2 py-3">
+    <a href="/item/{{ item.assetid }}" class="d-block text-truncate" title="{{ item.title }}"{% if selectable %} onclick="event.stopPropagation();" target="_blank"{% endif %}>{{ item.title }}</a>
+    <img src="{{ item.thumbnail }}" alt="{{ item.title }}" class="trade-item-thumb my-2">
+    <div>
+      {% if item.kind == 'unique' %}
+        <span class="badge badge-warning">Unique</span> <span class="badge badge-info">{{ item.serial }}</span>
+      {% else %}
+        <span class="badge badge-success">Limited</span>
+      {% endif %}
+    </div>
+  </div>
+</div>

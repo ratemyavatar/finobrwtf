@@ -1,0 +1,109 @@
+<html>
+  <head>
+    {% include ('v2/Modules/head.twig') %}
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  </head>
+  <body>
+    <div id="app">
+      {% include ('v2/Modules/nav.twig') %}
+      <div class="container mt-4">
+                <div class="row">
+                    <div class="col-lg-2 mb-2">
+                        {% include ('v2/Settings/Menu.twig') with {active: 'security'} %}
+                    </div>
+                    <div class="col-lg-10 mb-2">
+                        {% set s = data.security %}
+                        <h4 style="font-weight: 300;">Two-Factor Authentication</h4>
+                        {% if s.enabled %}
+                            <div class="row">
+                                <div class="col-md-6 mb-2"><button type="button" class="btn btn-warning full-width" onclick="showTfForm('2fa-disable', 'disable 2fa');">disable 2fa</button></div>
+                                <div class="col-md-6 mb-2"><button type="button" class="btn btn-outline-primary full-width" onclick="showTfForm('2fa-backup', 'regenerate backup codes');">regenerate backup codes</button></div>
+                            </div>
+                            <p class="text-muted mb-2">{{ s.backupLeft }} backup code{{ s.backupLeft == 1 ? '' : 's' }} left.</p>
+                            <form method="POST" action="/app/security" id="tf-form" class="mb-2" style="display: none;">
+                                <input type="hidden" name="_token" value="{{ data.csrf_token }}">
+                                <input type="hidden" name="action" id="tf-action">
+                                <div class="form-row">
+                                    <div class="col-md-5 mb-2"><input type="password" name="password" class="form-control" placeholder="Password" required autocomplete="current-password"></div>
+                                    <div class="col-md-4 mb-2"><input type="text" name="code" class="form-control" placeholder="Code from your app" required autocomplete="one-time-code" inputmode="numeric"></div>
+                                    <div class="col-md-3 mb-2"><button type="submit" class="btn btn-primary full-width" id="tf-submit"></button></div>
+                                </div>
+                            </form>
+                        {% elseif s.pending %}
+                            <div class="card mb-2">
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-3 mb-2"><div id="tf-qr" style="background: #fff; padding: 8px; display: inline-block;"></div></div>
+                                        <div class="col-md-9">
+                                            <p class="mb-1">Scan this with an authenticator app (Google Authenticator, Authy, ...), or type in this key:</p>
+                                            <p><code style="font-size: 1.1em;">{{ s.pending.secret }}</code></p>
+                                            <form method="POST" action="/app/security" class="form-inline">
+                                                <input type="hidden" name="_token" value="{{ data.csrf_token }}">
+                                                <input type="hidden" name="action" value="2fa-confirm">
+                                                <input type="text" name="code" class="form-control mr-2 mb-2" placeholder="6-digit code" required autocomplete="one-time-code" inputmode="numeric" maxlength="7">
+                                                <button type="submit" class="btn btn-success mb-2">turn on</button>
+                                            </form>
+                                            <form method="POST" action="/app/security">
+                                                <input type="hidden" name="_token" value="{{ data.csrf_token }}">
+                                                <input type="hidden" name="action" value="2fa-cancel">
+                                                <button type="submit" class="btn btn-link p-0">cancel</button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <script>new QRCode(document.getElementById('tf-qr'), { text: {{ s.pending.url|json_encode|raw }}, width: 160, height: 160 });</script>
+                        {% else %}
+                            <form method="POST" action="/app/security" class="mb-2">
+                                <input type="hidden" name="_token" value="{{ data.csrf_token }}">
+                                <input type="hidden" name="action" value="2fa-start">
+                                <button type="submit" class="btn btn-success full-width">enable 2fa</button>
+                            </form>
+                        {% endif %}
+
+                        <h4 style="font-weight: 300;" class="mt-2">Curse Filter</h4>
+                        <form method="POST" action="/app/security" class="mb-2">
+                            <input type="hidden" name="_token" value="{{ data.csrf_token }}">
+                            <input type="hidden" name="action" value="curse-filter">
+                            {% if s.curseFilter %}
+                                <button type="submit" class="btn btn-secondary full-width">I'm a big kid now, show me the bad words</button>
+                            {% else %}
+                                <button type="submit" class="btn btn-success full-width">My mom yelled at me so pls dont show me any more bad words :((</button>
+                            {% endif %}
+                        </form>
+
+                        <h4 style="font-weight: 300;" class="mt-2">Restrictions</h4>
+                        <div class="row no-gutters">
+                            {% for type, r in s.restrictions %}
+                                <div class="col-6 col-md-3 pr-1 mb-1"><button type="button" class="btn btn-{{ r.message ? 'danger' : 'success' }} full-width" onclick="showRestriction('r-{{ type }}');">{{ r.label }} Restriction</button></div>
+                            {% endfor %}
+                            <div class="col-6 col-md-3 pr-1 mb-1"><button type="button" class="btn btn-{{ s.otherRestrictions|length ? 'warning' : 'success' }} full-width" onclick="showRestriction('r-other');">Other Restrictions (if there are)</button></div>
+                        </div>
+                        {% for type, r in s.restrictions %}
+                            <div class="restriction-info alert alert-{{ r.message ? 'danger' : 'success' }} mt-2" id="r-{{ type }}" style="display: none;">
+                                <p class="mb-0 text-white">{{ r.message ?: "You're not restricted from " ~ {chat: 'sending messages', forum: 'the forum', play: 'playing games'}[type] ~ '.' }}</p>
+                            </div>
+                        {% endfor %}
+                        <div class="restriction-info alert alert-{{ s.otherRestrictions|length ? 'warning' : 'success' }} mt-2" id="r-other" style="display: none;">
+                            {% for line in s.otherRestrictions %}<p class="mb-0 text-white">{{ line }}</p>{% else %}<p class="mb-0 text-white">There aren't any.</p>{% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+    </div>
+    <script>
+      function showTfForm(action, label) {
+        document.getElementById('tf-action').value = action;
+        document.getElementById('tf-submit').textContent = label;
+        $('#tf-form').show();
+      }
+      function showRestriction(id) {
+        const el = document.getElementById(id);
+        const open = el.style.display !== 'none';
+        $('.restriction-info').hide();
+        if (!open) $(el).show();
+      }
+    </script>
+    {% include ('v2/Modules/footer.twig') %}
+  </body>
+</html>

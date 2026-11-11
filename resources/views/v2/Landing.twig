@@ -1,6 +1,15 @@
 <html>
   <head>
     {% include ('v2/Modules/head.twig') %}
+    {% if data.siteusername %}
+    <style>
+      /* the real logged-in home page (finobe.com, 2020) */
+      .home-main-content {
+        background: linear-gradient(rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.2)), url(/s/img/bannerlate2019-2.jpg) no-repeat center center;
+        background-size: cover;
+      }
+    </style>
+    {% endif %}
   </head>
   <body>
     <div id="app">
@@ -15,24 +24,20 @@
       </div>
       <div class="container mt-4"></div>
       <div class="container mt-4">
-        <div class="row"><div class="col-sm-6 mb-2"><a href="https://discord.gg/wXyJppsNd" class="catalog-card"><div class="card"><div class="card-body"><h3><i class="fab fa-fw fa-discord"></i> Discord</h3> <p class="text-muted mb-0">Join our Discord server and talk to people in our community!</p></div></div></a></div> </div>
+        <div class="row"><div class="col-sm-6 mb-2"><a href="{{ data.social.discord }}" class="catalog-card"><div class="card"><div class="card-body"><h3><i class="fab fa-fw fa-discord"></i> Discord</h3> <p class="text-muted mb-0">Join our Discord server and talk to people in our community!</p></div></div></a></div> </div>
       </div>
       {% else %}
-      <div class="container" style="display:flex;flex-direction:row;margin-top:3%;">
-				<div style="width:75%;">
-					<h1 class="mt-5 home-text">Hi there, {{ data.user.username }}</h1>
-					<p>
-						<a href="/app/places" class="btn btn-success btn-lg mt-3 mr-2">join a game ›</a>
-					</p>
-				</div>
-				<div style="width:25%">
-          {% if data.user.pfp == "" %}
-					<img width="250" height="250" src="/s/img/spinnerv2.gif">
-          {% else %}
-          <img width="250" height="250" src="https://cdn.finobe.wtf/{{ data.user.pfp }}">
-          {% endif %}
-				</div>
-			</div>
+      <div class="container d-flex justify-content-center">
+        <div class="row">
+          <div class="col-md-8 d-flex flex-column justify-content-center">
+            <h1 class="mb-4 home-text">Hi there, {{ data.user.username }}</h1>
+            <p><a href="/app/places" class="btn btn-success btn-lg mt-3 mr-2">Join a game ›</a></p>
+          </div>
+          <div class="col-md-4 d-none d-md-flex flex-column justify-content-center">
+            <img src="{{ avatar_url(data.user.pfp) }}" alt="{{ data.user.username }}" class="img-fluid home-avatar-img">
+          </div>
+        </div>
+      </div>
       {% endif %}
     </div>
     {% if data.siteusername %}
@@ -44,7 +49,13 @@
         <p>No games found.</p>
       {% endif %}
       </div>
-      <div class="container mt-4"><h3 class="mb-2">Quick Links</h3> <div class="row"><div class="col-lg-4 mb-2"><a href="https://discord.gg/wXyJppsNd" class="catalog-card"><div class="card"><div class="card-body"><h3><i class="fab fa-fw fa-discord"></i> Discord</h3> <p class="text-muted mb-0">Join our Discord server and talk to people in our community!</p></div></div></a></div> </div></div>
+      <div class="container mt-4"><h3 class="mb-2">Quick Links</h3>
+        <div class="row">
+          <div class="col-lg-4 mb-2"><a href="{{ data.social.discord }}" class="catalog-card"><div class="card"><div class="card-body"><h3><i class="fab fa-fw fa-discord"></i> Discord</h3> <p class="text-muted mb-0">Join our Discord server and talk to people in our community!</p></div></div></a></div>
+          {% if data.social.youtube %}<div class="col-lg-4 mb-2"><a href="{{ data.social.youtube }}" class="catalog-card"><div class="card"><div class="card-body"><h3><i class="fab fa-fw fa-youtube"></i> YouTube</h3> <p class="text-muted mb-0">Check out some of our videos, which detail some new and upcoming features.</p></div></div></a></div>{% endif %}
+          {% if data.social.twitter %}<div class="col-lg-4 mb-2"><a href="{{ data.social.twitter }}" class="catalog-card"><div class="card"><div class="card-body"><h3><i class="fab fa-fw fa-twitter"></i> Twitter</h3> <p class="text-muted mb-0">We tweet whenever we post a video, and may even hint at some upcoming events on our Twitter.</p></div></div></a></div>{% endif %}
+        </div>
+      </div>
     {% endif %}
     </div>
     {% include ('v2/Modules/footer.twig') %}

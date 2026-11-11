@@ -39,7 +39,7 @@ class ProfileController extends Controller
         $user['places'] = [];
         $joined = strtotime($user['created'] ?? $user['created_at'] ?? '');
         $user['created'] = $joined ? date('m/d/Y h:i:s A', $joined) : 'Unknown';
-        $user['blurb'] = nl2br(str_replace('${myDius}', '<span class="n-money-text text-nowrap"><img src="/s/img/diu_16.png" alt="Diu" title="Diu" class="img-responsive align-middle "> [' . number_format($user['Dius']) . ']</span>', preg_replace('/\b((?:https?|ftp):\/\/\S+)/i', '<a href="$1">$1</a>', strip_tags(htmlspecialchars($user['blurb'])))));
+        $user['blurb'] = nl2br(str_replace('${myDius}', '<span class="n-money-text text-nowrap"><img src="/s/img/diu_16.png" alt="Diu" title="Diu" class="img-responsive align-middle "> [' . number_format($user['Dius']) . ']</span>', preg_replace('/\b((?:https?|ftp):\/\/\S+)/i', '<a href="$1">$1</a>', strip_tags(htmlspecialchars(\App\Services\CurseFilter::forViewer($user['blurb']))))));
         $user['badges'] = $user['badges']['data']['custom_badges'] ?? [];
         $user['CurrentFriends'] = array_reverse(array_filter($user['friends'], fn($friend) => $friend['status'] == 'friends'));
 
@@ -103,6 +103,9 @@ class ProfileController extends Controller
         }
 
         $this->request['data']['profile'] = $user;
+        $this->request['user_profile'] = $user; // The classic profile template uses this alias.
+        $this->request['admin_flair'] = \Illuminate\Support\Facades\Schema::connection('finobe')->hasTable('admin_flair')
+            ? (array) \Illuminate\Support\Facades\DB::connection('finobe')->table('admin_flair')->where('user_id', $user['id'])->first() : [];
         return view($this->request['data']['user']['version'] . '/User', $this->request);
     }
 }

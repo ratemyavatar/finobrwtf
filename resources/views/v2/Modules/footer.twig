@@ -22,7 +22,7 @@
     </div>
     {% endif %}
     <div class="container">
-        <p class="my-0"><b>Copyright © Finobe 2021 - 2025</b> | <b>Lucky number:</b> {{ data.lucky_number }}
+        <p class="my-0"><b>Copyright © Finobe 2026 - 2027</b> | <b>Lucky number:</b> {{ data.lucky_number }}{% if data.server_name %} ({{ data.server_name }}){% endif %}
         </p>
         <div class="d-flex align-items-center mt-1 mb-0">
             <div class="dropdown">
@@ -31,18 +31,31 @@
                     <i class="far fa-globe mr-2"></i> <i class="far fa-chevron-up"></i>
                 </button>
                 <div class="dropdown-menu" aria-labelledby="locale-dropdown">
-                    <a class="dropdown-item locale-change-link active" href="#" data-locale="en">English (US)</a>
-                    <a class="dropdown-item locale-change-link" href="#" data-locale="en-ca">English (Canada)</a>
-                    <a class="dropdown-item locale-change-link" href="#" data-locale="zh-hk">中文(繁體)</a>
-                    <a class="dropdown-item locale-change-link" href="#" data-locale="pt-br">Português (Brasil)</a>
-                    <a class="dropdown-item locale-change-link" href="#" data-locale="es-us">Español (Estados Unidos)</a>
-                    <a class="dropdown-item locale-change-link" href="#" data-locale="pl-pl">Polski (Polska)</a>
-                    <a class="dropdown-item locale-change-link" href="#" data-locale="tl">Tagalog</a>
-                    <a class="dropdown-item locale-change-link" href="#" data-locale="th-th">ไทย</a>
+                    <a class="dropdown-item locale-change-link{{ (data.user.locale ?? 'en') == 'en' ? ' active' : '' }}" href="#" data-locale="en">English (US)</a>
+                    <a class="dropdown-item locale-change-link{{ (data.user.locale ?? 'en') == 'zh-hk' ? ' active' : '' }}" href="#" data-locale="zh-hk">中文(繁體)</a>
+                    <a class="dropdown-item locale-change-link{{ (data.user.locale ?? 'en') == 'pt-br' ? ' active' : '' }}" href="#" data-locale="pt-br">Português (Brasil)</a>
+                    <a class="dropdown-item locale-change-link{{ (data.user.locale ?? 'en') == 'es-us' ? ' active' : '' }}" href="#" data-locale="es-us">Español (Estados Unidos)</a>
+                    <a class="dropdown-item locale-change-link{{ (data.user.locale ?? 'en') == 'de-de' ? ' active' : '' }}" href="#" data-locale="de-de">Deutsch</a>
+                    <a class="dropdown-item locale-change-link{{ (data.user.locale ?? 'en') == 'pl-pl' ? ' active' : '' }}" href="#" data-locale="pl-pl">Polski (Polska)</a>
+                    <a class="dropdown-item locale-change-link{{ (data.user.locale ?? 'en') == 'tl' ? ' active' : '' }}" href="#" data-locale="tl">Tagalog</a>
+                    <a class="dropdown-item locale-change-link{{ (data.user.locale ?? 'en') == 'th-th' ? ' active' : '' }}" href="#" data-locale="th-th">ไทย</a>
                 </div>
             </div>
+            <script>
+                // the globe menu: same setting as Settings > Language
+                document.querySelectorAll('.locale-change-link').forEach(function (link) {
+                    link.addEventListener('click', function (e) {
+                        e.preventDefault();
+                        const form = new FormData();
+                        form.append('locale', link.dataset.locale);
+                        form.append('_token', '{{ data.csrf_token }}');
+                        fetch('/app/language', { method: 'POST', body: form, headers: { 'Accept': 'application/json' } })
+                            .then(function () { location.reload(); });
+                    });
+                });
+            </script>
             <p class="my-0">
-                <a href="/legal/about-us">About Us</a> | <a href="/legal/rules">Rules</a> | <a href="/legal/terms">Terms of Service</a>
+                <a href="/legal/about-us">About Us</a> | <a href="/legal/rules">Rules</a> | <a href="/legal/terms">Terms of Service</a> | <a href="/legal/privacy">Privacy Policy</a>
             </p>
         </div>
     </div>

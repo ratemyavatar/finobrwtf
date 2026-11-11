@@ -1,0 +1,27 @@
+{% extends 'v2/Admin/_layout.twig' %}
+{% block tool %}
+<form method="POST" class="form-row mb-3">
+  <input type="hidden" name="_token" value="{{ data.csrf_token }}">
+  <div class="col-md-4 mb-2"><input type="text" name="ip" class="form-control" placeholder="IP address" required></div>
+  <div class="col-md-6 mb-2"><input type="text" name="reason" class="form-control" placeholder="Reason" maxlength="255"></div>
+  <div class="col-md-2 mb-2"><button class="btn btn-danger btn-block">IP ban</button></div>
+</form>
+<form method="GET" class="form-inline mb-3">
+  <input type="text" name="user" class="form-control mr-2 mb-2" placeholder="Username" value="{{ data.lookup.username ?? '' }}">
+  <button class="btn btn-secondary mb-2">look up IPs</button>
+</form>
+{% if data.lookup %}
+  <p><strong>{{ data.lookup.username }}</strong> logged in from: {% for ip in data.lookup.ips %}<code class="mr-2">{{ ip }}</code>{% else %}<span class="text-muted">no sessions on record</span>{% endfor %}</p>
+{% endif %}
+<table class="table table-striped">
+  <thead class="thead-dark"><tr><th>IP</th><th>Reason</th><th>Moderator</th><th>Date</th><th></th></tr></thead>
+  <tbody>
+  {% for b in data.bans %}
+    <tr><td><code>{{ b.ip }}</code></td><td>{{ b.reason }}</td><td>{{ b.moderator }}</td><td>{{ b.created_at|date('m/d/Y') }}</td>
+      <td><form method="POST" class="mb-0"><input type="hidden" name="_token" value="{{ data.csrf_token }}"><input type="hidden" name="action" value="unban"><input type="hidden" name="id" value="{{ b.id }}"><button class="btn btn-sm btn-outline-secondary">unban</button></form></td></tr>
+  {% else %}
+    <tr><td colspan="5" class="text-center text-muted">No IP bans.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

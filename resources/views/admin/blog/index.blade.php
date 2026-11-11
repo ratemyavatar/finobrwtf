@@ -1,24 +1,7 @@
 @extends('admin.blog.layout')
-@section('title','Posts')
-@section('heading','Blog posts')
+@section('title','Blog posts')
 @section('content')
-<div class="card">
-<div class="card-header d-flex justify-content-between align-items-center"><strong>Published and draft posts</strong><a href="/admin/blog/posts/new" class="btn btn-theme btn-sm"><i class="fas fa-plus mr-1"></i>New post</a></div>
-<div class="table-responsive">
-<table class="table table-striped table-sm mb-0">
-<thead><tr><th>Title</th><th>Author</th><th>Status</th><th>Published</th><th></th></tr></thead>
-<tbody>
-@forelse($posts as $post)
-<tr>
-<td><a href="/admin/blog/posts/{{ $post->id }}/edit">{{ $post->title }}</a><div class="small text-muted">/{{ $post->slug }}</div></td>
-<td>{{ $post->author_name ?: 'Finobe Team' }}</td>
-<td><span class="badge {{ $post->status==='published' ? 'badge-success' : 'badge-secondary' }}">{{ ucfirst($post->status) }}</span></td>
-<td>{{ $post->published_at ?: '—' }}</td>
-<td><a href="/admin/blog/posts/{{ $post->id }}/edit" class="btn btn-sm btn-outline-secondary">Edit</a></td>
-</tr>
-@empty<tr><td colspan="5" class="text-muted py-4 text-center">No blog posts yet. Create the first one above.</td></tr>@endforelse
-</tbody>
-</table></div>
-</div>
-<div class="mt-3">{{ $posts->links() }}</div>
+<div class="d-flex mb-3 justify-content-between align-items-center"><form method="get" class="d-flex"><input class="form-control mr-2" name="q" value="{{ request('q') }}" placeholder="Search titles" aria-label="Search titles"><select class="form-control mr-2" name="status" aria-label="Post status">@foreach(['all'=>'All posts','draft'=>'Drafts','published'=>'Published','scheduled'=>'Scheduled','archived'=>'Archived'] as $key=>$label)<option value="{{ $key }}" @selected($status===$key)>{{ $label }}</option>@endforeach</select><button class="btn btn-theme">Filter</button></form><a class="btn btn-primary ml-3" href="/admin/blog/posts/new">New post</a></div>
+<div class="card"><div class="table-wrap"><table class="table table-striped mb-0"><thead><tr><th>Title</th><th>Author</th><th>Status</th><th>Publication time</th><th></th></tr></thead><tbody>@forelse($posts as $post)<tr><td>@if(!$post->trashed())<a href="/admin/blog/posts/{{ $post->id }}/edit">{{ $post->title }}</a>@else{{ $post->title }}@endif</td><td>{{ $post->author->name }}</td><td>{{ $post->trashed()?'Archived':($post->status==='scheduled' && $post->published_at?->isPast()?'Published':ucfirst($post->status)) }}</td><td>{{ $post->published_at?->format('Y-m-d H:i') ?? '—' }}</td><td><form method="post" action="/admin/blog/posts/{{ $post->id }}/archive" data-confirm="{{ $post->trashed()?'Restore this post as a draft?':'Archive this post? It will disappear from the public blog.' }}">@csrf<input type="hidden" name="version" value="{{ $post->version }}"><button class="btn btn-theme btn-sm">{{ $post->trashed()?'Restore':'Archive' }}</button></form></td></tr>@empty<tr><td colspan="5" class="text-muted text-center p-4">No posts.</td></tr>@endforelse</tbody></table></div></div>
+@if($posts->hasPages())<nav class="d-flex justify-content-between mt-3" aria-label="Post pages">@if($posts->previousPageUrl())<a href="{{ $posts->previousPageUrl() }}">Previous</a>@else<span></span>@endif<span>Page {{ $posts->currentPage() }} of {{ $posts->lastPage() }}</span>@if($posts->nextPageUrl())<a href="{{ $posts->nextPageUrl() }}">Next</a>@endif</nav>@endif
 @endsection

@@ -20,6 +20,8 @@ class LegalController extends Controller
 
     public function about_us(Request $request) {
         $this->request['data']['embeds']['title'] = 'About us' . $this->request['data']['embeds']['title'];
+        $this->request['data']['about'] = ['team' => config('finobe.about_team', [])];
+        $this->request['data']['invitekeys'] = \App\Admin\Settings::invitesRequired();
 
         return view($this->request['data']['user']['version'] . '/About-us', $this->request);
     }
@@ -44,6 +46,12 @@ class LegalController extends Controller
         $this->request['data']['embeds']['title'] = 'Terms of Service' . $this->request['data']['embeds']['title'];
 
         return view($this->request['data']['user']['version'] . '/Terms', $this->request);
+    }
+
+    public function privacy(Request $request) {
+        $this->request['data']['embeds']['title'] = 'Privacy Policy' . $this->request['data']['embeds']['title'];
+
+        return view('v2/PrivacyPolicy', $this->request);
     }
 
     public function transparency_bans(Request $request) {

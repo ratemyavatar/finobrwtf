@@ -8,16 +8,7 @@
       <div class="container mt-4">
                 <div class="row">
                     <div class="col-lg-2 mb-2">
-                        <div>
-                            <strong><p>Settings</p></strong>
-                            <p class="mb-1"><a href="/app/settings">User Details</a></p>
-                            <p class="mb-1">Password</p>
-                            <p class="mb-1">Security</p>
-                            <p class="mb-1">Privacy</p>
-                            <p class="mb-1 text-primary"><strong>Theming</strong></p>
-                            <p class="mb-1">Language</p>
-                            <p class="mb-1"><a href="/app/games">Places</a></p>
-                        </div>
+                        {% include ('v2/Settings/Menu.twig') with {active: 'theming'} %}
                     </div>
                     <div class="col-lg-10 mb-2">
                         <div class="card">
@@ -46,19 +37,6 @@
                                         <button type="submit" class="btn btn-primary full-width" style="text-transform: capitalize;">Toggle Upside Down Mode</button>
                                     </div>
                                 </form>
-								<form role="form" method="POST" action="/app/theme" enctype="multipart/form-data">
-                                    <input type="hidden" name="_token" value="{{ data.csrf_token }}">
-									<div class="form-group">
-										<label for="version" class="col-form-label">Version</label>
-										<select id="version" name="version" value="e" class="form-control mt-2" required>
-											<option value="v1"{{ (data.user.version == "v1") ? " selected" : "" }}>Version 1</option>
-											<option value="v2"{{ (data.user.version == "v2") ? " selected" : "" }}>Version 2</option>
-										</select>
-									</div>
-									<div class="form-group">
-										<button type="submit" class="btn btn-primary full-width">Change</button>
-									</div>
-								</form>
                                 <form role="form" method="POST" action="/app/theme" enctype="multipart/form-data">
                                     <input type="hidden" name="_token" value="{{ data.csrf_token }}">
                                     <div class="form-group">

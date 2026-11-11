@@ -24,11 +24,7 @@
                                     <div class="card-body">
                                         <div class="d-flex mt-0">
                                             <div class="ml-1">
-                                                {% if user.pfp == "" %}
-                                                <img src="/s/img/spinnerv2.gif" style="max-width: 40px;">
-                                                {% else %}
-                                                <img src="https://cdn.finobe.wtf/{{ user.pfp }}" style="max-width: 40px;">
-                                                {% endif %}
+                                                <img src="{{ avatar_url(user.pfp) }}" style="max-width: 40px;">
                                             </div>
                                             <div class="offset-md-1">
                                                 <p class="mb-0">{{ user.username }}</p>

@@ -85,14 +85,10 @@
                                 <div class="col-md-2 b-right">
                                     <p><span class="forum__color-ball ml-0 mr-1" style="background: {{ (data.post.online) ? 'green' : 'grey' }};"></span>
                                     <a href="/user/{{ data.post.uuid }}">
-                                        {% if data.siteusername %}<i class='fal fa-mars fa-1x'></i>{% endif %} {% if data.post.status == "admin" %}<span style="color: rgb(255, 82, 82); font-weight: bold;">{{ data.post.author }}</span>{% else %}{{ data.post.author }}{% endif %}
+                                        {% if data.siteusername and data.post.gender != 'n' %}<i class='fal fa-{{ data.post.gender == 'f' ? 'venus' : 'mars' }} fa-1x'></i>{% endif %} {% if data.post.status == "admin" %}<span style="color: rgb(255, 82, 82); font-weight: bold;">{{ data.post.author }}</span>{% else %}{{ data.post.author }}{% endif %}
                                     </a> {% if data.siteusername %}[-]{% endif %}</p>
                                     {% if data.siteusername %}
-                                        {% if data.post.pfp == "" %}
-                                            <img src="/s/img/spinnerv2.gif" style="max-width: 75px;">
-                                        {% else %}
-                                            <img src="https://cdn.finobe.wtf/{{ data.post.pfp }}" style="max-width: 75px;">
-                                        {% endif %}
+                                        <img src="{{ avatar_url(data.post.pfp) }}" style="max-width: 75px;">
                                     {% endif %}
                                     {% if data.post.status == "admin" %}
                                         <p class="mb-0"><span class="badge badge-danger badge-admin"><i class="far fa-gavel fa-fw mr-1"></i> Admin</span></p>
@@ -246,14 +242,10 @@
                                 <div class="row">
                                     <div class="col-md-2 b-right">
                                         <p><span class="forum__color-ball ml-0 mr-1" style="background: {{ (data.sticked.online) ? 'green' : 'grey' }};"></span> <a
-                                            href="/user/{{ data.sticked.uuid }}">{% if data.siteusername %}<i class='fal fa-mars fa-1x'></i>{% endif %} {% if data.sticked.status == "admin" %}<span style="color: rgb(255, 82, 82); font-weight: bold;">{{ data.sticked.author }}</span>{% else %}{{ data.sticked.author }}{% endif %}</a> {% if data.siteusername %}[-]{% endif %}
+                                            href="/user/{{ data.sticked.uuid }}">{% if data.siteusername and data.sticked.gender != 'n' %}<i class='fal fa-{{ data.sticked.gender == 'f' ? 'venus' : 'mars' }} fa-1x'></i>{% endif %} {% if data.sticked.status == "admin" %}<span style="color: rgb(255, 82, 82); font-weight: bold;">{{ data.sticked.author }}</span>{% else %}{{ data.sticked.author }}{% endif %}</a> {% if data.siteusername %}[-]{% endif %}
                                         </p>
                                         {% if data.siteusername %}
-                                            {% if data.sticked.pfp == "" %}
-                                                <img src="/s/img/spinnerv2.gif" style="max-width: 75px;">
-                                            {% else %}
-                                                <img src="https://cdn.finobe.wtf/{{ data.sticked.pfp }}" style="max-width: 75px;">
-                                            {% endif %}
+                                            <img src="{{ avatar_url(data.sticked.pfp) }}" style="max-width: 75px;">
                                         {% endif %}
                                         {% if data.sticked.status == "admin" %}
                                             <p class="mb-0"><span class="badge badge-danger badge-admin"><i class="far fa-gavel fa-fw mr-1"></i> Admin</span></p>
@@ -400,14 +392,10 @@
                                 <div class="row">
                                     <div class="col-md-2 b-right">
                                         <p><span class="forum__color-ball ml-0 mr-1" style="background: {{ (reply.online) ? 'green' : 'grey' }};"></span> <a
-                                                href="/user/{{ reply.uuid }}">{% if data.siteusername %}<i class='fal fa-mars fa-1x'></i>{% endif %} {% if reply.status == "admin" %}<span style="color: rgb(255, 82, 82); font-weight: bold;">{{ reply.author }}</span>{% else %}{{ reply.author }}{% endif %}</a> {% if data.siteusername %}[-]{% endif %}
+                                                href="/user/{{ reply.uuid }}">{% if data.siteusername and reply.gender != 'n' %}<i class='fal fa-{{ reply.gender == 'f' ? 'venus' : 'mars' }} fa-1x'></i>{% endif %} {% if reply.status == "admin" %}<span style="color: rgb(255, 82, 82); font-weight: bold;">{{ reply.author }}</span>{% else %}{{ reply.author }}{% endif %}</a> {% if data.siteusername %}[-]{% endif %}
                                         </p>
                                         {% if data.siteusername %}
-                                            {% if reply.pfp == "" %}
-                                                <img src="/s/img/spinnerv2.gif" style="max-width: 75px;">
-                                            {% else %}
-                                                <img src="https://cdn.finobe.wtf/{{ reply.pfp }}" style="max-width: 75px;">
-                                            {% endif %}
+                                            <img src="{{ avatar_url(reply.pfp) }}" style="max-width: 75px;">
                                         {% endif %}
                                         {% if reply.status == "admin" %}
                                             <p class="mb-0"><span class="badge badge-danger badge-admin"><i class="far fa-gavel fa-fw mr-1"></i> Admin</span></p>

@@ -1,0 +1,18 @@
+{% extends 'v2/Admin/_layout.twig' %}
+{% block tool %}
+<p>Game servers that haven't checked in for 10 minutes. Purging removes them from the server list, so nobody gets sent to a dead server.</p>
+<form method="POST" class="mb-3">
+  <input type="hidden" name="_token" value="{{ data.csrf_token }}">
+  <button class="btn btn-danger"{{ data.servers|length ? '' : ' disabled' }}>purge {{ data.servers|length }} inactive server{{ data.servers|length == 1 ? '' : 's' }}</button>
+</form>
+<table class="table table-striped">
+  <thead class="thead-dark"><tr><th>Job</th><th>Place</th><th>Address</th><th>Last alive</th></tr></thead>
+  <tbody>
+  {% for s in data.servers %}
+    <tr><td><code>{{ s.jobId }}</code></td><td><a href="/place/{{ s.placeid }}">{{ s.place }}</a></td><td>{{ s.ip }}:{{ s.port }}</td><td>{{ s.last_alive ?? 'never' }}</td></tr>
+  {% else %}
+    <tr><td colspan="4" class="text-center text-muted">No inactive game servers.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

@@ -22,6 +22,13 @@ class User extends Authenticatable
     protected $connection = 'finobe';
     protected $table = 'users';
 
+    /** whether the gender migration has run (forum author lookups select only some columns) */
+    public static function hasGender(): bool
+    {
+        static $has = null;
+        return $has ??= \Illuminate\Support\Facades\Schema::connection('finobe')->hasColumn('users', 'gender');
+    }
+
     protected $fillable = [
         'username',
         'email',
@@ -30,7 +37,8 @@ class User extends Authenticatable
         'inventory',
         'badges',
         'avatar',
-        'token'
+        'token',
+        'created'
     ];
 
     /**
@@ -41,6 +49,8 @@ class User extends Authenticatable
     protected $hidden = [
         //'password',
         'remember_token',
+        'two_factor_secret',
+        'two_factor_backup_codes',
     ];
 
     /**
@@ -48,12 +58,22 @@ class User extends Authenticatable
      *
      * @return array<string, string>
      */
+    protected static function booted(): void
+    {
+        static::creating(function (self $user) {
+            if (empty($user->created)) {
+                $user->created = now()->toDateTimeString();
+            }
+        });
+    }
+
     protected function casts(): array
     {
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'friends' => 'array',
+            'inventory' => 'array',
             'avatar' => 'array',
             'badges' => 'array'
         ];

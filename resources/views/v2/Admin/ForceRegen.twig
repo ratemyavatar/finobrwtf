@@ -1,0 +1,16 @@
+{% extends 'v2/Admin/_layout.twig' %}
+{% block tool %}
+<form method="POST" class="mb-3">
+  <input type="hidden" name="_token" value="{{ data.csrf_token }}">
+  <textarea name="usernames" class="form-control mb-2" rows="3" placeholder="Usernames to regenerate (one per line or comma separated)" required></textarea>
+  <button class="btn btn-primary">submit</button>
+</form>
+{% if data.results %}
+<table class="table table-striped">
+  <thead class="thead-dark"><tr><th>Specimens</th><th></th></tr></thead>
+  <tbody>
+  {% for r in data.results %}<tr><td>{{ r.username }}</td><td>{{ r.ok ? 'regenerating' : "doesn't exist" }}</td></tr>{% endfor %}
+  </tbody>
+</table>
+{% endif %}
+{% endblock %}

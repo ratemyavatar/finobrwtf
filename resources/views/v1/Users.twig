@@ -23,11 +23,7 @@
                              <div class="card mb-1">
                                  <div class="card-body">
                                      <div class="d-flex flex-row justify-content-center">
-                                         {% if user.pfp == "" %}
-                                         <img src="/s/img/spinnerv2.gif" style="width: 5%;height: auto;">
-                                         {% else %}
-                                         <img src="https://cdn.finobe.wtf/{{ user.pfp }}" style="width: 5%;height: auto;">
-                                         {% endif %}
+                                         <img src="{{ avatar_url(user.pfp) }}" style="width: 5%;height: auto;">
                                          <p class="mt-0 mb-0 ml-1" style="align-self: center;"><a href="/user/{{ user.id }}">{{ user.username }}</a></p>
                                          <p class="mt-0 mb-0 ml-1" style="align-self: center;">{{ (user.blurb|length) ? user.blurb|slice(0, 15) ~ '...' : "" }}</p>
                                          <p class="mt-0 mb-0 ml-1" style="align-self: center;">{{ user.lastlogin }}</p>

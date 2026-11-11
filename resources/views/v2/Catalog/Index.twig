@@ -45,6 +45,7 @@
                                 Models
                             </a>
                         </nav>
+                        <button type="button" class="btn btn-primary btn-block mt-3" data-toggle="modal" data-target="#catalog-filters">filter</button>
                     </div> <div class="col-md-8 col-lg-10">
             <div class="mb-4">
             <form method="get" action="" class="mt-2 mb-3 col-mb-3">
@@ -54,6 +55,51 @@
                             <button type="submit" class="btn btn-secondary  border-left-0 border"><i class="far fa-search"></i></button>
                         </span>
                     </div>
+                    {% set f = data.filters %}
+                    <div class="modal fade" id="catalog-filters" tabindex="-1" role="dialog" aria-labelledby="catalog-filters-title" aria-hidden="true">
+                        <div class="modal-dialog" role="document">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="catalog-filters-title">Filters</h5>
+                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                                </div>
+                                <div class="modal-body">
+                                    <div class="form-group">
+                                        <label for="filter-sort"><strong>Sort</strong></label>
+                                        <select id="filter-sort" name="sort" class="form-control">
+                                            <option value="unsorted"{{ f.sort == 'unsorted' ? ' selected' : '' }}>Unsorted</option>
+                                            <option value="price_asc"{{ f.sort == 'price_asc' ? ' selected' : '' }}>Price (Low to high)</option>
+                                            <option value="price_desc"{{ f.sort == 'price_desc' ? ' selected' : '' }}>Price (High to low)</option>
+                                        </select>
+                                    </div>
+                                    <div class="d-flex">
+                                        <div class="form-group w-50 pr-2">
+                                            <label for="filter-min"><strong>Minimum Price</strong></label>
+                                            <input type="number" min="0" id="filter-min" name="min" value="{{ f.min }}" class="form-control">
+                                        </div>
+                                        <div class="form-group w-50 pl-2">
+                                            <label for="filter-max"><strong>Maximum Price</strong></label>
+                                            <input type="number" min="0" id="filter-max" name="max" value="{{ f.max }}" class="form-control">
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label><strong>Visibility</strong></label>
+                                        {% for value, label in {'all': 'Show all items', 'hide': 'Hide tradables', 'only': 'Show only tradables'} %}
+                                        <div class="custom-control custom-radio">
+                                            <input type="radio" id="filter-tradables-{{ value }}" name="tradables" value="{{ value }}" class="custom-control-input"{{ f.tradables == value ? ' checked' : '' }}>
+                                            <label class="custom-control-label" for="filter-tradables-{{ value }}">{{ label }}</label>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                    <p class="mb-0"><strong>Note:</strong> Price sorting sorts using the original price for limiteds and uniques.</p>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-dismiss="modal">close</button>
+                                    <button type="submit" class="btn btn-primary">filter</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </form>
             {% if data.section == "audio" %}
             <div class="d-flex flex-row">
@@ -61,7 +107,7 @@
                 <p class="mb-2{{ (data.user.theme == 0) ? " text-black" : "" }}" style="margin-left: auto;">Uploader</p>
             </div>
             {% endif %}
-            <div class="justify-content-center row catalog-items">
+            <div class="row catalog-items">
                 {% for item in data.items.data %}
                   {% if item.asset_type == 3 %}
                     <div class="col-md-12 mb-2">
@@ -80,24 +126,28 @@
                             </div>
                         </a>
                     </div>
-                  {% elseif item.asset_type in [2, 8, 11, 12, 18, 19] %}
-                    <div class="card p-0 mb-4" style="width: 21%; {% if loop.index is not divisible by(4) %}margin-right: 3.5%;{% endif %}">
-                      <a href="/item/{{ item.id }}" style="text-decoration: none; color: inherit;"></a>
-                      <div class="card-body">
-                          <a href="/item/{{ item.id }}" style="text-decoration: none; color: inherit;">
-                            <div class="d-flex justify-content-center align-items-center mb-3">
+                  {% elseif item.asset_type in [2, 8, 11, 12, 17, 18, 19, 32] %}
+                    <div class="col-lg-3 col-16 mx-1 mb-3">
+                      <a href="/item/{{ item.id }}" class="catalog-card">
+                        <div class="card">
+                          {% if item.additional.isUnique %}
+                            <span class="badge badge-warning finobe__card-ribbon">Unique</span>
+                          {% elseif item.additional.isLimited %}
+                            <span class="badge badge-success finobe__card-ribbon">Limited</span>
+                          {% endif %}
+                          <div class="card-body">
+                            <div class="d-flex flex-column align-items-center mt-0">
                               <img src="{{ item.additional.media.thumbnail }}" height="95" width="95">
                             </div>
-                            <p class="mb-0">{{ item.title|raw }}</p>
-                          </a>
-                          <p class="text-muted mb-0"><a href="/item/{{ item.id }}" style="text-decoration: none; color: inherit;">by </a><a href="/user/{{ item.uuid }}">{{ item.author }}</a></p>
-                          <div class="col-auto">
-                              <a><img src="/s/img/diu_16.png" alt="Diu" title="Diu" class="img-responsive align-middle"> {{ item.additional.price }}</a>
+                            <p class="catalog-card-name catalog-no-overflow-plz mb-0">{{ item.title|raw }}</p>
+                            <p class="text-muted">by {{ item.author }}</p>
+                            <div class="col-auto text-muted">
+                              <img src="/s/img/diu_16.png" alt="Diu" title="Diu" class="img-responsive align-middle"> {{ item.additional.price }}
+                            </div>
                           </div>
-                      </div>
+                        </div>
+                      </a>
                     </div>
-                  {% else %}
-                    <div style="width: 21%; {% if loop.index is not divisible by(4) %}margin-right: 3.5%;{% endif %}"></div>
                   {% endif %}
                 {% endfor %}
                 {% if not data.items.data|length %}
@@ -113,15 +163,15 @@
             <div class="mt-2" style="display: flex; justify-content: center;">
                 <ul class="pagination shadow-sm">
     <li class="page-item">
-      <a class="page-link" id="previous-page" href="/catalog/{{ data.section }}?page={{ data.items.pages.info.current_page - 1 }}{{ (data.search) ? "&q=" ~ data.search : "" }}" rel="previous" aria-label="Previous <<" {{ (data.items.pages.info.current_page <= 1) ? "style='pointer-events: none;'" : "" }}>«</a>
+      <a class="page-link" id="previous-page" href="/catalog/{{ data.section }}?page={{ data.items.pages.info.current_page - 1 }}{{ data.qs }}" rel="previous" aria-label="Previous <<" {{ (data.items.pages.info.current_page <= 1) ? "style='pointer-events: none;'" : "" }}>«</a>
     </li>
     {% if data.items.pages.info.start_page > 1 %}
       <li class="page-item">
-        <a class="page-link" href="/catalog/{{ data.section }}?page=1{{ (data.search) ? "&q=" ~ data.search : "" }}">1</a>
+        <a class="page-link" href="/catalog/{{ data.section }}?page=1{{ data.qs }}">1</a>
       </li>
       {% if data.items.pages.info.start_page > 2 %}
         <li class="page-item">
-          <a class="page-link" href="/catalog/{{ data.section }}?page=2{{ (data.search) ? "&q=" ~ data.search : "" }}">2</a>
+          <a class="page-link" href="/catalog/{{ data.section }}?page=2{{ data.qs }}">2</a>
         </li>
       {% endif %}
       {% if data.items.pages.info.start_page - 1 > 2 %}
@@ -130,7 +180,7 @@
     {% endif %}
     {% for page in data.items.pages.data %}
       <li class="page-item">
-        <a class="page-link{{ (page.page == data.items.pages.info.current_page) ? " selected" : "" }}" href="/catalog/{{ data.section }}?page={{ page.page }}{{ (data.search) ? "&q=" ~ data.search : "" }}">
+        <a class="page-link{{ (page.page == data.items.pages.info.current_page) ? " selected" : "" }}" href="/catalog/{{ data.section }}?page={{ page.page }}{{ data.qs }}">
           {{ page.page }}
         </a>
       </li>
@@ -142,13 +192,13 @@
       {% for page in [data.items.pages.info.number_of_pages - 1, data.items.pages.info.number_of_pages] %}
         {% if page > data.items.pages.info.end_page %}
           <li class="page-item">
-            <a class="page-link" href="/catalog/{{ data.section }}?page={{ page }}{{ (data.search) ? "&q=" ~ data.search : "" }}">{{ page }}</a>
+            <a class="page-link" href="/catalog/{{ data.section }}?page={{ page }}{{ data.qs }}">{{ page }}</a>
           </li>
         {% endif %}
       {% endfor %}
     {% endif %}
     <li class="page-item">
-      <a class="page-link" id="next-page" href="/catalog/{{ data.section }}?page={{ data.items.pages.info.next_page }}{{ (data.search) ? "&q=" ~ data.search : "" }}" rel="next" aria-label="Next >>" {{ (data.items.pages.info.current_page >= data.items.pages.info.number_of_pages) ? "style='pointer-events: none;'" : "" }}>»</a>
+      <a class="page-link" id="next-page" href="/catalog/{{ data.section }}?page={{ data.items.pages.info.next_page }}{{ data.qs }}" rel="next" aria-label="Next >>" {{ (data.items.pages.info.current_page >= data.items.pages.info.number_of_pages) ? "style='pointer-events: none;'" : "" }}>»</a>
     </li>
   </ul>
             </div>

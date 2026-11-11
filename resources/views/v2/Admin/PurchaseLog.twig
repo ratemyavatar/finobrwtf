@@ -1,0 +1,26 @@
+{% extends 'v2/Admin/_layout.twig' %}
+{% block tool %}
+<form method="GET" class="form-inline mb-3">
+  <input type="text" name="user" class="form-control mr-2 mb-2" placeholder="Username" value="{{ data.filter.user }}">
+  <input type="number" name="asset" class="form-control mr-2 mb-2" placeholder="Asset ID" value="{{ data.filter.asset }}">
+  <button class="btn btn-secondary mb-2">filter</button>
+</form>
+<table class="table table-striped table-responsive-md">
+  <thead class="thead-dark"><tr><th>Date</th><th>User</th><th>Item</th><th>Serial</th><th>Dius</th><th>Type</th></tr></thead>
+  <tbody>
+  {% for r in data.log %}
+    <tr><td>{{ r.date }}</td><td><a href="?user={{ r.username|url_encode }}">{{ r.username }}</a></td><td><a href="/item/{{ r.assetid }}">{{ r.title }}</a> <a href="?asset={{ r.assetid }}" class="text-muted small">({{ r.assetid }})</a></td>
+      <td>{{ r.serial ? '#' ~ r.serial : '' }}</td><td>{{ r.amount }}</td><td>{{ r.type }}</td></tr>
+  {% else %}
+    <tr><td colspan="6" class="text-center text-muted">Nothing here.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% if data.pagination.pages > 1 %}
+<ul class="pagination d-flex flex-wrap">
+  {% for i in 1..data.pagination.pages %}
+    <li class="page-item{{ i == data.pagination.page ? ' active' : '' }}"><a class="page-link" href="?page={{ i }}&user={{ data.filter.user|url_encode }}&asset={{ data.filter.asset }}">{{ i }}</a></li>
+  {% endfor %}
+</ul>
+{% endif %}
+{% endblock %}

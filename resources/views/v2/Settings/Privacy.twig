@@ -1,0 +1,33 @@
+<html>
+  <head>
+    {% include ('v2/Modules/head.twig') %}
+  </head>
+  <body>
+    <div id="app">
+      {% include ('v2/Modules/nav.twig') %}
+      <div class="container mt-4">
+                <div class="row">
+                    <div class="col-lg-2 mb-2">
+                        {% include ('v2/Settings/Menu.twig') with {active: 'privacy'} %}
+                    </div>
+                    <div class="col-lg-10 mb-2">
+                        <form role="form" method="POST" action="/app/privacy">
+                            <input type="hidden" name="_token" value="{{ data.csrf_token }}">
+                            {% for key, setting in data.privacy.settings %}
+                                <h4 style="font-weight: 300;"{% if not loop.first %} class="mt-3"{% endif %}>{{ setting.label }}</h4>
+                                <select name="{{ key }}" class="form-control">
+                                    {% for level in setting.levels %}
+                                        <option value="{{ level }}"{{ setting.value == level ? ' selected' : '' }}>{{ data.privacy.levels[level] }}</option>
+                                    {% endfor %}
+                                </select>
+                            {% endfor %}
+                            <p class="text-muted mt-2 mb-0">Admins can always message you and see your inventory.</p>
+                            <button type="submit" class="btn btn-success mt-4">update</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+    </div>
+    {% include ('v2/Modules/footer.twig') %}
+  </body>
+</html>

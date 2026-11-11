@@ -1,0 +1,123 @@
+<html>
+  <head>
+    {% include ('v2/Modules/head.twig') %}
+  </head>
+  <body>
+    <div id="app">
+      {% include ('v2/Modules/nav.twig') %}
+      <div class="container mt-4">
+                <div class="row">
+                    <div class="col-lg-2 mb-2">
+                        {% include ('v2/Settings/Menu.twig') with {active: 'character'} %}
+                    </div>
+                    <div class="col-lg-10 mb-2">
+                        <div class="card">
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-3 mb-2">
+                                        <img id="renderimg" src="{{ (data.user.pfp == "") ? "/s/img/spinnerv2.gif" : "https://cdn.finobe.wtf/" ~ data.user.pfp }}" class="full-width" style="height: auto;">
+                                    </div>
+                                    <div class="col-md-9">
+                                        <h4 style="font-weight: 300;">Pose</h4>
+                                        <p class="text-muted">How your character stands in its picture.</p>
+                                        <select id="pose-select" class="form-control" onchange="setPose(this.value);">
+                                          {% for key, label in data.poses %}
+                                            <option value="{{ key }}" {{ data.pose == key ? 'selected' : '' }}>{{ label }}</option>
+                                          {% endfor %}
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card mt-3">
+                            <div class="card-body">
+                                <h4 style="font-weight: 300;">Animations</h4>
+                              <p class="mb-3">Movement animations your character uses in game. Takes effect the next time you spawn.</p>
+                              <div class="row">
+                                {% for key, pack in data.animationPacks %}
+                                  <div class="col-md-6 mb-4 anim-pack" data-pack="{{ key }}">
+                                    <div class="card">
+                                      <div class="card-body">
+                                        <h5 class="mb-1">{{ pack.label }}</h5>
+                                        <p class="mb-0 text-muted">{{ pack.description }}</p>
+                                        <button class="btn btn-{{ data.animationPack == key ? 'success' : 'primary' }} full-width mt-2" onclick="setAnimations('{{ key }}');" {{ data.animationPack == key ? 'disabled' : '' }}>{{ data.animationPack == key ? 'selected' : 'use' }}</button>
+                                      </div>
+                                    </div>
+                                  </div>
+                                {% endfor %}
+                              </div>
+                              <script>
+                                function setAnimations(pack) {
+                                  const formData = new FormData();
+                                  formData.append('type', 'animations');
+                                  formData.append('pack', pack);
+                                  formData.append('_token', '{{ data.csrf_token }}');
+
+                                  document.querySelectorAll('.anim-pack button').forEach(b => b.disabled = true);
+
+                                  fetch("/api/character", { method: 'POST', body: formData })
+                                    .then(response => response.json())
+                                    .then(response => {
+                                      if (response.code != 200) {
+                                        alert(response.message);
+                                      }
+                                      const selected = response.code == 200 ? pack : null;
+                                      document.querySelectorAll('.anim-pack').forEach(el => {
+                                        const btn = el.querySelector('button');
+                                        const isSelected = selected ? el.dataset.pack === selected : btn.innerHTML === 'selected';
+                                        btn.disabled = isSelected;
+                                        btn.classList.toggle('btn-success', isSelected);
+                                        btn.classList.toggle('btn-primary', !isSelected);
+                                        btn.innerHTML = isSelected ? 'selected' : 'use';
+                                      });
+                                    })
+                                    .catch(() => {
+                                      alert('Something went wrong, try again.');
+                                      document.querySelectorAll('.anim-pack button').forEach(b => b.disabled = b.innerHTML === 'selected');
+                                    });
+                                }
+                              </script>
+                            </div>
+                        </div>
+                        <script>
+                               const avatarimg = document.getElementById('renderimg');
+                               function setPose(pose) {
+                                 const select = document.getElementById('pose-select');
+                                 const formData = new FormData();
+                                 formData.append('type', 'pose');
+                                 formData.append('pose', pose);
+                                 formData.append('_token', '{{ data.csrf_token }}');
+                                 select.disabled = true;
+                                 const previous = avatarimg.src;
+                                 avatarimg.src = '/s/img/spinnerv2.gif';
+
+                                 fetch("/api/character", { method: 'POST', body: formData })
+                                   .then(response => response.json())
+                                   .then(response => {
+                                     select.disabled = false;
+                                     if (response.code != 200) {
+                                       avatarimg.src = previous;
+                                       alert(response.message);
+                                       return;
+                                     }
+                                     if (response.image) {
+                                       avatarimg.src = response.image;
+                                     } else {
+                                       avatarimg.src = previous;
+                                       alert(response.message);
+                                     }
+                                   })
+                                   .catch(() => {
+                                     select.disabled = false;
+                                     avatarimg.src = previous;
+                                     alert('Something went wrong, try again.');
+                                   });
+                               }
+                             </script>
+                    </div>
+                </div>
+            </div>
+    </div>
+    {% include ('v2/Modules/footer.twig') %}
+  </body>
+</html>

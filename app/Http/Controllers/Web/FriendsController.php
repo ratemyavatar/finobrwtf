@@ -40,6 +40,11 @@ class FriendsController extends Controller
             }
         }
 
+        if(!\App\Services\Privacy::allows($user, 'friend_requests', \Illuminate\Support\Facades\Auth::user())) {
+            Session::put('error', $user->username . " isn't accepting friend requests.");
+            return redirect('/user/' . $id);
+        }
+
         $friends = $user->friends;
         $friends[] = [
             'userid' => $this->request['data']['user']['id'],

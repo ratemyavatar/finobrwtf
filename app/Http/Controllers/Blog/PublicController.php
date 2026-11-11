@@ -1,176 +1,62 @@
 <?php
 
 namespace App\Http\Controllers\Blog;
-
-use App\Blog\Publisher;
 use App\Blog\Settings;
+use App\Models\Blog\{Post,Author,Tag};
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
-final class PublicController extends Controller
-{
-    private function base(): array
-    {
-        return ['settings' => Settings::all(), 'blogUrl' => config('blog.url')];
+final class PublicController extends Controller {
+    private function posts(){return Post::visible()->with(['author'=>fn($q)=>$q->withCount(['posts'=>fn($q)=>$q->visible()]),'tags']);}
+    public function index(Request $request,int $page=1){return $this->listing($this->posts(),$page,'home');}
+    public function author(Request $request,string $slug,int $page=1){$author=Author::where('slug',$slug)->firstOrFail();return $this->listing($this->posts()->where('author_id',$author->id),$page,'author',$author);}
+    public function tag(Request $request,string $slug,int $page=1){$tag=Tag::where('slug',$slug)->firstOrFail();return $this->listing($this->posts()->whereHas('tags',fn($q)=>$q->where('blog_tags.id',$tag->id)),$page,'tag',$tag);}
+    private function listing($query,int $page,string $kind,$archive=null){
+        abort_if($page<1||$page>100000,404);
+        $posts=$query->orderByDesc('published_at')->orderByDesc('id')->paginate(config('blog.posts_per_page'),['*'],'page',$page);
+        abort_if($page>1&&$posts->isEmpty(),404);
+        $base=$kind==='home'?'/':'/'.$kind.'/'.$archive->slug.'/';
+        $pagePath=$page===1?$base:$base.'page/'.$page.'/';
+        return response()->view('blog.index',['posts'=>$posts,'kind'=>$kind,'archive'=>$archive,'blogSettings'=>Settings::all(),'canonical'=>config('blog.url').$pagePath,'base'=>$base,'pageNumber'=>$page,'feedUrl'=>config('blog.url').$base.'rss/',
+            'next'=>$posts->hasMorePages()?config('blog.url').$base.'page/'.($page+1).'/':null,'previous'=>$page>1?config('blog.url').($page===2?$base:$base.'page/'.($page-1).'/'):null]);
     }
-
-    private function query()
-    {
-        return Publisher::publishable()
-            ->leftJoin('blog_authors', 'blog_authors.id', '=', 'blog_posts.author_id')
-            ->select(
-                'blog_posts.*',
-                'blog_authors.name as author_name',
-                'blog_authors.slug as author_slug',
-                'blog_authors.avatar_url as author_avatar'
-            )
-            ->selectSub(function ($q) {
-                $q->from('blog_tags')
-                    ->join('blog_post_tag', 'blog_post_tag.tag_id', '=', 'blog_tags.id')
-                    ->whereColumn('blog_post_tag.post_id', 'blog_posts.id')
-                    ->orderBy('blog_tags.name')
-                    ->limit(1)
-                    ->select('blog_tags.name');
-            }, 'primary_tag_name')
-            ->selectSub(function ($q) {
-                $q->from('blog_tags')
-                    ->join('blog_post_tag', 'blog_post_tag.tag_id', '=', 'blog_tags.id')
-                    ->whereColumn('blog_post_tag.post_id', 'blog_posts.id')
-                    ->orderBy('blog_tags.name')
-                    ->limit(1)
-                    ->select('blog_tags.slug');
-            }, 'primary_tag_slug');
-    }
-
-    private function page(Request $request): int
-    {
-        $page = (int) ($request->route('page') ?: $request->query('page', 1));
-        abort_unless($page >= 1 && $page <= 100000, 404);
-        return $page;
-    }
-
-    private function listPage($query, Request $request, string $heading, ?string $description, string $kind, $profile = null)
-    {
-        $page = $this->page($request);
-        $posts = $query->orderByDesc('blog_posts.published_at')->orderByDesc('blog_posts.id')
-            ->paginate(12, ['*'], 'page', $page);
-
-        if ($kind === 'home') {
-            $pageBase = '/';
-        } elseif ($kind === 'author') {
-            $pageBase = '/author/'.$profile->slug.'/';
-        } elseif ($kind === 'tag') {
-            $pageBase = '/tag/'.$profile->slug.'/';
-        } else {
-            $pageBase = '/search/';
-            $posts->appends(['q' => (string)$request->query('q', '')]);
+    public function post(Request $request,string $year,string $month,string $day,string $slug){
+        $path='/'.$year.'/'.$month.'/'.$day.'/'.$slug.'/';
+        $post=$this->posts()->where('slug',$slug)->first();
+        if(!$post||$post->path!==$path){
+            $redirect=DB::connection('finobe')->table('blog_redirects')->where('path',$path)->first();
+            if($redirect&&$target=$this->posts()->find($redirect->post_id))return redirect()->away($target->url,301);
+            abort(404);
         }
-
-        return view('blog.index', $this->base() + [
-            'posts' => $posts,
-            'heading' => $heading,
-            'description' => $description,
-            'kind' => $kind,
-            'profile' => $profile,
-            'pageBase' => $pageBase,
-            'pageNumber' => $page,
-        ]);
+        return $this->article($post);
     }
-
-    public function index(Request $request)
-    {
-        return $this->listPage($this->query(), $request, 'Latest stories', null, 'home');
+    public function article(Post $post,bool $preview=false){
+        $post->load(['author'=>fn($q)=>$q->withCount(['posts'=>fn($q)=>$q->visible()]),'tags']);
+        return response()->view('blog.post',['entry'=>$post,'kind'=>'post','canonical'=>$post->url,'blogSettings'=>Settings::all(),'related'=>$this->posts()->where('id','!=',$post->id)->orderByDesc('published_at')->limit(3)->get(),'preview'=>$preview])
+            ->header('Cache-Control',$preview?'private, no-store':'no-cache')->header('X-Robots-Tag',$preview?'noindex, nofollow':'all');
     }
-
-    public function tag(Request $request, string $slug)
-    {
-        $tag = DB::connection('finobe')->table('blog_tags')->where('slug', $slug)->first();
-        abort_unless($tag, 404);
-
-        $query = $this->query()->whereExists(function ($q) use ($tag) {
-            $q->selectRaw('1')->from('blog_post_tag')
-                ->whereColumn('blog_post_tag.post_id', 'blog_posts.id')
-                ->where('blog_post_tag.tag_id', $tag->id);
-        });
-
-        return $this->listPage($query, $request, $tag->name, $tag->description, 'tag', $tag);
-    }
-
-    public function author(Request $request, string $slug)
-    {
-        $author = DB::connection('finobe')->table('blog_authors')->where('slug', $slug)->first();
-        abort_unless($author, 404);
-
-        return $this->listPage(
-            $this->query()->where('blog_posts.author_id', $author->id),
-            $request, $author->name, $author->bio, 'author', $author
-        );
-    }
-
-    public function search(Request $request)
-    {
-        $data = $request->validate(['q' => 'nullable|string|max:120']);
-        $term = trim((string)($data['q'] ?? ''));
-        $query = $this->query();
-        if ($term !== '') {
-            $like = '%'.addcslashes($term, '%_\\').'%';
-            $query->where(function ($q) use ($like) {
-                $q->where('blog_posts.title', 'like', $like)
-                    ->orWhere('blog_posts.excerpt', 'like', $like)
-                    ->orWhere('blog_posts.body', 'like', $like);
-            });
+    public function rss(){return $this->feed($this->posts());}
+    public function authorRss(string $slug){$author=Author::where('slug',$slug)->firstOrFail();return $this->feed($this->posts()->where('author_id',$author->id));}
+    public function tagRss(string $slug){$tag=Tag::where('slug',$slug)->firstOrFail();return $this->feed($this->posts()->whereHas('tags',fn($q)=>$q->where('blog_tags.id',$tag->id)));}
+    private function feed($query){
+        $settings=Settings::all();$doc=new \DOMDocument('1.0','UTF-8');$doc->formatOutput=true;
+        $rss=$doc->appendChild($doc->createElement('rss'));$rss->setAttribute('version','2.0');$rss->setAttribute('xmlns:content','http://purl.org/rss/1.0/modules/content/');$rss->setAttribute('xmlns:dc','http://purl.org/dc/elements/1.1/');
+        $channel=$rss->appendChild($doc->createElement('channel'));
+        $text=function($parent,$key,$value)use($doc){$node=$parent->appendChild($doc->createElement($key));$node->appendChild($doc->createTextNode((string)$value));return $node;};
+        $text($channel,'title',$settings['title']);$text($channel,'link',config('blog.url').'/');$text($channel,'description',$settings['description']);
+        foreach($query->orderByDesc('published_at')->limit(25)->get() as $post){
+            $item=$channel->appendChild($doc->createElement('item'));$text($item,'title',$post->title);$text($item,'link',$post->url);$guid=$text($item,'guid',$post->url);$guid->setAttribute('isPermaLink','true');
+            $text($item,'pubDate',$post->published_at->toRssString());$text($item,'dc:creator',$post->author->name);$text($item,'description',$post->summary);$text($item,'content:encoded',$post->html);
+            foreach($post->tags as $tag)$text($item,'category',$tag->name);
         }
-
-        return $this->listPage($query, $request, 'Search results',
-            $term === '' ? 'All published posts' : 'Results for: '.$term, 'search');
+        return response($doc->saveXML(),200,['Content-Type'=>'application/rss+xml; charset=UTF-8']);
     }
-
-    public function show(string $slug)
-    {
-        return $this->renderPost($this->query()->where('blog_posts.slug', $slug)->first());
-    }
-
-    public function showDated(string $year, string $month, string $day, string $slug)
-    {
-        abort_unless(checkdate((int)$month, (int)$day, (int)$year), 404);
-        $date = sprintf('%04d-%02d-%02d', (int)$year, (int)$month, (int)$day);
-        $post = $this->query()
-            ->where('blog_posts.slug', $slug)
-            ->whereDate('blog_posts.published_at', $date)
-            ->first();
-
-        return $this->renderPost($post);
-    }
-
-    private function renderPost($post)
-    {
-        abort_unless($post, 404);
-        $post->body_html = Publisher::html((string)$post->body);
-
-        $tags = DB::connection('finobe')->table('blog_tags')
-            ->join('blog_post_tag', 'blog_tags.id', '=', 'blog_post_tag.tag_id')
-            ->where('blog_post_tag.post_id', $post->id)
-            ->orderBy('blog_tags.name')
-            ->get(['blog_tags.name', 'blog_tags.slug']);
-
-        $prev = $this->query()
-            ->where('blog_posts.published_at', '<', $post->published_at)
-            ->orderByDesc('blog_posts.published_at')->first();
-        $next = $this->query()
-            ->where('blog_posts.published_at', '>', $post->published_at)
-            ->orderBy('blog_posts.published_at')->first();
-
-        return view('blog.post', $this->base() + [
-            'post' => $post, 'tags' => $tags, 'prev' => $prev, 'next' => $next,
-        ]);
-    }
-
-    public function rss()
-    {
-        $posts = $this->query()->orderByDesc('blog_posts.published_at')->limit(20)->get();
-        return response()->view('blog.rss', $this->base() + ['posts' => $posts])
-            ->header('Content-Type', 'application/rss+xml; charset=UTF-8')
-            ->header('Cache-Control', 'public, max-age=300');
+    public function sitemap(){
+        $doc=new \DOMDocument('1.0','UTF-8');$root=$doc->appendChild($doc->createElementNS('http://www.sitemaps.org/schemas/sitemap/0.9','urlset'));
+        $paths=[config('blog.url').'/'];foreach($this->posts()->orderBy('id')->cursor() as $p)$paths[]=$p->url;
+        foreach($paths as $path){$url=$root->appendChild($doc->createElement('url'));$loc=$url->appendChild($doc->createElement('loc'));$loc->appendChild($doc->createTextNode($path));}
+        return response($doc->saveXML(),200,['Content-Type'=>'application/xml; charset=UTF-8']);
     }
 }

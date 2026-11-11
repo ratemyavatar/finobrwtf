@@ -73,7 +73,7 @@ class GamesController extends Controller
                     $result['players'][] = [
                         'userid' => $playerId,
                         'username' => User::where('id', $playerId)->value('username'),
-                        'avatar' => Cache::remember('pfp_' . User::where('id', $playerId)->value('username'), 60 * 60, fn() => User::where('username', User::where('id', $playerId)->value('username'))->value('pfp'))
+                        'avatar' => Cache::remember('pfp_' . $playerId, 60 * 60, fn() => User::where('id', $playerId)->value('pfp'))
                     ];
                 }
             }
@@ -101,8 +101,9 @@ class GamesController extends Controller
         $place['username'] = User::where('id', $place['author'])->value('username');
 
         if($place['username'] != $this->request['data']['user']['username']) {
-            Session::put('error', 'You do not own this place');
-            return redirect('/app/places');
+            // the real site answered with its 403 "Error" page here
+            $this->request['data']['embeds']['title'] = '403 Forbidden' . $this->request['data']['embeds']['title'];
+            return response()->view('v2/Forbidden', $this->request, 403);
         }
 
         // place file, custom thumbnail, badges and user restrictions
@@ -133,7 +134,7 @@ class GamesController extends Controller
                 'social'           => 'nullable|in:on,1,true,0,false,off',
                 'building'         => 'nullable|in:on,1,true,0,false,off',
                 'musical'          => 'nullable|in:on,1,true,0,false,off',
-                'game-version'     => 'required|in:2012,2016',
+                'game-version'     => 'required|in:' . implode(',', \App\Services\ClientVersions::names()),
                 'category'         => 'required|in:original,copy',
                 'chat-type'        => 'required|in:classic,bubble_chat,both',
                 'max-players'      => 'required|integer|between:5,100',
@@ -164,6 +165,12 @@ class GamesController extends Controller
             
             Session::put('successv2', 'Place settings saved.');
             return redirect('/place/' . $id . '/settings');
+        }
+
+        // normalise the on/off flags to real booleans: they can be true/false (JSON),
+        // or legacy 'y'/'n', and the settings form's checkboxes must reflect that exactly
+        foreach (['allowplaying', 'uncopylocked', 'hidden'] as $flag) {
+            $place['additional'][$flag] = filter_var($place['additional'][$flag] ?? false, FILTER_VALIDATE_BOOLEAN);
         }
 
         $place['title'] = strip_tags(htmlspecialchars($place['title']));
@@ -207,7 +214,7 @@ class GamesController extends Controller
             $validator = Validator::make($data, [
                 'title' => 'required|string|min:3|max:255',
                 'description' => 'nullable|string|max:8192',
-                'game-version' => 'nullable|in:2012,2016'
+                'game-version' => 'nullable|in:' . implode(',', \App\Services\ClientVersions::names())
             ]);
 
             if($validator->fails()) {
@@ -215,7 +222,7 @@ class GamesController extends Controller
                 return redirect('/app/place/new');
             }
 
-            $version = $data['game-version'] ?? '2016';
+            $version = $data['game-version'] ?? \App\Services\ClientVersions::DEFAULT;
 
             $games = Asset::where('author', $this->request['data']['user']['id'])
                 ->where('asset_type', 9)
@@ -231,10 +238,6 @@ class GamesController extends Controller
                 return redirect('/app/place/new');
             }
 
-            if($this->request['data']['user']['status'] != 'admin') {
-                Session::put('error', 'Admin status is required');
-                return redirect('/app/place/new');
-            }
             /*
             $id = $this->db->table('assets')->insertGetId([
                 'asset_type' => 9,
