@@ -50,6 +50,7 @@ return Application::configure(basePath: dirname(__DIR__))
             '/game/validate-machine',
             '/game/machineconfiguration.ashx',
             '/game/report-stats',
+            '/persistence/*',
         ]);
     })
     ->create();

@@ -378,6 +378,10 @@ class rbxAPIs extends Controller
             $is2012 = !\App\Services\ClientVersions::usesRcc($version);
             [$rccHost, $rccPort] = \App\Services\ClientVersions::rcc($version);
 
+            if ($server) {
+                \Illuminate\Support\Facades\Cache::put('datastore-closed-job:' . $jobId, (int) $server->placeid, now()->addMinutes(10));
+            }
+
             $deleted = $this->db->table('servers')
                 ->where('jobId', $jobId)
                 ->delete();
