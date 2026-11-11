@@ -52,7 +52,7 @@
                                     <hr class="mt-0">
                                     <div class="card-body row justify-content-between" style="padding-top: 0;padding-bottom: 0;">
                                         <p class="col-md-1">{{ key.creation }}</p>
-                                        {% if not key.used or key.used == "n" %}
+                                        {% if not key.used or (not key.used or key.used == 'n') %}
                                             <i class="col-md-10" style="padding:0;"><p>Unused invite key: <b>{{ key.IID }}</b></p></i>
                                         {% else %}
                                             <p class="col-md-10" style="padding:0;">Invited <a href="/user/{{ key.uuid }}">{{ key.usedBy }}</a> on {{ key.dateUsed }}</p>

@@ -311,7 +311,7 @@ class AdminToolsController extends Controller
                     'author' => Auth::user()->username,
                     'IID' => $key,
                     'creation' => now(),
-                    'used' => 'n',
+                    'used' => false,
                 ]);
                 $keys[] = $key;
             }

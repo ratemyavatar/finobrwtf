@@ -85,11 +85,11 @@ class ProfileController extends Controller
             $user['places'][] = $place;
         }
 
-        if(Ban::where('username', $user['username'])->where('perm', 'y')->exists()) {
+        if(Ban::where('username', $user['username'])->where('perm', true)->exists()) {
             $user['ban'] = [
                 'IsBanned' => true,
                 'data' => [
-                    'reason' => Ban::select('reason')->where('username', $user['username'])->where('perm', 'y')->value('reason')
+                    'reason' => Ban::select('reason')->where('username', $user['username'])->where('perm', true)->value('reason')
                 ]
             ];
         }

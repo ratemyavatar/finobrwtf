@@ -252,7 +252,7 @@ class ForumController extends Controller
                 return redirect('/forum/post?id=' . $data['id']);
             }
 
-            if($post->locked == 'y') {
+            if((bool) $post->locked) {
                 Session::put('error', 'This post is locked');
                 return redirect('/forum/post?id=' . $data['id']);
             }
@@ -356,9 +356,9 @@ class ForumController extends Controller
         $post['online'] = Carbon::parse($user['lastlogin'])->gt(Carbon::now()->subMinutes(2));
         $pageData['post'] = $post;
 
-        if(Reply::where('toid', $post['id'])->where('sticked', 'y')->exists()) {
+        if(Reply::where('toid', $post['id'])->where('sticked', true)->exists()) {
             $sticked = Reply::where('toid', $post['id'])
-                ->where('sticked', 'y')
+                ->where('sticked', true)
                 ->first()
                 ->toArray();
 
@@ -573,7 +573,7 @@ class ForumController extends Controller
 
             $post = Thread::find($data['id']);
 
-            if($post->locked == 'y') {
+            if((bool) $post->locked) {
                 Session::put('error', 'This post is locked');
                 return redirect('/forum/home');
             }
@@ -655,7 +655,7 @@ class ForumController extends Controller
 
         $post = Thread::find($data['id'])->toArray();
 
-        if($post['locked'] == 'y') {
+        if((bool) $post['locked']) {
             Session::put('error', 'This post is locked');
             return redirect('/forum/post?id=' . $data['id']);
         }
@@ -697,13 +697,13 @@ class ForumController extends Controller
 
             $post = Thread::find($reply->toid);
 
-            if($post->locked == 'y') {
+            if((bool) $post->locked) {
                 Session::put('error', 'This post is locked');
                 return redirect('/forum/edit?id=' . $data['id']);
             }
 
             $reply->comment = $data['content'];
-            $reply->edited = 'y';
+            $reply->edited = true;
             $reply->edited_date = now();
             $reply->save();
 
@@ -769,13 +769,13 @@ class ForumController extends Controller
 
             $post = Thread::find($reply['toid']);
 
-            if($post->locked == 'y') {
+            if((bool) $post->locked) {
                 Session::put('error', 'This post is locked');
                 return redirect('/forum/edit?id=' . $data['id']);
             }
 
             $reply->comment = $data['content'];
-            $reply->edited = 'y';
+            $reply->edited = true;
             $reply->edited_date = now();
             $reply->save();
 
@@ -865,7 +865,7 @@ class ForumController extends Controller
                 $validator = Validator::make($data, [
                     'title' => 'required|string|min:3',
                     'content' => 'required|string|min:3|max:8192',
-                    'section' => 'required|integer|min:1|max:10'
+                    'section' => ['required', 'integer', \Illuminate\Validation\Rule::in(array_keys(config('forum.sections')))]
                 ]);
 
                 if($validator->fails()) {

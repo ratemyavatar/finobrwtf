@@ -37,3 +37,4 @@ storage/setup/*.zip
 
 __pycache__/
 dump.rdb
+/storage/cdn

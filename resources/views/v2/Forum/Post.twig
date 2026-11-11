@@ -17,7 +17,7 @@
       <div class="forumContainer container mt-3">
                 <nav class="breadcrumb"><a href="/" class="breadcrumb-item">Finobe</a> <a href="/forum/home"
                         class="breadcrumb-item">Forum Home</a> <a href="/forum/home/{{ data.post.category }}" class="breadcrumb-item">
-                        {% if data.post.category == "1" %}{{ "Announcements" }}{% elseif data.post.category == "2" %}{{ "General" }}{% elseif data.post.category == "3" %}{{ "Suggestions" }}{% elseif data.post.category == "4" %}{{ "Off Topic" }}{% elseif data.post.category == "5" %}{{ "Help" }}{% elseif data.post.category == "6" %}{{ "Development" }}{% elseif data.post.category == "7" %}{{ "Serious" }}{% elseif data.post.category == "8" %}{{ "Serious (Real World)" }}{% elseif data.post.category == "9" %}{{ "Trade Discussion" }}{% elseif data.post.category == "10" %}{{ "да (Русский)" }}{% endif %}
+                        {{ data.forum_sections[data.post.category].name ?? "" }}
                     </a> <span class="breadcrumb-item overflow-hidden">
                         {{ data.post.title | raw }}
                     </span></nav>
@@ -32,10 +32,10 @@
                 {% endif %}
                 {% if not data.editing %}
                 {% if data.siteusername %}
-                    {% if data.post.locked == 'y' %}
+                    {% if (data.post.locked and data.post.locked != 'n') %}
                         <button class="btn btn-primary btn-lg-5 col-md-1 mb-2 disabled" style="text-transform: capitalize;" disabled><i class="far fa-fw fa-plus"></i>topic locked</button>
                     {% else %}
-                        <a href="/forum/new/reply?id={{ data.post.id }}"><button class="btn btn-primary btn-lg-5 col-md-1 mb-2{{ (data.post.locked == "y") ? " disabled" : "" }}" style="text-transform: capitalize;"><i class="far fa-fw fa-plus"></i>reply</button></a>
+                        <a href="/forum/new/reply?id={{ data.post.id }}"><button class="btn btn-primary btn-lg-5 col-md-1 mb-2{{ ((data.post.locked and data.post.locked != 'n')) ? " disabled" : "" }}" style="text-transform: capitalize;"><i class="far fa-fw fa-plus"></i>reply</button></a>
                     {% endif %}
                     {% if data.post.author != data.data.user.username %}
                         <a href="/forum/subscribe?id={{ data.post.id }}&_token={{ data.csrf_token }}"><button class="btn btn-primary btn-lg-5 col-md-1 mb-2" style="text-transform: capitalize;">{{ (data.post.subscription) ? "Unsubscribe" : "subscribe" }}</button></a>
@@ -78,7 +78,7 @@
                 <div id="forum-posts">
                     <div class="card mb-4">
                         <div id="originalPost" class="card-header bg-info text-white">
-                            Original Post - {{ data.post.date }} {% if data.post.edited %}<span title="Edited {{ data.post.edited_date }}"><i>*(edited)</i></span>{% endif %}{% if data.user.status == "admin" %} - <a href="/admin/{{ (data.post.pinned == "n") ? "pin" : "unpin" }}?id={{ data.post.id }}">{{ (data.post.pinned == "n") ? "Pin" : "Unpin" }} Post</a> - <a href="/admin/{{ (data.post.locked == "n") ? "lock" : "unlock" }}?id={{ data.post.id }}">{{ (data.post.locked == "n") ? "Lock" : "Unlock" }} Post</a>{% endif %}
+                            Original Post - {{ data.post.date }} {% if data.post.edited %}<span title="Edited {{ data.post.edited_date }}"><i>*(edited)</i></span>{% endif %}{% if data.user.status == "admin" %} - <a href="/admin/{{ ((not data.post.pinned or data.post.pinned == 'n')) ? "pin" : "unpin" }}?id={{ data.post.id }}">{{ ((not data.post.pinned or data.post.pinned == 'n')) ? "Pin" : "Unpin" }} Post</a> - <a href="/admin/{{ ((not data.post.locked or data.post.locked == 'n')) ? "lock" : "unlock" }}?id={{ data.post.id }}">{{ ((not data.post.locked or data.post.locked == 'n')) ? "Lock" : "Unlock" }} Post</a>{% endif %}
                         </div>
                         <div class="card-body">
                             <div class="row">
@@ -236,7 +236,7 @@
                     {% if data.sticked %}
                         <div class="card mb-4">
                             <div id="stickyPost" class="card-header bg-success text-white"><a href="#stickyPost">Sticked Post</a> -
-                                {{ data.sticked.date }} {% if data.sticked.edited == "y" %}<span title="Edited {{ data.sticked.edited_date }}"><i>*(edited)</i></span>{% endif %} {% if data.user.status == "admin" %} - <a href="/admin/unstick?id={{ data.sticked.id }}&_token={{ data.csrf_token }}">Unstick Post</a>{% endif %}
+                                {{ data.sticked.date }} {% if (data.sticked.edited and data.sticked.edited != 'n') %}<span title="Edited {{ data.sticked.edited_date }}"><i>*(edited)</i></span>{% endif %} {% if data.user.status == "admin" %} - <a href="/admin/unstick?id={{ data.sticked.id }}&_token={{ data.csrf_token }}">Unstick Post</a>{% endif %}
                             </div>
                             <div class="card-body">
                                 <div class="row">
@@ -386,7 +386,7 @@
                     {% for reply in data.replies.data %}
                         <div class="card mb-4">
                             <div class="card-header bg-primary text-white"><a href="/forum/new/reply?id={{ data.post.id }}&reply={{ reply.id }}" class="text-white">Reply</a> -
-                                {{ reply.date }} {% if reply.edited == "y" %}<span title="Edited {{ reply.edited_date }}"><i>*(edited)</i></span>{% endif %} {% if data.user.status == "admin" %} - <a href="/admin/stick?id={{ reply.id }}&_token={{ data.csrf_token }}">Stick Post</a>{% endif %}
+                                {{ reply.date }} {% if (reply.edited and reply.edited != 'n') %}<span title="Edited {{ reply.edited_date }}"><i>*(edited)</i></span>{% endif %} {% if data.user.status == "admin" %} - <a href="/admin/stick?id={{ reply.id }}&_token={{ data.csrf_token }}">Stick Post</a>{% endif %}
                             </div>
                             <div class="card-body">
                                 <div class="row">

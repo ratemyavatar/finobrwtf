@@ -68,6 +68,7 @@ final class PageData
             'lucky_number' => random_int(0, max(0, $userCount)) . '/' . $userCount,
             'social' => config('finobe.social'),
             'server_name' => config('finobe.server_name'),
+            'forum_sections' => config('forum.sections'),
         ];
 
         if ($user !== null) {

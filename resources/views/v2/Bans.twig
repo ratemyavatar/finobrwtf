@@ -110,9 +110,9 @@
 											<td>{{ ban.date }}</td>
 											<td>{{ ban.username }}</td>
 											<td><button class="btn btn-primary" onclick="opend('{{ ban.username|e('js') }}', `{{ ban.reason|e('js') }}`);">click here</button></td>
-											<td>{% if ban.perm == "y" %}{{ "Permanent" }}{% elseif ban.expire != "" %}{{ "Ban" }}{% else %}{{ "Warning" }}{% endif %}</td>
-											<td>{{ (ban.perm == "y" or ban.expire == "") ? "N/A" : ban.expire }}</td>
-											<td>{{ (ban.undone == "n") ? "No" : "Yes" }}</td>
+											<td>{% if (ban.perm and ban.perm != 'n') %}{{ "Permanent" }}{% elseif ban.expire != "" %}{{ "Ban" }}{% else %}{{ "Warning" }}{% endif %}</td>
+											<td>{{ ((ban.perm and ban.perm != 'n') or ban.expire == "") ? "N/A" : ban.expire }}</td>
+											<td>{{ ((not ban.undone or ban.undone == 'n')) ? "No" : "Yes" }}</td>
 										</tr>
 										{% endfor %}
 										{% if not data.bans|length %}

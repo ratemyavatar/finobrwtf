@@ -8,7 +8,7 @@
       <div class="forumContainer container mt-3">
                 <nav class="breadcrumb"><a href="/" class="breadcrumb-item">Finobe</a> <a href="/forum/home"
                         class="breadcrumb-item">Forum Home</a> <a href="/forum/home/{{ data.post.category }}" class="breadcrumb-item">
-                        {% if data.post.category == "1" %}{{ "Announcements" }}{% elseif data.post.category == "2" %}{{ "General" }}{% elseif data.post.category == "3" %}{{ "Suggestions" }}{% elseif data.post.category == "4" %}{{ "Off Topic" }}{% elseif data.post.category == "5" %}{{ "Help" }}{% elseif data.post.category == "6" %}{{ "Development" }}{% elseif data.post.category == "7" %}{{ "Serious" }}{% elseif data.post.category == "8" %}{{ "Serious (Real World)" }}{% elseif data.post.category == "9" %}{{ "Trade Discussion" }}{% elseif data.post.category == "10" %}{{ "да (Русский)" }}{% endif %}
+                        {{ data.forum_sections[data.post.category].name ?? "" }}
                     </a> <a href="/forum/post?id={{ data.post.id }}" class="breadcrumb-item">{{ data.post.title | raw }}</a> <span class="breadcrumb-item overflow-hidden">
                         New Reply
                     </span></nav>

@@ -34,7 +34,7 @@ class InvitesController extends Controller
         foreach($inviteKeys as $key) {
             $key['creation'] = date('m/d/Y', strtotime($key['creation']));
 
-            if($key['used'] && $key['used'] !== 'n') {
+            if(filter_var($key['used'], FILTER_VALIDATE_BOOLEAN) || $key['used'] === 'y') {
                 $key['uuid'] = User::where('username', $key['usedBy'])->value('id');
                 $key['dateUsed'] = date('m/d/Y', strtotime($key['dateUsed']));
             }
@@ -53,7 +53,7 @@ class InvitesController extends Controller
         $maxDepth = 5;
         $budget = 500;
 
-        $inviter = Keys::where('usedBy', $username)->where('used', '!=', 'n')->value('author');
+        $inviter = Keys::where('usedBy', $username)->where('used', true)->value('author');
 
         $build = function (string $name, int $depth) use (&$build, &$budget, $maxDepth) {
             $children = [];
@@ -63,7 +63,7 @@ class InvitesController extends Controller
             }
 
             $keys = Keys::where('author', $name)
-                ->where('used', '!=', 'n')
+                ->where('used', true)
                 ->whereNotNull('usedBy')
                 ->orderBy('dateUsed')
                 ->get(['usedBy', 'dateUsed']);
@@ -122,7 +122,7 @@ class InvitesController extends Controller
                 return redirect('/invites');
             }
 
-            if(Keys::where('author', Auth::user()->username)->where('used', 'n')->count() >= 2) {
+            if(Keys::where('author', Auth::user()->username)->where('used', false)->count() >= 2) {
                 Session::put('error', 'You have too many unused keys');
                 return redirect('/invites');
             }

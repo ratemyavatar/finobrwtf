@@ -19,18 +19,7 @@
                                     <label for="type" class="col-form-label text-md-right" style="margin-left:15px;">Type</label>
                                     <div class="col-md-12">
                                         <select id="section" name="section" class="form-control mt-2" required>
-                                            {% if data.user.status == "admin" %}
-                                                <option value="1">Annoucements</option>
-                                            {% endif %}
-                                            <option value="2">General</option>
-                                            <option value="3">Suggestions</option>
-                                            <option value="4">Off Topic</option>
-                                            <option value="5">Help</option>
-                                            <option value="6">Development</option>
-                                            <option value="7">Serious</option>
-                                            <option value="8">Serious (Real World)</option>
-                                            <option value="9">Trade Discussion</option>
-                                            <option value="10">да (Русский)</option>
+                                            {% for id, section in data.forum_sections %}{% if not section.staff_only or data.user.status == "admin" %}<option value="{{ id }}">{{ section.name }}</option>{% endif %}{% endfor %}
                                         </select>
                                     </div>
                                 </div>

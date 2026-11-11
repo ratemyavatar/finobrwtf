@@ -25,7 +25,7 @@ class rbxAPIs extends Controller
 
     public function productInfo(Request $request) {
         $data = $request->all();
-        $assetId = (int)$data['assetId'] ?? 0;
+        $assetId = (int) ($data['assetId'] ?? 0);
 
         if (!$this->db->table('assets')->where('id', $assetId)->exists()) {
             $this->response = [

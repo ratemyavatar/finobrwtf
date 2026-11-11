@@ -393,7 +393,7 @@ class AdminController extends Controller
             if(Ban::where('username', $data['name'])
                 ->where(function ($query) {
                     $query->where('expire', '>', now())
-                        ->orWhere('perm', 'y');
+                        ->orWhere('perm', true);
                 })->exists()) {
                 Session::put('error', 'This user already has an active ban');
                 return redirect('/admin/bans');
@@ -410,14 +410,14 @@ class AdminController extends Controller
                     'reason' => $data['reason'],
                     'expire' => $expire,
                     'moderator' => Auth::user()->username,
-                    'perm' => 'n'
+                    'perm' => false
                 ]);
             } else {
                 Ban::create([
                     'username' => $data['name'],
                     'reason' => $data['reason'],
                     'moderator' => Auth::user()->username,
-                    'perm' => 'y'
+                    'perm' => true
                 ]);
             }
 
@@ -595,7 +595,7 @@ class AdminController extends Controller
         }
 
         $thread = Thread::find($data['id']);
-        $thread->locked = 'y';
+        $thread->locked = true;
         $thread->save();
 
         Session::put('success', 'Successfully locked');
@@ -615,7 +615,7 @@ class AdminController extends Controller
         }
 
         $thread = Thread::find($data['id']);
-        $thread->locked = 'n';
+        $thread->locked = false;
         $thread->save();
 
         Session::put('success', 'Successfully unlocked');
@@ -635,7 +635,7 @@ class AdminController extends Controller
         }
 
         $thread = Thread::find($data['id']);
-        $thread->pinned = 'y';
+        $thread->pinned = true;
         $thread->save();
 
         Session::put('success', 'Successfully pinned');
@@ -655,7 +655,7 @@ class AdminController extends Controller
         }
 
         $thread = Thread::find($data['id']);
-        $thread->pinned = 'n';
+        $thread->pinned = false;
         $thread->save();
 
         Session::put('success', 'Successfully unpinned');
@@ -676,12 +676,12 @@ class AdminController extends Controller
 
         $reply = Reply::find($data['id']);
 
-        if($reply->sticked = 'y') {
+        if(Reply::where('toid', $reply->toid)->where('sticked', true)->exists()) {
             Session::put('error', 'A sticked reply already exists');
-            return redirect('/forum/home');
+            return redirect('/forum/post?id=' . $reply->toid);
         }
 
-        $reply->sticked = 'y';
+        $reply->sticked = true;
         $reply->save();
 
         Session::put('success', 'Successfully sticked');
@@ -701,10 +701,10 @@ class AdminController extends Controller
         }
 
         $reply = Reply::find($data['id']);
-        $reply->sticked = 'n';
+        $reply->sticked = false;
         $reply->save();
 
-        Session::put('success', 'Successfully sticked');
+        Session::put('success', 'Successfully unsticked');
         return redirect('/forum/post?id=' . $reply->toid);
     }
 

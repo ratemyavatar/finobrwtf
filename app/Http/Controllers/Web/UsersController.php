@@ -30,7 +30,7 @@ class UsersController extends Controller
             $results = User::whereNotIn('username', function ($query) {
                 $query->select('username')
                     ->from('bans')
-                    ->where('perm', 'y');
+                    ->where('perm', true);
                 })
                 ->whereRaw('LOWER(username) LIKE LOWER(?)', ["%{$search}%"])
                 ->orderBy('lastlogin', 'desc')
@@ -39,7 +39,7 @@ class UsersController extends Controller
             $results = User::whereNotIn('username', function ($query) {
                 $query->select('username')
                     ->from('bans')
-                    ->where('perm', 'y');
+                    ->where('perm', true);
                 })
                 ->orderBy('lastlogin', 'desc')
                 ->count();
@@ -55,7 +55,7 @@ class UsersController extends Controller
             $results = User::whereNotIn('username', function ($query) {
                 $query->select('username')
                     ->from('bans')
-                    ->where('perm', 'y');
+                    ->where('perm', true);
                 })
                 ->whereRaw('LOWER(username) LIKE LOWER(?)', ["%{$search}%"])
                 ->orderBy('lastlogin', 'desc')
@@ -67,7 +67,7 @@ class UsersController extends Controller
             $results = User::whereNotIn('username', function ($query) {
                 $query->select('username')
                     ->from('bans')
-                    ->where('perm', 'y');
+                    ->where('perm', true);
                 })
                 ->orderBy('lastlogin', 'desc')
                 ->offset($offset)
