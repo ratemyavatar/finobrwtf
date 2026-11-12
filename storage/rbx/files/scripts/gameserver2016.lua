@@ -91,6 +91,145 @@ local ecSounds = { url .. "/s/sounds/ec_sound_1.mp3", url .. "/s/sounds/ec_sound
 local ecCooldown = {}
 math.randomseed(tick())
 
+local danceList = {}
+local danceTitles = {}
+local danceIds = {}
+local danceTracks = {}
+local danceRecent = {}
+local flingCooldown = {}
+local danceRemote = nil
+local danceClient = nil
+
+local function stopDance(player)
+	local state = danceTracks[player]
+	danceTracks[player] = nil
+	if state == nil then return end
+	for _, connection in pairs(state.connections) do pcall(function() connection:disconnect() end) end
+	pcall(function() state.track:Stop(0.2) end)
+	pcall(function() state.animation:Destroy() end)
+end
+
+local function playDance(player, slug)
+	if danceTitles[slug] == nil then return end
+	local recent = danceRecent[player]
+	if recent and (tick() - recent.at < 0.3 or (recent.slug == slug and tick() - recent.at < 1.5)) then return end
+	danceRecent[player] = { slug = slug, at = tick() }
+	local character = player.Character
+	local humanoid = character and character:FindFirstChild("Humanoid")
+	if humanoid == nil or humanoid.Health <= 0 or character:FindFirstChild("Torso") == nil then return end
+	stopDance(player)
+	local animation = Instance.new("Animation")
+	animation.Name = "FinobeDance"
+	animation.AnimationId = url .. "/asset/?id=" .. danceIds[slug]
+	animation.Parent = character
+	local track = humanoid:LoadAnimation(animation)
+	local state = { track = track, animation = animation, connections = {} }
+	danceTracks[player] = state
+	track:Play(0.2)
+	local startedAt = tick()
+	table.insert(state.connections, humanoid.Running:connect(function(speed)
+		if speed > 1 and tick() - startedAt > 0.3 and danceTracks[player] == state then stopDance(player) end
+	end))
+	table.insert(state.connections, humanoid.Jumping:connect(function(active)
+		if active and danceTracks[player] == state then stopDance(player) end
+	end))
+	table.insert(state.connections, humanoid.Died:connect(function()
+		if danceTracks[player] == state then stopDance(player) end
+	end))
+end
+
+local function flingPlayer(player)
+	if flingCooldown[player] and tick() - flingCooldown[player] < 2 then return end
+	local character = player.Character
+	local humanoid = character and character:FindFirstChild("Humanoid")
+	local root = character and (character:FindFirstChild("HumanoidRootPart") or character:FindFirstChild("Torso"))
+	if humanoid == nil or root == nil or humanoid.Health <= 0 then return end
+	flingCooldown[player] = tick()
+	stopDance(player)
+	local angle = math.random() * math.pi * 2
+	local push = Instance.new("BodyVelocity")
+	push.Name = "FinobeFling"
+	push.MaxForce = Vector3.new(1e7, 1e7, 1e7)
+	push.P = 1e5
+	push.Velocity = Vector3.new(math.cos(angle) * 160, 120, math.sin(angle) * 160)
+	local spin = Instance.new("BodyAngularVelocity")
+	spin.Name = "FinobeFlingSpin"
+	spin.MaxTorque = Vector3.new(1e7, 1e7, 1e7)
+	spin.P = 1e5
+	spin.AngularVelocity = Vector3.new(math.random(-40, 40), math.random(-40, 40), math.random(-40, 40))
+	pcall(function() humanoid.PlatformStand = true end)
+	push.Parent = root
+	spin.Parent = root
+	game:GetService("Debris"):AddItem(push, 0.25)
+	game:GetService("Debris"):AddItem(spin, 0.4)
+	delay(2.5, function()
+		pcall(function() if humanoid.Parent ~= nil then humanoid.PlatformStand = false end end)
+	end)
+end
+
+local function giveDanceClient(player)
+	if danceClient == nil or player.Parent == nil then return end
+	local gui = player:FindFirstChild("PlayerGui")
+	if gui == nil or gui:FindFirstChild("FinobeDance") ~= nil then return end
+	danceClient:Clone().Parent = gui
+	return true
+end
+
+local function setupDances()
+	local ok, list = pcall(function() return game:HttpGet(url .. "/asset/?id=dance&name=list", true) end)
+	if not ok or type(list) ~= "string" then return end
+	for line in string.gmatch(list, "[^\n]+") do
+		local id, slug, title = string.match(line, "^(%d+)\t([a-z0-9]+)\t(.+)$")
+		if slug ~= nil then
+			table.insert(danceList, slug)
+			danceTitles[slug] = title
+			danceIds[slug] = id
+		end
+	end
+	local storage = game:GetService("ReplicatedStorage")
+	local listValue = Instance.new("StringValue")
+	listValue.Name = "FinobeDances"
+	listValue.Value = list
+	listValue.Parent = storage
+	danceRemote = Instance.new("RemoteEvent")
+	danceRemote.Name = "FinobeDance"
+	danceRemote.Parent = storage
+	danceRemote.OnServerEvent:connect(function(player, action, slug)
+		if action == "dance" and type(slug) == "string" then
+			playDance(player, slug)
+		elseif action == "stop" then
+			stopDance(player)
+		end
+	end)
+	pcall(function() danceClient = game:GetObjects(url .. "/asset/?id=dance&name=client")[1] end)
+end
+
+local function danceCommand(player, msg)
+	local text = string.lower(tostring(msg or ""))
+	text = string.gsub(text, "^%s+", "")
+	text = string.gsub(text, "%s+$", "")
+	if text == "/dance" or text == "/dances" then
+		if danceRemote ~= nil then
+			if giveDanceClient(player) then wait(1) end
+			danceRemote:FireClient(player, "open")
+		end
+		return true
+	end
+	if text == "/fling" then
+		flingPlayer(player)
+		return true
+	end
+	local emote = string.match(text, "^/e%s+(.+)$")
+	if emote ~= nil then
+		local slug = string.gsub(emote, "[^a-z0-9]", "")
+		if danceTitles[slug] ~= nil then
+			playDance(player, slug)
+			return true
+		end
+	end
+	return false
+end
+
 pcall(function() Players.CharacterAutoLoads = false end)
 Players.Changed:connect(function(property)
 	if property == "CharacterAutoLoads" and Players.CharacterAutoLoads then
@@ -400,7 +539,12 @@ game:GetService("Players").PlayerAdded:connect(function(player)
 	player.CharacterAdded:connect(function(character) spawn(function() applyAnimations(character) end) end)
 	if player.Character ~= nil then spawn(function() applyAnimations(player.Character) end) end
 
+	player.CharacterAdded:connect(function()
+		delay(1, function() giveDanceClient(player) end)
+	end)
+
 	player.Chatted:connect(function(msg)
+		if danceCommand(player, msg) then return end
 		local command = string.lower(tostring(msg or ""))
 		if not ecCommands[command] then return end
 		local character = player.Character
@@ -433,6 +577,9 @@ end)
 
 game:GetService("Players").PlayerRemoving:connect(function(player)
 	ecCooldown[player] = nil
+	stopDance(player)
+	danceRecent[player] = nil
+	flingCooldown[player] = nil
 	playerAnims[player] = nil
 	print("Player " .. player.userId .. " leaving")
 
@@ -454,6 +601,8 @@ pcall(function()
 		admin.Parent = game:GetService("ServerScriptService")
 	end
 end)
+
+pcall(setupDances)
 
 if tostring(forceFiltering) ~= "0" then
 	pcall(function() workspace.FilteringEnabled = true end)

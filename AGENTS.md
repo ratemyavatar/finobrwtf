@@ -57,3 +57,13 @@
 - `AvatarRenderer::render3d` saves the scene to `storage/app/avatar3d/<userid>-<hash>/` and only renders again when the avatar changes
 - three.js r128 shows it. it spins slowly and can be dragged
 - users turn it on in /app/theme (`users.view3d`, off by default)
+
+## dances and fling (2016 games)
+
+- `/dance` opens a dance list that looks like the thugshakers admin list window. clicking one says `/e <dance>` in chat
+- `/e <dance>` plays it, walking or jumping stops it. only r6 players can dance, the pack is r6
+- `/fling` flings yourself
+- the dances come from roblox pack 119879382625668. they live in `storage/rbx/files/dances` as gzipped xml with ids from 2140000001 up, listed in `list.txt`
+- the 2016 engine only loads animations from number ids, so `/asset/?id=<dance id>` serves them
+- the gui script is `storage/rbx/files/scripts/dance2016.lua`, sent as a LocalScript from `/asset/?id=dance&name=client`
+- to build the dances again see `tools/dances/README.md`

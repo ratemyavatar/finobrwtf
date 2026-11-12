@@ -11,6 +11,8 @@ use Illuminate\Support\Facades\Cache;
 
 class rbxAPIs extends Controller
 {
+    private const DANCE_BASE_ID = 2140000000;
+
     protected $response;
     protected $db;
 
@@ -95,6 +97,9 @@ class rbxAPIs extends Controller
         if (($data['id'] ?? null) === 'admin') {
             return $this->adminModel();
         }
+        if (($data['id'] ?? null) === 'dance') {
+            return $this->danceAsset((string) ($data['name'] ?? ''));
+        }
         $assetId = (int)($data['ID'] ?? $data['Id'] ?? $data['iD'] ?? $data['id'] ?? 0);
 
         if (file_exists(storage_path("rbx/files/2012CoreGui/{$assetId}.lua")))
@@ -103,6 +108,15 @@ class rbxAPIs extends Controller
 
             $script = preg_replace('#https?://www\.' . preg_quote(config('finobe.domain'), '#') . '#i', 'http://assetgame.' . config('finobe.domain'), $script);
             return response(SecurityNotary::SignScript($script, FormatVersion::V1, false));
+        }
+
+        if ($assetId > self::DANCE_BASE_ID && $assetId < self::DANCE_BASE_ID + 100000) {
+            $dance = $this->danceFile($assetId);
+            if ($dance !== null) {
+                return response($dance, 200)
+                    ->header('Content-Type', 'text/xml')
+                    ->header('Cache-Control', 'public, max-age=86400');
+            }
         }
 
         $animation = storage_path("rbx/files/animations/{$assetId}");
@@ -316,6 +330,39 @@ class rbxAPIs extends Controller
         }
 
         return response('1|' . $user->username, 200)->header('Content-Type', 'text/plain');
+    }
+
+    public function danceAsset(string $name) {
+        $folder = storage_path('rbx/files/dances');
+
+        if ($name === 'list') {
+            return response((string) @file_get_contents("{$folder}/list.txt"), 200)->header('Content-Type', 'text/plain');
+        }
+
+        if ($name === 'client') {
+            $source = (string) @file_get_contents(storage_path('rbx/files/scripts/dance2016.lua'));
+            $source = str_replace(']]>', ']]]]><![CDATA[>', $source);
+            $model = '<roblox xmlns:xmime="http://www.w3.org/2005/05/xmlmime" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.roblox.com/roblox.xsd" version="4">'
+                . '<External>null</External><External>nil</External>'
+                . '<Item class="LocalScript" referent="RBX0"><Properties><bool name="Disabled">false</bool>'
+                . '<Content name="LinkedSource"><null></null></Content><string name="Name">FinobeDance</string>'
+                . '<ProtectedString name="Source"><![CDATA[' . $source . ']]></ProtectedString></Properties></Item></roblox>';
+            return response($model, 200)->header('Content-Type', 'text/xml');
+        }
+
+        return response('', 404);
+    }
+
+    private function danceFile(int $assetId): ?string {
+        $list = @file(storage_path('rbx/files/dances/list.txt'), FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) ?: [];
+        foreach ($list as $line) {
+            [$id, $slug] = array_pad(explode("\t", $line, 3), 2, '');
+            if ((int) $id === $assetId && preg_match('/^[a-z0-9]{1,64}$/', $slug)) {
+                $file = storage_path("rbx/files/dances/{$slug}.rbxmx.gz");
+                return is_file($file) ? gzdecode((string) file_get_contents($file)) : null;
+            }
+        }
+        return null;
     }
 
     public function adminModel() {

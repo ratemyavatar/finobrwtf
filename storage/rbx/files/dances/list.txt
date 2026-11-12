@@ -1,0 +1,93 @@
+2140000001	aerostep	AeroStep
+2140000002	anthony	Anthony
+2140000003	bloxycola	Bloxy Cola
+2140000004	bostonbreakdance	Boston Breakdance
+2140000005	breakdown	Breakdown
+2140000006	bumperkart	Bumper Kart
+2140000007	carshearer	Car Shearer
+2140000008	catdance	Cat Dance
+2140000009	chill	Chill
+2140000010	clapping	Clapping
+2140000011	classicparty	Classic Party
+2140000012	cleangroove	Clean Groove
+2140000013	comeback	Comeback
+2140000014	confused	Confused
+2140000015	congascout	Conga (Scout)
+2140000016	cradles	Cradles
+2140000017	dab	Dab
+2140000018	defaultdance	Default Dance
+2140000019	destiny	destiny
+2140000020	distraction	Distraction
+2140000021	dr33mf33t	Dr33mF33t
+2140000022	engineerlaugh	Engineer Laugh
+2140000023	epicbackflips	Epic Backflips
+2140000024	fave	Fave
+2140000025	firework	Firework
+2140000026	flex	Flex
+2140000027	floss	Floss
+2140000028	flydance	Fly dance
+2140000029	fresh	Fresh
+2140000030	garrysdance	Garry's dance
+2140000031	groovin	Groovin
+2140000032	headless	Headless
+2140000033	heavylaugh	Heavy Laugh
+2140000034	helicopter	Helicopter
+2140000035	helloworld	Hello World
+2140000036	illbreakyou	I'll Break You.
+2140000037	infinitedabcringe	Infinite Dab (CRINGE)
+2140000038	intro	Intro
+2140000039	jumpstyle	JumpStyle
+2140000040	kazotskykick	Kazotsky Kick
+2140000041	kazotskykickdemoman	Kazotsky Kick (Demoman)
+2140000042	kazotskykickengineer	Kazotsky Kick (Engineer)
+2140000043	kazotskykickheavy	Kazotsky Kick (Heavy)
+2140000044	kazotskykickmedic	Kazotsky Kick (Medic)
+2140000045	kazotskykickpyro	Kazotsky Kick (Pyro)
+2140000046	kazotskykickscout	Kazotsky Kick (Scout)
+2140000047	kazotskykicksniper	Kazotsky Kick (Sniper)
+2140000048	kazotskykicksoldier	Kazotsky Kick (Soldier)
+2140000049	kazotskykickspy	Kazotsky Kick (Spy)
+2140000050	lazycouch	Lazy Couch
+2140000051	loudlaugh	Loud Laugh
+2140000052	lucio	Lucio
+2140000053	mannrobics	Mannrobics
+2140000054	mariobeatbox	Mario beatbox
+2140000055	mediclaugh	Medic Laugh
+2140000056	monstermash	Monster Mash
+2140000057	ok	Ok
+2140000058	orangejustice	Orange Justice
+2140000059	parrotpartayyyyyyyyyyypoggers	PARROT PARTAYYYYYYYYYYY poggers
+2140000060	pem	Pem
+2140000061	penguinwalk	Penguin Walk
+2140000062	peterparker	Peter Parker
+2140000063	poisoned	Poisoned
+2140000064	powerdance	Power Dance
+2140000065	ppmusic	PP Music
+2140000066	pyrolaugh	Pyro Laugh
+2140000067	ranchorelaxo	Rancho Relaxo
+2140000068	rat	Rat
+2140000069	reanimated	Reanimated
+2140000070	relief	Relief
+2140000071	revenge	Revenge
+2140000072	rickroll	RickRoll
+2140000073	robics	Robics
+2140000074	russian	Russian
+2140000075	seasantis	Sea Santis
+2140000076	skippinghappily	Skipping Happily
+2140000077	smug	Smug
+2140000078	sniperlaugh	Sniper Laugh
+2140000079	soldierlaugh	Soldier Laugh
+2140000080	special	Special
+2140000081	spin	Spin
+2140000082	spyconga	Spy Conga
+2140000083	takethel	Take The L
+2140000084	thiller	Thiller
+2140000085	thriller	Thriller
+2140000086	torturedance	Torture Dance
+2140000087	tpose	Tpose
+2140000088	transcendence	Transcendence
+2140000089	unlock	Unlock
+2140000090	walkywalk	WalkyWalk
+2140000091	wess	Wess
+2140000092	whip	Whip
+2140000093	whoawhoawhoaholdon	Whoa, Whoa, Whoa, Hold On.
