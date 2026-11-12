@@ -54,14 +54,13 @@ local function open()
 	info.Visible = false
 	info.ZIndex = 10
 
-	local drag = Instance.new("TextButton", scr)
-	drag.Draggable = true
+	local drag = Instance.new("Frame", scr)
+	drag.Active = false
 	drag.BackgroundTransparency = 1
+	drag.BorderSizePixel = 0
 	drag.Size = UDim2.new(0, 255, 0, 30)
 	drag.Name = "Drag"
 	drag.Position = UDim2.new(0, -400, 0.5, -160)
-	drag.AutoButtonColor = false
-	drag.Text = ""
 	drag.ZIndex = 1
 
 	local main = Instance.new("Frame", drag)
@@ -80,7 +79,9 @@ local function open()
 	cmf.ScrollBarThickness = 2
 	cmf.BackgroundTransparency = transparency
 
-	local top = Instance.new("TextLabel", drag)
+	local top = Instance.new("TextButton", drag)
+	top.AutoButtonColor = false
+	top.Style = "Custom"
 	top.Position = UDim2.new(0, 0, 0, 0)
 	top.Size = UDim2.new(1, 0, 0, 30)
 	top.BackgroundColor3 = primary
@@ -110,14 +111,40 @@ local function open()
 		return button
 	end
 
-	smallButton("X", -25).MouseButton1Click:connect(function() scr:Destroy() end)
+	local dragging = false
+	local dragStart = nil
+	local startPosition = nil
+	local connections = {}
+
+	local function close()
+		for _, connection in pairs(connections) do pcall(function() connection:disconnect() end) end
+		scr:Destroy()
+	end
+
+	smallButton("X", -25).MouseButton1Down:connect(close)
 	local hide = smallButton("-", -50)
-	hide.MouseButton1Click:connect(function()
+	hide.MouseButton1Down:connect(function()
 		main.Visible = not main.Visible
 		hide.Text = main.Visible and "-" or "+"
 	end)
 	local stop = smallButton("S", -75)
-	stop.MouseButton1Click:connect(function() remote:FireServer("stop") end)
+	stop.MouseButton1Down:connect(function() remote:FireServer("stop") end)
+
+	top.MouseButton1Down:connect(function(x, y)
+		dragging = true
+		dragStart = Vector2.new(x, y)
+		startPosition = drag.Position
+	end)
+	local input = game:GetService("UserInputService")
+	table.insert(connections, input.InputChanged:connect(function(event)
+		if dragging and event.UserInputType == Enum.UserInputType.MouseMovement then
+			local delta = Vector2.new(event.Position.X, event.Position.Y) - dragStart
+			drag.Position = UDim2.new(startPosition.X.Scale, startPosition.X.Offset + delta.X, startPosition.Y.Scale, startPosition.Y.Offset + delta.Y)
+		end
+	end))
+	table.insert(connections, input.InputEnded:connect(function(event)
+		if event.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end
+	end))
 
 	local search = Instance.new("TextBox", drag)
 	search.Size = UDim2.new(0, 130, 0, 20)
