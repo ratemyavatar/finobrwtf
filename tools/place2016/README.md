@@ -27,3 +27,4 @@ then upload place2016.rbxlx as the place and set the game to the 2016 client.
 - beams, trails, highlights and surface appearances do nothing.
 - union cut outs made with negate parts are lost on newer unions.
 - collision groups and no collision constraints do not change physics.
+- members 2016 does not have at all are read as nil (or an event that never fires) instead of erroring, and a warning is printed once.
