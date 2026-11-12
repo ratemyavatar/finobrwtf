@@ -9,3 +9,10 @@ python3 tools/dances/build_dances.py pack.xml storage/rbx/files/dances
 ```
 
 it keeps r6 dances only, drops junk names and copies, sets them to action priority, and writes `list.txt` with the ids.
+
+then render the wheel thumbnails (needs the arbiter running) and the wheel images:
+
+```bash
+php tools/dances/render_thumbs.php storage/rbx/files/dances
+python3 tools/dances/wheel_images.py storage/rbx/files/dances/ui
+```

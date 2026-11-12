@@ -18,8 +18,8 @@ local guiName = "FinobeDanceGUI"
 local function dances()
 	local list = {}
 	for line in string.gmatch(listValue.Value, "[^\n]+") do
-		local slug, title = string.match(line, "^%d+\t([^\t]+)\t(.+)$")
-		if slug ~= nil then table.insert(list, { slug = slug, title = title }) end
+		local id, slug, title = string.match(line, "^(%d+)\t([^\t]+)\t(.+)$")
+		if slug ~= nil then table.insert(list, { id = tonumber(id), slug = slug, title = title }) end
 	end
 	return list
 end
@@ -241,3 +241,243 @@ end
 
 player.CharacterAdded:connect(watch)
 if player.Character ~= nil then watch(player.Character) end
+
+local wheelName = "FinobeEmoteWheel"
+local wheelImage = "rbxassetid://2140200001"
+local highlightImage = "rbxassetid://2140200002"
+local wheel = nil
+
+local function buildWheel()
+	local playerGui = player:FindFirstChild("PlayerGui")
+	if playerGui == nil then return nil end
+
+	local state = { page = 1, filter = "", visible = {}, slots = {} }
+
+	local scr = Instance.new("ScreenGui")
+	scr.Name = wheelName
+
+	local holder = Instance.new("Frame", scr)
+	holder.BackgroundTransparency = 1
+	holder.BorderSizePixel = 0
+	holder.Size = UDim2.new(0, 360, 0, 440)
+	holder.Position = UDim2.new(0.5, -180, 0.5, -220)
+	holder.Visible = false
+
+	local modal = Instance.new("TextButton", holder)
+	modal.BackgroundTransparency = 1
+	modal.Text = ""
+	modal.Size = UDim2.new(0, 0, 0, 0)
+	modal.Modal = true
+
+	local search = Instance.new("TextBox", holder)
+	search.Size = UDim2.new(0, 220, 0, 26)
+	search.Position = UDim2.new(0.5, -110, 0, 0)
+	search.BackgroundColor3 = Color3.new(0.08, 0.1, 0.16)
+	search.BackgroundTransparency = 0.15
+	search.BorderSizePixel = 0
+	search.TextColor3 = Color3.new(0.85, 0.85, 0.9)
+	search.Font = "SourceSans"
+	search.FontSize = "Size18"
+	search.Text = "Search"
+	search.ClearTextOnFocus = true
+	search.ZIndex = 3
+
+	local ring = Instance.new("ImageLabel", holder)
+	ring.BackgroundTransparency = 1
+	ring.Image = wheelImage
+	ring.Size = UDim2.new(0, 360, 0, 360)
+	ring.Position = UDim2.new(0, 0, 0, 36)
+	ring.ZIndex = 1
+
+	local highlight = Instance.new("ImageLabel", ring)
+	highlight.BackgroundTransparency = 1
+	highlight.Image = highlightImage
+	highlight.Size = UDim2.new(1, 0, 1, 0)
+	highlight.Visible = false
+	highlight.ZIndex = 2
+
+	local center = Instance.new("TextLabel", ring)
+	center.BackgroundTransparency = 1
+	center.Size = UDim2.new(0, 104, 0, 104)
+	center.Position = UDim2.new(0.5, -52, 0.5, -52)
+	center.Font = "SourceSans"
+	center.FontSize = "Size18"
+	center.TextWrapped = true
+	center.TextColor3 = Color3.new(1, 1, 1)
+	center.Text = "Select an Emote"
+	center.ZIndex = 4
+
+	for i = 1, 8 do
+		local angle = math.rad((i - 1) * 45 - 90)
+		local x = 180 + math.cos(angle) * 121
+		local y = 180 + math.sin(angle) * 121
+		local slot = Instance.new("TextButton", ring)
+		slot.Style = "Custom"
+		slot.AutoButtonColor = false
+		slot.BackgroundTransparency = 1
+		slot.BorderSizePixel = 0
+		slot.Text = ""
+		slot.Size = UDim2.new(0, 80, 0, 80)
+		slot.Position = UDim2.new(0, x - 40, 0, y - 40)
+		slot.ZIndex = 3
+
+		local thumb = Instance.new("ImageLabel", slot)
+		thumb.BackgroundTransparency = 1
+		thumb.Size = UDim2.new(0, 64, 0, 64)
+		thumb.Position = UDim2.new(0.5, -32, 0, 0)
+		thumb.ZIndex = 3
+
+		local number = Instance.new("TextLabel", slot)
+		number.BackgroundTransparency = 1
+		number.Size = UDim2.new(1, 0, 0, 16)
+		number.Position = UDim2.new(0, 0, 1, -16)
+		number.Font = "SourceSansBold"
+		number.FontSize = "Size14"
+		number.TextColor3 = Color3.new(1, 1, 1)
+		number.TextStrokeTransparency = 0.6
+		number.Text = tostring(i)
+		number.ZIndex = 4
+
+		state.slots[i] = { button = slot, thumb = thumb }
+
+		slot.MouseEnter:connect(function()
+			local dance = state.visible[i]
+			if dance == nil then return end
+			highlight.Rotation = (i - 1) * 45
+			highlight.Visible = true
+			center.Text = dance.title
+		end)
+		slot.MouseLeave:connect(function()
+			highlight.Visible = false
+			center.Text = "Select an Emote"
+		end)
+		slot.MouseButton1Down:connect(function()
+			local dance = state.visible[i]
+			if dance == nil then return end
+			holder.Visible = false
+			choose(dance.slug)
+		end)
+	end
+
+	local function arrow(text, x)
+		local button = Instance.new("TextButton", holder)
+		button.Style = "Custom"
+		button.AutoButtonColor = true
+		button.BackgroundColor3 = Color3.new(0.08, 0.1, 0.16)
+		button.BackgroundTransparency = 0.15
+		button.BorderSizePixel = 0
+		button.Size = UDim2.new(0, 30, 0, 26)
+		button.Position = UDim2.new(0.5, x, 1, -30)
+		button.Font = "SourceSansBold"
+		button.FontSize = "Size18"
+		button.TextColor3 = Color3.new(1, 1, 1)
+		button.Text = text
+		button.ZIndex = 3
+		return button
+	end
+
+	local previous = arrow("<", -110)
+	local nextPage = arrow(">", 80)
+	local pageLabel = Instance.new("TextLabel", holder)
+	pageLabel.BackgroundTransparency = 1
+	pageLabel.Size = UDim2.new(0, 160, 0, 26)
+	pageLabel.Position = UDim2.new(0.5, -80, 1, -30)
+	pageLabel.Font = "SourceSansBold"
+	pageLabel.FontSize = "Size18"
+	pageLabel.TextColor3 = Color3.new(1, 1, 1)
+	pageLabel.TextStrokeTransparency = 0.6
+	pageLabel.ZIndex = 3
+
+	local function matching()
+		local out = {}
+		local filter = string.lower(state.filter)
+		for _, dance in pairs(dances()) do
+			if filter == "" or string.find(string.lower(dance.title), filter, 1, true) or string.find(dance.slug, filter, 1, true) then
+				table.insert(out, dance)
+			end
+		end
+		return out
+	end
+
+	local function refresh()
+		local list = matching()
+		local pages = math.max(1, math.ceil(#list / 8))
+		if state.page > pages then state.page = pages end
+		if state.page < 1 then state.page = 1 end
+		pageLabel.Text = state.page .. " / " .. pages
+		state.visible = {}
+		for i = 1, 8 do
+			local dance = list[(state.page - 1) * 8 + i]
+			state.visible[i] = dance
+			local slot = state.slots[i]
+			slot.thumb.Image = dance and ("rbxassetid://" .. (dance.id + 100000)) or ""
+			slot.button.Visible = dance ~= nil
+		end
+		highlight.Visible = false
+		center.Text = #list == 0 and "No emotes found" or "Select an Emote"
+	end
+
+	previous.MouseButton1Down:connect(function() state.page = state.page - 1 refresh() end)
+	nextPage.MouseButton1Down:connect(function() state.page = state.page + 1 refresh() end)
+	search.FocusLost:connect(function()
+		state.filter = (search.Text == "Search") and "" or search.Text
+		state.page = 1
+		refresh()
+		if search.Text == "" then search.Text = "Search" end
+	end)
+
+	refresh()
+	scr.Parent = playerGui
+
+	return {
+		gui = scr,
+		holder = holder,
+		state = state,
+		refresh = refresh,
+		pick = function(i)
+			local dance = state.visible[i]
+			if dance == nil then return end
+			holder.Visible = false
+			choose(dance.slug)
+		end,
+		page = function(step) state.page = state.page + step refresh() end,
+	}
+end
+
+local function getWheel()
+	if wheel == nil or wheel.gui.Parent == nil then
+		wheel = buildWheel()
+	end
+	return wheel
+end
+
+local numberKeys = {
+	[Enum.KeyCode.One] = 1, [Enum.KeyCode.Two] = 2, [Enum.KeyCode.Three] = 3, [Enum.KeyCode.Four] = 4,
+	[Enum.KeyCode.Five] = 5, [Enum.KeyCode.Six] = 6, [Enum.KeyCode.Seven] = 7, [Enum.KeyCode.Eight] = 8,
+}
+
+local function typing()
+	local focused = nil
+	pcall(function() focused = game:GetService("UserInputService"):GetFocusedTextBox() end)
+	return focused ~= nil
+end
+
+game:GetService("UserInputService").InputBegan:connect(function(input, processed)
+	if processed or input.UserInputType ~= Enum.UserInputType.Keyboard or typing() then return end
+	local key = input.KeyCode
+	if key == Enum.KeyCode.Minus or key == Enum.KeyCode.KeypadMinus then
+		local w = getWheel()
+		if w == nil then return end
+		w.holder.Visible = not w.holder.Visible
+		if w.holder.Visible then w.refresh() end
+		return
+	end
+	if wheel == nil or wheel.gui.Parent == nil or not wheel.holder.Visible then return end
+	if numberKeys[key] then
+		wheel.pick(numberKeys[key])
+	elseif key == Enum.KeyCode.Left then
+		wheel.page(-1)
+	elseif key == Enum.KeyCode.Right then
+		wheel.page(1)
+	end
+end)

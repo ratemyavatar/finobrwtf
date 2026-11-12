@@ -110,11 +110,11 @@ class rbxAPIs extends Controller
             return response(SecurityNotary::SignScript($script, FormatVersion::V1, false));
         }
 
-        if ($assetId > self::DANCE_BASE_ID && $assetId < self::DANCE_BASE_ID + 100000) {
+        if ($assetId > self::DANCE_BASE_ID && $assetId < self::DANCE_BASE_ID + 300000) {
             $dance = $this->danceFile($assetId);
             if ($dance !== null) {
-                return response($dance, 200)
-                    ->header('Content-Type', 'text/xml')
+                return response($dance[0], 200)
+                    ->header('Content-Type', $dance[1])
                     ->header('Cache-Control', 'public, max-age=86400');
             }
         }
@@ -353,15 +353,32 @@ class rbxAPIs extends Controller
         return response('', 404);
     }
 
-    private function danceFile(int $assetId): ?string {
-        $list = @file(storage_path('rbx/files/dances/list.txt'), FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) ?: [];
+    private function danceFile(int $assetId): ?array {
+        $folder = storage_path('rbx/files/dances');
+        $offset = $assetId - self::DANCE_BASE_ID;
+
+        if ($offset > 200000) {
+            $ui = [200001 => 'wheel', 200002 => 'highlight'][$offset] ?? null;
+            $file = $ui ? "{$folder}/ui/{$ui}.png" : null;
+            return $file && is_file($file) ? [(string) file_get_contents($file), 'image/png'] : null;
+        }
+
+        $thumb = $offset > 100000;
+        $danceId = $thumb ? $assetId - 100000 : $assetId;
+        $list = @file("{$folder}/list.txt", FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) ?: [];
         foreach ($list as $line) {
             [$id, $slug] = array_pad(explode("\t", $line, 3), 2, '');
-            if ((int) $id === $assetId && preg_match('/^[a-z0-9]{1,64}$/', $slug)) {
-                $file = storage_path("rbx/files/dances/{$slug}.rbxmx.gz");
-                return is_file($file) ? gzdecode((string) file_get_contents($file)) : null;
+            if ((int) $id !== $danceId || !preg_match('/^[a-z0-9]{1,64}$/', $slug)) {
+                continue;
             }
+            if ($thumb) {
+                $file = "{$folder}/thumbs/{$slug}.png";
+                return is_file($file) ? [(string) file_get_contents($file), 'image/png'] : null;
+            }
+            $file = "{$folder}/{$slug}.rbxmx.gz";
+            return is_file($file) ? [(string) gzdecode((string) file_get_contents($file)), 'text/xml'] : null;
         }
+
         return null;
     }
 
