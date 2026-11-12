@@ -332,7 +332,7 @@ do
 	end
 
 	C.afterSet = function(o, k, v)
-		if C.weldConstraints[o] and (k == "Part0" or k == "Part1") then
+		if (k == "Part0" or k == "Part1") and C.isWeldConstraint(o) then
 			local p0, p1 = o.Part0, o.Part1
 			if p0 and p1 then
 				o.C0 = p0.CFrame:inverse() * p1.CFrame
@@ -342,7 +342,7 @@ do
 	end
 	local oldEnabledSet = C.SET.Enabled
 	C.SET.Enabled = function(o, v)
-		if C.weldConstraints[o] then
+		if isInstance(o) and C.isWeldConstraint(o) then
 			setShadow(o, "Enabled", v)
 			local sh = props(o)
 			if not v then
@@ -365,6 +365,11 @@ do
 	end
 	C.GET.Enabled = function(o)
 		if not isInstance(o) then return false end
+		if C.isWeldConstraint(o) then
+			local e = props(o).Enabled
+			if e == nil then return true, true end
+			return true, e
+		end
 		local ok, v = pcall(idx, o, "Enabled")
 		if ok then return true, v end
 		if C.dummyClass(o) then return false end
@@ -447,6 +452,26 @@ do
 				dummySignal(prompt, "PromptButtonHoldEnded"):Fire(player)
 				pps.PromptButtonHoldEnded:Fire(prompt, player)
 			end
+		end)
+
+		C.spawn(function()
+			for _, root in ipairs({ workspace, ReplicatedStorage }) do
+				for _, d in ipairs(C.descendants(root)) do
+					local dc = C.dummyClass(d)
+					if dc and CLASSES[dc] and CLASSES[dc].onSet and (dc == "LinearVelocity" or dc == "AngularVelocity" or dc == "VectorForce" or dc == "AlignPosition" or dc == "AlignOrientation") then
+						if d:IsDescendantOf(workspace) then pcall(CLASSES[dc].onSet, d) end
+					end
+				end
+			end
+			workspace.DescendantAdded:connect(function(d)
+				if d.Name == "__compat_class" and d.Parent then
+					local dc = d.Value
+					if CLASSES[dc] and (dc == "LinearVelocity" or dc == "AngularVelocity" or dc == "VectorForce" or dc == "AlignPosition" or dc == "AlignOrientation") then
+						local o = d.Parent
+						delay(0, function() pcall(CLASSES[dc].onSet, o) end)
+					end
+				end
+			end)
 		end)
 
 		local commands = {}

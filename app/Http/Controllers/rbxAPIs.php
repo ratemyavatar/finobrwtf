@@ -129,6 +129,11 @@ class rbxAPIs extends Controller
             return response()->file($r15Mesh, ['Content-Type' => 'application/octet-stream']);
         }
 
+        $csgMesh = storage_path("rbx/files/csg/{$assetId}");
+        if ($assetId > 0 && is_file($csgMesh)) {
+            return response()->file($csgMesh, ['Content-Type' => 'application/octet-stream']);
+        }
+
         if (Asset::isAssetExist($assetId))
         {
             $renderToken = (string) ($data['rendertoken'] ?? '');

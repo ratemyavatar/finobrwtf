@@ -64,6 +64,7 @@ do
 		if kind == "Vector2" then return realVector2.new(n[1], n[2]) end
 		if kind == "NumberRange" then return NumberRange.new(n[1], n[2]) end
 		if kind == "Enum" then return C.enum(rest) end
+		if kind == "EnumNum" then return tonumber(rest) end
 		if kind == "Font" then return G.Font.new(rest) end
 		if kind == "Rect" then return G.Rect.new(n[1], n[2], n[3], n[4]) end
 		if kind == "CS" then
@@ -362,10 +363,37 @@ do
 	end
 	C.descendants = descendants
 
+	local aliasCache = weak()
+	local function aliasClass(o)
+		local c = aliasCache[o]
+		if c ~= nil then return c or nil end
+		c = false
+		local ok, cn = pcall(idx, o, "ClassName")
+		if ok and (cn == "Part" or cn == "Frame") then
+			local marker = o:FindFirstChild("__compat_class")
+			if marker then c = marker.Value end
+		elseif ok and cn == "ManualWeld" then
+			if o:FindFirstChild("__compat_wc") then c = "WeldConstraint" end
+		end
+		aliasCache[o] = c
+		return c or nil
+	end
+	C.aliasClass = aliasClass
+	C.isWeldConstraint = function(o)
+		return C.weldConstraints[o] == true or aliasClass(o) == "WeldConstraint"
+	end
+
 	local function realIsA(o, class)
 		local dc = dummyClass(o)
 		if dc then return classIsA(dc, class) end
-		if C.weldConstraints[o] then return class == "WeldConstraint" or class == "Constraint" or class == "Instance" end
+		local ac = aliasClass(o)
+		if ac then
+			if ac == class then return true end
+			if ac == "UnionOperation" and (class == "PartOperation" or class == "TriangleMeshPart") then return true end
+			if ac == "MeshPart" and class == "TriangleMeshPart" then return true end
+			if class == "Part" then return false end
+		end
+		if C.weldConstraints[o] or ac == "WeldConstraint" then return class == "WeldConstraint" or class == "Constraint" or class == "Instance" end
 		local ok, r = pcall(o.IsA, o, class)
 		if ok and r then return true end
 		if class == "Constraint" or class == "PVInstance" then
@@ -379,6 +407,8 @@ do
 	local function className(o)
 		local dc = dummyClass(o)
 		if dc then return dc end
+		local ac = aliasClass(o)
+		if ac then return ac end
 		if C.weldConstraints[o] then return "WeldConstraint" end
 		return o.ClassName
 	end

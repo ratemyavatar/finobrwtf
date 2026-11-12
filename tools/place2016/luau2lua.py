@@ -27,7 +27,7 @@ GuiState Transparency Color Size Position Rotation Visible Text Value'''.split()
 
 COMPAT_GLOBALS = ['task', 'typeof', 'Random', 'TweenInfo', 'RaycastParams', 'OverlapParams', 'utf8', 'bit32',
                   'Color3', 'CFrame', 'UDim2', 'UDim', 'Vector3', 'Vector2', 'math', 'table', 'string', 'os', 'Enum',
-                  'Instance', 'DateTime', 'NumberRange', 'Font', 'warn', 'Rect', 'PhysicalProperties', 'require']
+                  'Instance', 'DateTime', 'NumberRange', 'Font', 'warn', 'Rect', 'PhysicalProperties']
 
 
 class Token:
@@ -817,7 +817,7 @@ class Emitter:
             self.w('for', line)
             self.w(', '.join(st.names))
             self.w('in')
-            if len(st.exprs) == 1 and st.exprs[0].k not in ('call', 'mcall', 'vararg') and self.hooks:
+            if len(st.exprs) == 1 and st.exprs[0].k != 'vararg' and self.hooks:
                 self.w('__iter(')
                 self.expr(st.exprs[0])
                 self.w(')')

@@ -223,6 +223,53 @@ do
 		return true
 	end
 
+	local function meshOf(o)
+		if not isInstance(o) then return nil end
+		local ok, m = pcall(o.FindFirstChild, o, "__compat_mesh")
+		if ok then return m end
+		return nil
+	end
+	C.meshOf = meshOf
+	SET.TextureID = function(o, v)
+		local m = meshOf(o)
+		if not m then return false end
+		m.TextureId = v
+		setShadow(o, "TextureID", v)
+		return true
+	end
+	GET.TextureID = function(o)
+		local m = meshOf(o)
+		if not m then return false end
+		return true, m.TextureId
+	end
+	SET.TextureId = function(o, v)
+		local m = meshOf(o)
+		if not m then return false end
+		local ok = pcall(C.setidx, o, "TextureId", v)
+		if ok then return true end
+		m.TextureId = v
+		return true
+	end
+	GET.MeshId = function(o)
+		local m = meshOf(o)
+		if not m then return false end
+		return true, m.MeshId
+	end
+	local oldSizeSet = SET.Size
+	SET.Size = function(o, v, k)
+		local m = meshOf(o)
+		if m then
+			local initial = props(o).InitialSize
+			o.Size = v
+			if initial then
+				local real = o.Size
+				m.Scale = realVector3.new(real.x / initial.x, real.y / initial.y, real.z / initial.z)
+			end
+			return true
+		end
+		return oldSizeSet(o, v, k)
+	end
+
 	SET.TextSize = function(o, v)
 		local okf = pcall(C.setidx, o, "TextSize", v)
 		if okf then return true end
@@ -696,9 +743,9 @@ do
 		error(tostring(name) .. " is not a valid member of " .. (inst and o.ClassName or typeof(o)), 2)
 	end
 
-	function C.iter(x)
+	function C.iter(x, ...)
 		local t = type(x)
-		if t == "function" then return x end
+		if t == "function" then return x, ... end
 		if t == "table" then
 			local mt = getmetatable(x)
 			if type(mt) == "table" and mt.__iter then return mt.__iter(x) end

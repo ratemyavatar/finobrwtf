@@ -1025,6 +1025,40 @@ do
 	}
 	SERVICE_METHODS[RunService] = RunServiceExtra
 
+	local closeCallbacks = {}
+	SERVICE_METHODS[game] = {
+		BindToClose = function(_, fn)
+			closeCallbacks[#closeCallbacks + 1] = fn
+			if #closeCallbacks == 1 then
+				pcall(function()
+					game.OnClose = function()
+						for _, f in ipairs(closeCallbacks) do pcall(f) end
+					end
+				end)
+			end
+		end,
+		IsLoaded = function() return true end,
+		GetJobsInfo = function() return {} end,
+	}
+	C.GET.Loaded = function(o)
+		if o ~= game then return false end
+		return true, C.proxySignal(function() return nil end)
+	end
+	C.GET.PrivateServerId = function(o)
+		if o ~= game then return false end
+		return true, ""
+	end
+	C.GET.PrivateServerOwnerId = function(o)
+		if o ~= game then return false end
+		return true, 0
+	end
+	C.GET.CreatorType = function(o)
+		if o ~= game then return false end
+		local ok, v = pcall(idx, game, "CreatorType")
+		if ok then return true, v end
+		return true, realEnum.CreatorType.User
+	end
+
 	local Lighting = game:GetService("Lighting")
 	C.GET.GlobalShadows = function(o)
 		if o ~= Lighting then return false end
