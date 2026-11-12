@@ -251,7 +251,7 @@ local function buildWheel()
 	local playerGui = player:FindFirstChild("PlayerGui")
 	if playerGui == nil then return nil end
 
-	local state = { page = 1, filter = "", visible = {}, slots = {} }
+	local state = { page = 1, visible = {}, slots = {} }
 
 	local scr = Instance.new("ScreenGui")
 	scr.Name = wheelName
@@ -259,8 +259,8 @@ local function buildWheel()
 	local holder = Instance.new("Frame", scr)
 	holder.BackgroundTransparency = 1
 	holder.BorderSizePixel = 0
-	holder.Size = UDim2.new(0, 360, 0, 440)
-	holder.Position = UDim2.new(0.5, -180, 0.5, -220)
+	holder.Size = UDim2.new(0, 360, 0, 400)
+	holder.Position = UDim2.new(0.5, -180, 0.5, -200)
 	holder.Visible = false
 
 	local modal = Instance.new("TextButton", holder)
@@ -269,24 +269,12 @@ local function buildWheel()
 	modal.Size = UDim2.new(0, 0, 0, 0)
 	modal.Modal = true
 
-	local search = Instance.new("TextBox", holder)
-	search.Size = UDim2.new(0, 220, 0, 26)
-	search.Position = UDim2.new(0.5, -110, 0, 0)
-	search.BackgroundColor3 = Color3.new(0.08, 0.1, 0.16)
-	search.BackgroundTransparency = 0.15
-	search.BorderSizePixel = 0
-	search.TextColor3 = Color3.new(0.85, 0.85, 0.9)
-	search.Font = "SourceSans"
-	search.FontSize = "Size18"
-	search.Text = "Search"
-	search.ClearTextOnFocus = true
-	search.ZIndex = 3
-
 	local ring = Instance.new("ImageLabel", holder)
 	ring.BackgroundTransparency = 1
 	ring.Image = wheelImage
 	ring.Size = UDim2.new(0, 360, 0, 360)
-	ring.Position = UDim2.new(0, 0, 0, 36)
+	ring.Position = UDim2.new(0, 0, 0, 0)
+	ring.ImageTransparency = 0.35
 	ring.ZIndex = 1
 
 	local highlight = Instance.new("ImageLabel", ring)
@@ -364,7 +352,7 @@ local function buildWheel()
 		button.Style = "Custom"
 		button.AutoButtonColor = true
 		button.BackgroundColor3 = Color3.new(0.08, 0.1, 0.16)
-		button.BackgroundTransparency = 0.15
+		button.BackgroundTransparency = 0.6
 		button.BorderSizePixel = 0
 		button.Size = UDim2.new(0, 30, 0, 26)
 		button.Position = UDim2.new(0.5, x, 1, -30)
@@ -388,19 +376,8 @@ local function buildWheel()
 	pageLabel.TextStrokeTransparency = 0.6
 	pageLabel.ZIndex = 3
 
-	local function matching()
-		local out = {}
-		local filter = string.lower(state.filter)
-		for _, dance in pairs(dances()) do
-			if filter == "" or string.find(string.lower(dance.title), filter, 1, true) or string.find(dance.slug, filter, 1, true) then
-				table.insert(out, dance)
-			end
-		end
-		return out
-	end
-
 	local function refresh()
-		local list = matching()
+		local list = dances()
 		local pages = math.max(1, math.ceil(#list / 8))
 		if state.page > pages then state.page = pages end
 		if state.page < 1 then state.page = 1 end
@@ -414,18 +391,11 @@ local function buildWheel()
 			slot.button.Visible = dance ~= nil
 		end
 		highlight.Visible = false
-		center.Text = #list == 0 and "No emotes found" or "Select an Emote"
+		center.Text = "Select an Emote"
 	end
 
 	previous.MouseButton1Down:connect(function() state.page = state.page - 1 refresh() end)
 	nextPage.MouseButton1Down:connect(function() state.page = state.page + 1 refresh() end)
-	search.FocusLost:connect(function()
-		state.filter = (search.Text == "Search") and "" or search.Text
-		state.page = 1
-		refresh()
-		if search.Text == "" then search.Text = "Search" end
-	end)
-
 	refresh()
 	scr.Parent = playerGui
 
