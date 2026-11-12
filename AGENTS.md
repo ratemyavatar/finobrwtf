@@ -50,3 +50,10 @@
 - rcc leaks a thread for each failed request to a host that doesn't exist. restarting rcc clears them
 - rcc idles at about 160% cpu under wine. that's normal
 - `servers` rows use php time (america/los_angeles) but mysql `NOW()` is utc. check how old a row is with `now()` in php, not in sql
+
+## 3d avatar view
+
+- the small 3d button on the character and profile pages uses rcc's own obj export (`ThumbnailGenerator:Click("OBJ", ...)`), not a fake model
+- `AvatarRenderer::render3d` saves the scene to `storage/app/avatar3d/<userid>-<hash>/` and only renders again when the avatar changes
+- three.js r128 shows it. it spins slowly and can be dragged
+- users turn it on in /app/theme (`users.view3d`, off by default)

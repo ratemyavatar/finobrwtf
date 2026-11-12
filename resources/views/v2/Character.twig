@@ -153,7 +153,10 @@
                          </div>
                          <div class="card-body" style="height: auto;">
                              <button id="renderbtn" onclick="regen();" class="btn btn-primary full-width"><i class="fa fa-sync-alt"></i> regen</button>
-                             <img id="renderimg" src="{{ (data.user.pfp == "") ? "/s/img/spinnerv2.gif" : avatar_url(data.user.pfp) }}" class="full-width mt-2" style="height: auto;">
+                             <div class="finobe-3d mt-2" data-user="{{ data.user.id }}">
+                                 <img id="renderimg" src="{{ (data.user.pfp == "") ? "/s/img/spinnerv2.gif" : avatar_url(data.user.pfp) }}" class="full-width" style="height: auto;">
+                                 {% include ('v2/Modules/view3d.twig') %}
+                             </div>
                          </div>
                      </div>
                  </div>
@@ -538,6 +541,7 @@
 											alert(data.message);
 										} else {
 											avatarimg.src = data.image;
+											if (window.finobe3dReset) window.finobe3dReset();
 										}
 
 										render.innerHTML = "Done";

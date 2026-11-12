@@ -62,4 +62,44 @@ class AvatarController extends Controller
         
         return $this->page('Character', $pageData ?? [], $title ?? null);
     }
+
+    public function model3d(Request $request)
+    {
+        $viewer = Auth::user();
+        if (!$viewer || !(int) ($viewer->view3d ?? 0)) {
+            return response()->json(['code' => 403, 'message' => 'The 3D view is turned off.'], 403);
+        }
+
+        $user = User::find((int) $request->query('userId', $viewer->id));
+        if (!$user) {
+            return response()->json(['code' => 404, 'message' => 'That user does not exist.'], 404);
+        }
+
+        try {
+            $manifest = \App\Services\AvatarRenderer::render3d($user);
+        } catch (\Throwable $e) {
+            report($e);
+
+            return response()->json(['code' => 500, 'message' => 'There was an error while rendering in 3D.'], 500);
+        }
+
+        return response()->json(['code' => 200] + $manifest);
+    }
+
+    public function model3dFile(string $name, string $file)
+    {
+        if (!Auth::check() || !preg_match('/^\d+-[a-f0-9]{24}$/', $name)
+            || !preg_match('/^[A-Za-z0-9_.-]{1,64}\.(obj|mtl|png)$/', $file)) {
+            abort(404);
+        }
+
+        $path = \App\Services\AvatarRenderer::model3dDirectory() . "/{$name}/{$file}";
+        if (!is_file($path)) {
+            abort(404);
+        }
+
+        $type = ['obj' => 'text/plain', 'mtl' => 'text/plain', 'png' => 'image/png'][pathinfo($file, PATHINFO_EXTENSION)];
+
+        return response()->file($path, ['Content-Type' => $type, 'Cache-Control' => 'private, max-age=86400']);
+    }
 }

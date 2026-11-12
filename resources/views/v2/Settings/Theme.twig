@@ -39,6 +39,13 @@
                                 </form>
                                 <form role="form" method="POST" action="/app/theme" enctype="multipart/form-data">
                                     <input type="hidden" name="_token" value="{{ data.csrf_token }}">
+                                    <input type="hidden" name="view3d" value="e">
+                                    <div class="form-group mt-3">
+                                        <button type="submit" class="btn btn-primary full-width">toggle 3d button (not retro)</button>
+                                    </div>
+                                </form>
+                                <form role="form" method="POST" action="/app/theme" enctype="multipart/form-data">
+                                    <input type="hidden" name="_token" value="{{ data.csrf_token }}">
                                     <div class="form-group">
                                         <label for="type" class="col-form-label">Logo</label>
                                         <select id="logo" name="logo" class="form-control mt-2" required>

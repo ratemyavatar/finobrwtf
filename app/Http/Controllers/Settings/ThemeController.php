@@ -7,7 +7,7 @@ use Illuminate\Http\Request;
 
 class ThemeController extends Controller
 {
-    private const TOGGLES = ['dark' => 'theme', 'gary' => 'gary'];
+    private const TOGGLES = ['dark' => 'theme', 'gary' => 'gary', 'view3d' => 'view3d'];
 
     public function show()
     {

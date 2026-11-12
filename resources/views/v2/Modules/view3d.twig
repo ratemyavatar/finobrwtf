@@ -1,0 +1,184 @@
+{% if data.user.view3d is defined and data.user.view3d %}
+<div class="finobe-3d-view" style="display: none; aspect-ratio: 1 / 1; cursor: grab; touch-action: none;"></div>
+<button type="button" class="btn btn-sm btn-light finobe-3d-button" onclick="finobe3dToggle(this);" style="position: absolute; right: 4px; bottom: 4px; padding: 0 6px; font-size: 12px; line-height: 20px; opacity: 0.85; text-transform: none;">3D</button>
+{% if true %}
+<style>
+.finobe-3d { position: relative; display: block; max-width: 100%; }
+.finobe-3d .finobe-3d-view canvas { width: 100% !important; height: 100% !important; display: block; }
+</style>
+<script>
+(function () {
+    if (window.finobe3dToggle) return;
+
+    var viewers = {};
+    var libraries = null;
+
+    function load(src) {
+        return new Promise(function (resolve, reject) {
+            var tag = document.createElement('script');
+            tag.src = src;
+            tag.onload = resolve;
+            tag.onerror = reject;
+            document.head.appendChild(tag);
+        });
+    }
+
+    function three() {
+        if (!libraries) {
+            libraries = (window.THREE ? Promise.resolve() : load('https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js')).then(function () {
+                if (THREE.OBJLoader && THREE.MTLLoader && THREE.OrbitControls) return;
+                return Promise.all([
+                    load('https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/OBJLoader.js'),
+                    load('https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/MTLLoader.js'),
+                    load('https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js')
+                ]);
+            });
+        }
+        return libraries;
+    }
+
+    function build(box, scene) {
+        return new Promise(function (resolve, reject) {
+            var renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setPixelRatio(window.devicePixelRatio || 1);
+            renderer.outputEncoding = THREE.sRGBEncoding;
+            box.innerHTML = '';
+            box.appendChild(renderer.domElement);
+
+            var world = new THREE.Scene();
+            world.add(new THREE.AmbientLight(0xffffff, 0.75));
+            var sun = new THREE.DirectionalLight(0xffffff, 0.55);
+            world.add(sun);
+
+            var min = scene.aabb.min, max = scene.aabb.max;
+            var center = new THREE.Vector3((min.x + max.x) / 2, (min.y + max.y) / 2, (min.z + max.z) / 2);
+            var size = Math.max(max.x - min.x, max.y - min.y, max.z - min.z);
+            var camera = new THREE.PerspectiveCamera(30, 1, 0.1, 1000);
+            var from = new THREE.Vector3(scene.camera.position.x, scene.camera.position.y, scene.camera.position.z).sub(center);
+            from.y = Math.max(from.y, 0);
+            if (from.lengthSq() < 0.0001) from.set(0, 0, 1);
+            camera.position.copy(center).add(from.normalize().multiplyScalar(size * 2.1));
+
+            var controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.target.copy(center);
+            controls.enablePan = false;
+            controls.enableDamping = true;
+            controls.autoRotate = true;
+            controls.autoRotateSpeed = 1.5;
+            controls.minDistance = size * 0.8;
+            controls.maxDistance = size * 4;
+            controls.update();
+            renderer.domElement.addEventListener('pointerdown', function () { box.style.cursor = 'grabbing'; });
+            window.addEventListener('pointerup', function () { box.style.cursor = 'grab'; });
+
+            var viewer = {
+                running: false,
+                frame: null,
+                resize: function () {
+                    var width = box.clientWidth || 224;
+                    renderer.setSize(width, width, false);
+                    camera.aspect = 1;
+                    camera.updateProjectionMatrix();
+                },
+                start: function () {
+                    viewer.running = true;
+                    if (viewer.frame) return;
+                    var tick = function () {
+                        viewer.frame = null;
+                        if (!viewer.running) return;
+                        controls.update();
+                        sun.position.copy(camera.position);
+                        renderer.render(world, camera);
+                        viewer.frame = requestAnimationFrame(tick);
+                    };
+                    viewer.frame = requestAnimationFrame(tick);
+                },
+                dispose: function () {
+                    viewer.running = false;
+                    controls.dispose();
+                    renderer.dispose();
+                    box.innerHTML = '';
+                }
+            };
+            window.addEventListener('resize', function () { viewer.resize(); });
+
+            new THREE.MTLLoader().setPath(scene.base).load(scene.mtl, function (materials) {
+                materials.preload();
+                new THREE.OBJLoader().setMaterials(materials).setPath(scene.base).load(scene.obj, function (object) {
+                    object.traverse(function (child) {
+                        if (!child.isMesh) return;
+                        (Array.isArray(child.material) ? child.material : [child.material]).forEach(function (material) {
+                            material.transparent = false;
+                            material.alphaTest = 0.5;
+                            material.shininess = 20;
+                            if (material.map) material.map.encoding = THREE.sRGBEncoding;
+                        });
+                    });
+                    world.add(object);
+                    resolve(viewer);
+                }, undefined, reject);
+            }, undefined, reject);
+        });
+    }
+
+    window.finobe3dReset = function () {
+        document.querySelectorAll('.finobe-3d').forEach(function (wrap) {
+            var id = wrap.getAttribute('data-user');
+            if (viewers[id] && viewers[id].viewer) viewers[id].viewer.dispose();
+            delete viewers[id];
+            var box = wrap.querySelector('.finobe-3d-view');
+            var image = wrap.querySelector('img');
+            var button = wrap.querySelector('.finobe-3d-button');
+            if (box) box.style.display = 'none';
+            if (image) image.style.display = '';
+            if (button) button.textContent = '3D';
+        });
+    };
+
+    window.finobe3dToggle = function (button) {
+        var wrap = button.closest('.finobe-3d');
+        var id = wrap.getAttribute('data-user');
+        var box = wrap.querySelector('.finobe-3d-view');
+        var image = wrap.querySelector('img');
+        var state = viewers[id] || (viewers[id] = {});
+
+        if (box.style.display !== 'none') {
+            box.style.display = 'none';
+            image.style.display = '';
+            button.textContent = '3D';
+            if (state.viewer) state.viewer.running = false;
+            return;
+        }
+        if (state.loading) return;
+        state.loading = true;
+        button.disabled = true;
+        button.textContent = '...';
+
+        three().then(function () {
+            if (state.viewer) return state.viewer;
+            return fetch('/app/avatar-3d?userId=' + encodeURIComponent(id), { credentials: 'same-origin' })
+                .then(function (response) { return response.json().then(function (scene) { return { ok: response.ok, scene: scene }; }); })
+                .then(function (result) {
+                    if (!result.ok || result.scene.code !== 200) throw new Error(result.scene.message || 'There was an error while rendering in 3D.');
+                    box.style.width = image.clientWidth ? image.clientWidth + 'px' : '';
+                    return build(box, result.scene);
+                })
+                .then(function (viewer) { state.viewer = viewer; return viewer; });
+        }).then(function (viewer) {
+            image.style.display = 'none';
+            box.style.display = '';
+            viewer.resize();
+            viewer.start();
+            button.textContent = '2D';
+        }).catch(function (error) {
+            alert(error && error.message ? error.message : 'There was an error while rendering in 3D.');
+            button.textContent = '3D';
+        }).then(function () {
+            button.disabled = false;
+            state.loading = false;
+        });
+    };
+})();
+</script>
+{% endif %}
+{% endif %}

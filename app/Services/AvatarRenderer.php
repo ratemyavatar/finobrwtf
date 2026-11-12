@@ -242,4 +242,76 @@ class AvatarRenderer
 
         return "avatar/{$filename}";
     }
+
+    public static function model3dDirectory(): string
+    {
+        return storage_path('app/avatar3d');
+    }
+
+    public static function render3d(User $user): array
+    {
+        $pose = self::poseFor($user);
+        $key = substr(hash('sha256', json_encode($user->avatar) . '|' . $pose . '|' . $user->pfp), 0, 24);
+        $name = "{$user->id}-{$key}";
+        $directory = self::model3dDirectory() . "/{$name}";
+
+        if (File::exists("{$directory}/manifest.json")) {
+            $manifest = json_decode(File::get("{$directory}/manifest.json"), true);
+            if (is_array($manifest)) {
+                return $manifest;
+            }
+        }
+
+        $domain = config('finobe.domain');
+        $site = "https://www.{$domain}";
+
+        $arbiter = new RobloxArbiterUtilities(config('finobe.arbiter.host'), (int) config('finobe.arbiter.port'));
+        $job = $arbiter->ConstructJob(
+            RobloxUtilities::GenerateGUID(),
+            self::SCRIPT,
+            90,
+            0,
+            2,
+            "ScriptExecution",
+            ["{$site}/asset/CharacterFetch.ashx?userId={$user->id}", $site, "OBJ", 768, 768, $pose]
+        );
+
+        $scene = json_decode((string) $arbiter->OpenJobEx($job), true);
+        if (!is_array($scene) || !isset($scene['files']['scene.obj']['content'], $scene['files']['scene.mtl']['content'])) {
+            throw new \RuntimeException("3D render for user {$user->id} returned no scene (is the arbiter running?)");
+        }
+
+        File::ensureDirectoryExists($directory, 0775);
+        foreach ($scene['files'] as $file => $entry) {
+            if (!is_string($file) || !preg_match('/^[A-Za-z0-9_.-]{1,64}\.(obj|mtl|png)$/', $file) || !isset($entry['content'])) {
+                continue;
+            }
+            $content = base64_decode((string) $entry['content'], true);
+            if ($content === false) {
+                continue;
+            }
+            if ($file === 'scene.mtl') {
+                $content = preg_replace('/^(map_d|Material).*$/m', '', $content);
+            }
+            File::put("{$directory}/{$file}", $content);
+        }
+
+        $vec = fn($v) => ['x' => (float) ($v['x'] ?? 0), 'y' => (float) ($v['y'] ?? 0), 'z' => (float) ($v['z'] ?? 0)];
+        $manifest = [
+            'base' => "/app/avatar-3d/{$name}/",
+            'obj' => 'scene.obj',
+            'mtl' => 'scene.mtl',
+            'camera' => ['position' => $vec($scene['camera']['position'] ?? []), 'direction' => $vec($scene['camera']['direction'] ?? [])],
+            'aabb' => ['min' => $vec($scene['AABB']['min'] ?? []), 'max' => $vec($scene['AABB']['max'] ?? [])],
+        ];
+        File::put("{$directory}/manifest.json", json_encode($manifest));
+
+        foreach (File::directories(self::model3dDirectory()) as $old) {
+            if (str_starts_with(basename($old), "{$user->id}-") && basename($old) !== $name) {
+                File::deleteDirectory($old);
+            }
+        }
+
+        return $manifest;
+    }
 }
