@@ -737,6 +737,20 @@ PROP_ENUMS = {
 }
 
 
+ASSET_URL = re.compile(r'^\s*(?:https?://)?(?:[a-z]+\.)?roblox\.com/(?:v1/)?asset(?:/|\.ashx)?/?\?(?:.*&)?id=(\d+)', re.I)
+ASSET_URL2 = re.compile(r'^\s*(?:https?://)?assetdelivery\.roblox\.com/v1/assetId/(\d+)', re.I)
+
+
+def normalize_content(url):
+    m = ASSET_URL.match(url) or ASSET_URL2.match(url)
+    if m:
+        return 'rbxassetid://' + m.group(1)
+    m = re.match(r'^\s*rbxassetid://\s*(\d+)', url)
+    if m:
+        return 'rbxassetid://' + m.group(1)
+    return url
+
+
 def prop_to_value(v, prop=None):
     kind, val = v
     if val is None:
@@ -841,6 +855,7 @@ class XmlWriter:
                 raw = val if isinstance(val, bytes) else val.encode('utf-8')
                 return '<BinaryString name="%s">%s</BinaryString>\n' % (n, base64.b64encode(raw).decode())
             if kind == 'Content' or name in CONTENT_PROPS:
+                sval = normalize_content(sval)
                 if sval == '':
                     return '<Content name="%s"><null></null></Content>\n' % n
                 return '<Content name="%s"><url>%s</url></Content>\n' % (n, esc(sval))

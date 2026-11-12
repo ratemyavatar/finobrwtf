@@ -682,6 +682,7 @@ do
 			return
 		end
 		if k == "Parent" and type(v) == "table" and rawget(v, "__instance") then v = v:__instance() end
+		if type(v) == "string" and C.CONTENT_PROPS[k] then v = C.normalizeContent(v) end
 		if isFakeEnum(v) then
 			setShadow(o, k, v)
 			if C.onFakeEnum then C.onFakeEnum(o, k, v) end
@@ -728,6 +729,20 @@ do
 		setShadow(o, k, v)
 	end
 
+	C.CONTENT_PROPS = { Image = true, HoverImage = true, PressedImage = true, SelectionImage = true, MeshId = true, TextureId = true,
+		TextureID = true, SoundId = true, AnimationId = true, Texture = true, ShirtTemplate = true, PantsTemplate = true, Graphic = true,
+		SkyboxBk = true, SkyboxDn = true, SkyboxFt = true, SkyboxLf = true, SkyboxRt = true, SkyboxUp = true, LinkedSource = true,
+		ColorMap = true, NormalMap = true, Face = true, ImageContent = true }
+	function C.normalizeContent(url)
+		local lower = url:lower()
+		if lower:find("roblox%.com/") then
+			local id = lower:match("roblox%.com/v1/assetid/(%d+)") or (lower:find("roblox%.com/.-asset") and (lower:match("[?&]id=(%d+)")))
+			if id then return "rbxassetid://" .. id end
+		end
+		local id = url:match("^%s*rbxassetid://%s*(%d+)")
+		if id then return "rbxassetid://" .. id end
+		return url
+	end
 	local DEAD_CONN = { Disconnect = function() end, disconnect = function() end, Connected = false }
 	function C.m(o, name, ...)
 		if o == nil and (name == "Connect" or name == "connect" or name == "Once" or name == "ConnectParallel") then
