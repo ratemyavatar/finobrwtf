@@ -427,6 +427,38 @@ class api extends Controller
             return response()->json($this->response, 400);
         }
 
+        if ($data['type'] == 'emote') {
+            $user = Auth::user();
+            $slug = (string) ($data['emote'] ?? '');
+            if (!\App\Services\EmoteRenderer::allowed($user) || ($slug !== '' && \App\Services\EmoteRenderer::dance($slug) === null)) {
+                $this->response['code'] = 400;
+                $this->response['message'] = 'Bad request';
+
+                return response()->json($this->response, 400);
+            }
+
+            $avatar = $user->avatar;
+            if ($slug === '') {
+                unset($avatar[0]['emote']);
+            } else {
+                $avatar[0]['emote'] = $slug;
+            }
+            $user->avatar = $avatar;
+            $user->save();
+
+            @set_time_limit(300);
+            try {
+                $this->response['image'] = 'https://cdn.' . config('finobe.domain') . '/' . AvatarRenderer::render($user);
+                $user->render_cooldown = now();
+                $user->save();
+            } catch (\Throwable $e) {
+                report($e);
+                $this->response['message'] = 'Emote saved, but the render failed. Press regen in a bit.';
+            }
+
+            return response()->json($this->response, 200);
+        }
+
         if ($data['type'] == 'pose') {
             $pose = (string) ($data['pose'] ?? '');
             if (!\App\Services\AvatarRenderer::poseExists($pose)) {

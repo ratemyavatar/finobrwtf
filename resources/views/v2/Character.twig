@@ -194,6 +194,11 @@
                               <li class="nav-item">
                                 <a class="nav-link" data-toggle="tab" href="#outfits">Outfits</a>
                               </li>
+                              {% if data.emotes is defined %}
+                              <li class="nav-item">
+                                <a class="nav-link" data-toggle="tab" href="#emotes">Emotes</a>
+                              </li>
+                              {% endif %}
                              </ul>
                          </div>
                          <div class="card-body pb-0" id="item-search-row" style="display: none;">
@@ -811,6 +816,58 @@
                                                                 {% endif %}
                                                                 </div>
                             </div>
+                            {% if data.emotes is defined %}
+                            <div class="tab-pane" id="emotes">
+                              <p class="text-muted">Your render does the emote on a loop. Pick none to go back to your pose.</p>
+                              <div class="row" id="emote-list">
+                                <div class="col-md-4 mb-4 pr-3 emote-option" data-emote="">
+                                  <div class="card"><div class="card-body">
+                                    <div class="d-flex justify-content-center align-items-center item-thumb"><i class="fas fa-fw fa-ban fa-3x text-muted"></i></div>
+                                    <p class="mt-2 mb-0">None</p>
+                                    <button class="btn btn-{{ data.emote == '' ? 'danger' : 'primary' }} full-width mt-2 emote-button" onclick="setEmote('');">{{ data.emote == '' ? 'using' : 'use' }}</button>
+                                  </div></div>
+                                </div>
+                                {% for emote in data.emotes %}
+                                <div class="col-md-4 mb-4 pr-3 emote-option" data-emote="{{ emote.slug }}">
+                                  <div class="card"><div class="card-body">
+                                    <div class="d-flex justify-content-center align-items-center item-thumb"><img src="/app/emote-thumb/{{ emote.slug }}" loading="lazy" alt="" style="max-width: 100%; max-height: 100%;"></div>
+                                    <p class="mt-2 mb-0 text-truncate">{{ emote.title }}</p>
+                                    <button class="btn btn-{{ data.emote == emote.slug ? 'danger' : 'primary' }} full-width mt-2 emote-button" onclick="setEmote('{{ emote.slug }}');">{{ data.emote == emote.slug ? 'using' : 'use' }}</button>
+                                  </div></div>
+                                </div>
+                                {% endfor %}
+                              </div>
+                              <script>
+                                function setEmote(slug) {
+                                  const buttons = document.querySelectorAll('#emote-list .emote-button');
+                                  buttons.forEach(b => b.disabled = true);
+                                  const avatar = document.getElementById('renderimg');
+                                  const previous = avatar.src;
+                                  avatar.src = '/s/img/spinnerv2.gif';
+                                  const formData = new FormData();
+                                  formData.append('_token', '{{ data.csrf_token }}');
+                                  formData.append('type', 'emote');
+                                  formData.append('emote', slug);
+                                  fetch('/api/character', { method: 'POST', body: formData })
+                                    .then(r => r.json())
+                                    .then(data => {
+                                      if (data.code != 200) { avatar.src = previous; alert(data.message || 'Something went wrong.'); return; }
+                                      avatar.src = data.image || previous;
+                                      if (data.message && data.message !== 'Success') alert(data.message);
+                                      document.querySelectorAll('#emote-list .emote-option').forEach(option => {
+                                        const button = option.querySelector('.emote-button');
+                                        const using = option.getAttribute('data-emote') === slug;
+                                        button.className = 'btn btn-' + (using ? 'danger' : 'primary') + ' full-width mt-2 emote-button';
+                                        button.textContent = using ? 'using' : 'use';
+                                      });
+                                      if (window.finobe3dReset) window.finobe3dReset();
+                                    })
+                                    .catch(() => { avatar.src = previous; alert('Something went wrong.'); })
+                                    .then(() => buttons.forEach(b => b.disabled = false));
+                                }
+                              </script>
+                            </div>
+                            {% endif %}
                             <div class="tab-pane" id="outfits">
                               <div class="input-group mb-3">
                                 <input type="text" id="outfit-name" class="form-control" maxlength="50" placeholder="Outfit name">

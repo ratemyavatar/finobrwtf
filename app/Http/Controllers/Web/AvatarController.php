@@ -12,6 +12,14 @@ use Illuminate\Support\Facades\Auth;
 class AvatarController extends Controller
 {
 
+    public function emoteThumbnail(string $slug) {
+        abort_unless(Auth::check() && \App\Services\EmoteRenderer::allowed(Auth::user()), 404);
+        $file = \App\Services\EmoteRenderer::thumbnail($slug);
+        abort_if($file === null, 404);
+
+        return response()->file($file, ['Content-Type' => 'image/png', 'Cache-Control' => 'private, max-age=86400']);
+    }
+
     public function index() {
         $title = 'Character';
 
@@ -57,6 +65,10 @@ class AvatarController extends Controller
         }
 
         $pageData['purchases'] = $purchases;
+        if (\App\Services\EmoteRenderer::allowed(Auth::user())) {
+            $pageData['emotes'] = array_values(\App\Services\EmoteRenderer::dances());
+            $pageData['emote'] = (string) (Auth::user()->avatar[0]['emote'] ?? '');
+        }
         $pageData['outfits'] = \Illuminate\Support\Facades\DB::connection('finobe')->table('outfits')
             ->where('user_id', Auth::user()->id)->orderByDesc('id')->get(['id', 'name']);
         

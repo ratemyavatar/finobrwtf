@@ -72,6 +72,129 @@ class PoseExtractor
         throw new ImportException("That file has no R6 or R15 character or animation in it.");
     }
 
+    public static function frames(string $file, float $fps = 12, float $maxSeconds = 8, int $maxFrames = 96): array
+    {
+        $doc = new DOMDocument();
+        if (!@$doc->loadXML(RbxmReader::toXml($file), LIBXML_NONET | LIBXML_PARSEHUGE)) {
+            throw new ImportException("That file couldn't be read.");
+        }
+        $self = new self();
+        $self->xpath = new DOMXPath($doc);
+        $sequence = $self->sequence('');
+        if ($sequence === null) {
+            throw new ImportException('That file has no animation in it.');
+        }
+
+        $tracks = [];
+        $length = 0.0;
+        foreach ($self->children($sequence, 'Keyframe') as $frame) {
+            $time = (float) $self->prop($frame, 'Time');
+            $length = max($length, $time);
+            $poses = [];
+            $self->collectPoses($frame, $poses);
+            foreach ($poses as $part => $cframe) {
+                $tracks[$part][] = [$time, $cframe];
+            }
+        }
+        foreach ($tracks as &$track) {
+            usort($track, fn ($a, $b) => $a[0] <=> $b[0]);
+        }
+        unset($track);
+
+        $duration = $length > 0 ? min($length, $maxSeconds) : 0;
+        $count = $duration > 0 ? max(1, min($maxFrames, (int) round($duration * $fps))) : 1;
+        $out = [];
+        for ($i = 0; $i < $count; $i++) {
+            $time = $count > 1 ? $duration * $i / $count : 0;
+            $joints = [];
+            foreach (self::R6 as $joint => [, $part1, $c0, $c1]) {
+                if (isset($tracks[$part1])) {
+                    $c1 = self::mul($c1, self::inv(self::sample($tracks[$part1], $time)));
+                }
+                $joints[$joint] = [self::clean($c0), self::clean($c1)];
+            }
+            $out[] = $joints;
+        }
+
+        return [$out, $count > 1 ? $duration / $count : 0.1];
+    }
+
+    private static function sample(array $track, float $time): array
+    {
+        if ($time <= $track[0][0]) {
+            return $track[0][1];
+        }
+        $last = count($track) - 1;
+        if ($time >= $track[$last][0]) {
+            return $track[$last][1];
+        }
+        for ($i = 0; $i < $last; $i++) {
+            [$t0, $a] = $track[$i];
+            [$t1, $b] = $track[$i + 1];
+            if ($time >= $t0 && $time <= $t1) {
+                $alpha = $t1 > $t0 ? ($time - $t0) / ($t1 - $t0) : 0;
+                return self::lerp($a, $b, $alpha);
+            }
+        }
+
+        return $track[$last][1];
+    }
+
+    private static function lerp(array $a, array $b, float $t): array
+    {
+        $qa = self::quat($a);
+        $qb = self::quat($b);
+        $dot = $qa[0] * $qb[0] + $qa[1] * $qb[1] + $qa[2] * $qb[2] + $qa[3] * $qb[3];
+        if ($dot < 0) {
+            $qb = array_map(fn ($v) => -$v, $qb);
+            $dot = -$dot;
+        }
+        if ($dot > 0.9995) {
+            $q = [];
+            for ($i = 0; $i < 4; $i++) {
+                $q[] = $qa[$i] + ($qb[$i] - $qa[$i]) * $t;
+            }
+        } else {
+            $theta = acos(min(1, $dot));
+            $sin = sin($theta);
+            $wa = sin((1 - $t) * $theta) / $sin;
+            $wb = sin($t * $theta) / $sin;
+            $q = [];
+            for ($i = 0; $i < 4; $i++) {
+                $q[] = $qa[$i] * $wa + $qb[$i] * $wb;
+            }
+        }
+        $len = sqrt($q[0] ** 2 + $q[1] ** 2 + $q[2] ** 2 + $q[3] ** 2) ?: 1;
+        [$x, $y, $z, $w] = array_map(fn ($v) => $v / $len, $q);
+
+        return [
+            $a[0] + ($b[0] - $a[0]) * $t, $a[1] + ($b[1] - $a[1]) * $t, $a[2] + ($b[2] - $a[2]) * $t,
+            1 - 2 * ($y * $y + $z * $z), 2 * ($x * $y - $z * $w), 2 * ($x * $z + $y * $w),
+            2 * ($x * $y + $z * $w), 1 - 2 * ($x * $x + $z * $z), 2 * ($y * $z - $x * $w),
+            2 * ($x * $z - $y * $w), 2 * ($y * $z + $x * $w), 1 - 2 * ($x * $x + $y * $y),
+        ];
+    }
+
+    private static function quat(array $c): array
+    {
+        [$m00, $m01, $m02, $m10, $m11, $m12, $m20, $m21, $m22] = array_slice($c, 3);
+        $trace = $m00 + $m11 + $m22;
+        if ($trace > 0) {
+            $s = sqrt($trace + 1) * 2;
+            return [($m21 - $m12) / $s, ($m02 - $m20) / $s, ($m10 - $m01) / $s, 0.25 * $s];
+        }
+        if ($m00 > $m11 && $m00 > $m22) {
+            $s = sqrt(1 + $m00 - $m11 - $m22) * 2;
+            return [0.25 * $s, ($m01 + $m10) / $s, ($m02 + $m20) / $s, ($m21 - $m12) / $s];
+        }
+        if ($m11 > $m22) {
+            $s = sqrt(1 + $m11 - $m00 - $m22) * 2;
+            return [($m01 + $m10) / $s, 0.25 * $s, ($m12 + $m21) / $s, ($m02 - $m20) / $s];
+        }
+        $s = sqrt(1 + $m22 - $m00 - $m11) * 2;
+        return [($m02 + $m20) / $s, ($m12 + $m21) / $s, 0.25 * $s, ($m10 - $m01) / $s];
+    }
+
     public static function encode(array $joints): string
     {
         $out = [];

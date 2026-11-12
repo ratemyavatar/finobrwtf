@@ -133,7 +133,8 @@ Route::middleware([Moderation::class, SerializeWrites::class])->group(function (
                 Route::post('/settings', [AccountSettingsController::class, 'update'])->middleware('limit:20,1');
                 Route::get('/theme', [ThemeController::class, 'show']);
                 Route::get('/avatar-3d', [AvatarController::class, 'model3d'])->middleware('limit:20,1');
-                Route::get('/avatar-3d/{name}/{file}', [AvatarController::class, 'model3dFile']);
+                Route::get('/emote-thumb/{slug}', [AvatarController::class, 'emoteThumbnail'])->where('slug', '[a-z0-9]{1,64}');
+            Route::get('/avatar-3d/{name}/{file}', [AvatarController::class, 'model3dFile']);
                 Route::post('/theme', [ThemeController::class, 'update']);
                 Route::get('/character-settings', [CharacterSettingsController::class, 'show']);
                 Route::get('/password', [PasswordController::class, 'show']);

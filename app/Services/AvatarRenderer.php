@@ -277,6 +277,15 @@ class AvatarRenderer
 
     public static function render(User $user): string
     {
+        $emote = EmoteRenderer::emoteFor($user);
+        if ($emote !== null) {
+            try {
+                return self::store($user, EmoteRenderer::render($user, $emote['slug']));
+            } catch (\Throwable $e) {
+                report($e);
+            }
+        }
+
         $domain = config('finobe.domain');
         $site = "https://www.{$domain}";
 
@@ -297,6 +306,11 @@ class AvatarRenderer
             throw new \RuntimeException("Avatar render for user {$user->id} returned no image (is the arbiter running?)");
         }
 
+        return self::store($user, $image);
+    }
+
+    private static function store(User $user, string $image): string
+    {
         $filename = uniqid() . '.png';
         $directory = config('finobe.cdn_path') . '/avatar';
 
