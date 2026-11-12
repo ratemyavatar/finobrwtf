@@ -240,7 +240,7 @@ local function watch(character)
 end
 
 player.CharacterAdded:connect(watch)
-if player.Character ~= nil then watch(player.Character) end
+if player.Character ~= nil then spawn(function() watch(player.Character) end) end
 
 local wheelName = "FinobeEmoteWheel"
 local wheelImage = "rbxassetid://2140200001"
@@ -432,14 +432,21 @@ local function typing()
 	return focused ~= nil
 end
 
-game:GetService("UserInputService").InputBegan:connect(function(input, processed)
-	if processed or input.UserInputType ~= Enum.UserInputType.Keyboard or typing() then return end
-	local key = input.KeyCode
+local lastToggle = 0
+
+local function toggleWheel()
+	if tick() - lastToggle < 0.25 then return end
+	lastToggle = tick()
+	local w = getWheel()
+	if w == nil then return end
+	w.holder.Visible = not w.holder.Visible
+	if w.holder.Visible then w.refresh() end
+end
+
+local function onKey(key)
+	if typing() then return end
 	if key == Enum.KeyCode.Minus or key == Enum.KeyCode.KeypadMinus then
-		local w = getWheel()
-		if w == nil then return end
-		w.holder.Visible = not w.holder.Visible
-		if w.holder.Visible then w.refresh() end
+		toggleWheel()
 		return
 	end
 	if wheel == nil or wheel.gui.Parent == nil or not wheel.holder.Visible then return end
@@ -450,4 +457,18 @@ game:GetService("UserInputService").InputBegan:connect(function(input, processed
 	elseif key == Enum.KeyCode.Right then
 		wheel.page(1)
 	end
+end
+
+game:GetService("UserInputService").InputBegan:connect(function(input)
+	if input.UserInputType == Enum.UserInputType.Keyboard then onKey(input.KeyCode) end
+end)
+
+pcall(function()
+	player:GetMouse().KeyDown:connect(function(key)
+		if key == "-" then onKey(Enum.KeyCode.Minus) end
+	end)
+end)
+
+remote.OnClientEvent:connect(function(action)
+	if action == "wheel" then toggleWheel() end
 end)

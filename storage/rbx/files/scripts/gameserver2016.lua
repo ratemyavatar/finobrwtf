@@ -216,6 +216,13 @@ local function danceCommand(player, msg)
 		end
 		return true
 	end
+	if text == "/wheel" or text == "/emotes" then
+		if danceRemote ~= nil then
+			if giveDanceClient(player) then wait(1) end
+			danceRemote:FireClient(player, "wheel")
+		end
+		return true
+	end
 	if text == "/fling" then
 		flingPlayer(player)
 		return true

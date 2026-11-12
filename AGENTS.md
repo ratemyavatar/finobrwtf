@@ -66,7 +66,7 @@
 - the dances come from roblox pack 119879382625668. they live in `storage/rbx/files/dances` as gzipped xml with ids from 2140000001 up, listed in `list.txt`
 - the 2016 engine only loads animations from number ids, so `/asset/?id=<dance id>` serves them
 - the gui script is `storage/rbx/files/scripts/dance2016.lua`, sent as a LocalScript from `/asset/?id=dance&name=client`
-- pressing `-` in game opens the emote wheel: 8 dances per page, a search box, `<` `>` (or the arrow keys) to change page, and 1 to 8 to pick. `/dance` still works
+- pressing `-` (or saying `/wheel`) in game opens the emote wheel: 8 dances per page, a search box, `<` `>` (or the arrow keys) to change page, and 1 to 8 to pick. `/dance` still works
 - each slot shows a render of a white faceless avatar in the dance's most posed keyframe, from `storage/rbx/files/dances/thumbs`. thumbnails are the dance id + 100000, the wheel images are 2140200001 and 2140200002
 - to build the dances again see `tools/dances/README.md`
 
