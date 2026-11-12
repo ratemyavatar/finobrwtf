@@ -176,7 +176,7 @@ local function giveDanceClient(player)
 end
 
 local function setupDances()
-	local ok, list = pcall(function() return game:HttpGet(url .. "/asset/?id=dance&name=list", true) end)
+	local ok, list = pcall(function() return game:HttpGetAsync(url .. "/asset/?id=dance&name=list") end)
 	if not ok or type(list) ~= "string" then return end
 	for line in string.gmatch(list, "[^\n]+") do
 		local id, slug, title = string.match(line, "^(%d+)\t([a-z0-9]+)\t(.+)$")
@@ -202,6 +202,7 @@ local function setupDances()
 		end
 	end)
 	pcall(function() danceClient = game:GetObjects(url .. "/asset/?id=dance&name=client")[1] end)
+	for _, player in pairs(Players:GetPlayers()) do pcall(giveDanceClient, player) end
 end
 
 local function danceCommand(player, msg)
@@ -602,8 +603,6 @@ pcall(function()
 	end
 end)
 
-pcall(setupDances)
-
 if tostring(forceFiltering) ~= "0" then
 	pcall(function() workspace.FilteringEnabled = true end)
 end
@@ -638,3 +637,5 @@ spawn(function()
 end)
 
 game:HttpGet(url .. "/api/gameserver/register/" .. game.JobId .. auth)
+
+spawn(function() pcall(setupDances) end)
