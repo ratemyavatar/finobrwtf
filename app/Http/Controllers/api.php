@@ -1081,108 +1081,40 @@ class api extends Controller
         ];
 
         $results_per_page = 20;
-        $currentPage = isset($data['page']) ? max(1, intval($data['page'])) : 1;
-        $offset = ($currentPage - 1) * $results_per_page;
-        if($data['type'] == 'all' && $data['version'] == 'all' && $data['search'] == '') {
-            $results = Asset::select('assets.*', DB::raw('(SELECT COALESCE(SUM(JSON_LENGTH(servers.players)), 0) FROM servers WHERE servers.placeid = assets.id) AS total_players'))
-                ->where('asset_type', 9)
-                ->orderByDesc('total_players')
-                ->limit($results_per_page)
-                ->offset($offset);
-        } elseif($data['type'] == 'featured' && $data['version'] == 'all' && $data['search'] == '') {
-            $results = Asset::select('assets.*', DB::raw('(SELECT COALESCE(SUM(JSON_LENGTH(servers.players)), 0) FROM servers WHERE servers.placeid = assets.id) AS total_players'))
-                ->whereRaw("JSON_UNQUOTE(JSON_EXTRACT(additional, '$.featured')) = 'true'")
-                ->where('asset_type', 9)
-                ->orderByDesc('total_players')
-                ->limit($results_per_page)
-                ->offset($offset);
-        } elseif($data['type'] == 'featured' && $data['version'] == '2012' && $data['search'] == '') {
-            $results = Asset::select('assets.*', DB::raw('(SELECT COALESCE(SUM(JSON_LENGTH(servers.players)), 0) FROM servers WHERE servers.placeid = assets.id) AS total_players'))
-                ->whereRaw("JSON_UNQUOTE(JSON_EXTRACT(additional, '$.featured')) = 'true'")
-                ->whereRaw("JSON_UNQUOTE(JSON_EXTRACT(additional, '$.version')) = '2012'")
-                ->where('asset_type', 9)
-                ->orderByDesc('total_players')
-                ->limit($results_per_page)
-                ->offset($offset);
-        } elseif($data['type'] == 'featured' && $data['version'] == '2016' && $data['search'] == '') {
-            $results = Asset::select('assets.*', DB::raw('(SELECT COALESCE(SUM(JSON_LENGTH(servers.players)), 0) FROM servers WHERE servers.placeid = assets.id) AS total_players'))
-                ->whereRaw("JSON_UNQUOTE(JSON_EXTRACT(additional, '$.featured')) = 'true'")
-                ->whereRaw("JSON_UNQUOTE(JSON_EXTRACT(additional, '$.version')) = '2016'")
-                ->where('asset_type', 9)
-                ->orderByDesc('total_players')
-                ->limit($results_per_page)
-                ->offset($offset);
-        } elseif($data['type'] == 'all' && $data['version'] == '2012' && $data['search'] == '') {
-            $results = Asset::select('assets.*', DB::raw('(SELECT COALESCE(SUM(JSON_LENGTH(servers.players)), 0) FROM servers WHERE servers.placeid = assets.id) AS total_players'))
-                ->whereRaw("JSON_UNQUOTE(JSON_EXTRACT(additional, '$.version')) = '2012'")
-                ->where('asset_type', 9)
-                ->orderByDesc('total_players')
-                ->limit($results_per_page)
-                ->offset($offset);
-        } elseif($data['type'] == 'all' && $data['version'] == '2016' && $data['search'] == '') {
-            $results = Asset::select('assets.*', DB::raw('(SELECT COALESCE(SUM(JSON_LENGTH(servers.players)), 0) FROM servers WHERE servers.placeid = assets.id) AS total_players'))
-                ->whereRaw("JSON_UNQUOTE(JSON_EXTRACT(additional, '$.version')) = '2016'")
-                ->where('asset_type', 9)
-                ->orderByDesc('total_players')
-                ->limit($results_per_page)
-                ->offset($offset);
-        } elseif($data['type'] == 'featured' && $data['version'] == 'all' && $data['search'] != '') {
-            $results = Asset::select('assets.*', DB::raw('(SELECT COALESCE(SUM(JSON_LENGTH(servers.players)), 0) FROM servers WHERE servers.placeid = assets.id) AS total_players'))
-                ->whereRaw('title LIKE ?', ['%' . htmlspecialchars($data['search']) . '%'])
-                ->whereRaw("JSON_UNQUOTE(JSON_EXTRACT(additional, '$.featured')) = 'true'")
-                ->where('asset_type', 9)
-                ->orderByDesc('total_players')
-                ->limit($results_per_page)
-                ->offset($offset);
-        } elseif($data['type'] == 'featured' && $data['version'] == '2012' && $data['search'] != '') {
-            $results = Asset::select('assets.*', DB::raw('(SELECT COALESCE(SUM(JSON_LENGTH(servers.players)), 0) FROM servers WHERE servers.placeid = assets.id) AS total_players'))
-                ->whereRaw('title LIKE ?', ['%' . htmlspecialchars($data['search']) . '%'])
-                ->whereRaw("JSON_UNQUOTE(JSON_EXTRACT(additional, '$.featured')) = 'true'")
-                ->whereRaw("JSON_UNQUOTE(JSON_EXTRACT(additional, '$.version')) = '2012'")
-                ->where('asset_type', 9)
-                ->orderByDesc('total_players')
-                ->limit($results_per_page)
-                ->offset($offset);
-        } elseif($data['type'] == 'featured' && $data['version'] == '2016' && $data['search'] != '') {
-            $results = Asset::select('assets.*', DB::raw('(SELECT COALESCE(SUM(JSON_LENGTH(servers.players)), 0) FROM servers WHERE servers.placeid = assets.id) AS total_players'))
-                ->whereRaw('title LIKE ?', ['%' . htmlspecialchars($data['search']) . '%'])
-                ->whereRaw("JSON_UNQUOTE(JSON_EXTRACT(additional, '$.featured')) = 'true'")
-                ->whereRaw("JSON_UNQUOTE(JSON_EXTRACT(additional, '$.version')) = '2016'")
-                ->where('asset_type', 9)
-                ->orderByDesc('total_players')
-                ->limit($results_per_page)
-                ->offset($offset);
-        } elseif($data['type'] == 'all' && $data['version'] == 'all' && $data['search'] != '') {
-            $results = Asset::select('assets.*', DB::raw('(SELECT COALESCE(SUM(JSON_LENGTH(servers.players)), 0) FROM servers WHERE servers.placeid = assets.id) AS total_players'))
-                ->whereRaw('title LIKE ?', ['%' . htmlspecialchars($data['search']) . '%'])
-                ->where('asset_type', 9)
-                ->orderByDesc('total_players')
-                ->limit($results_per_page)
-                ->offset($offset);
-        } elseif($data['type'] == 'all' && $data['version'] == '2012' && $data['search'] != '') {
-            $results = Asset::select('assets.*', DB::raw('(SELECT COALESCE(SUM(JSON_LENGTH(servers.players)), 0) FROM servers WHERE servers.placeid = assets.id) AS total_players'))
-                ->whereRaw('title LIKE ?', ['%' . htmlspecialchars($data['search']) . '%'])
-                ->whereRaw("JSON_UNQUOTE(JSON_EXTRACT(additional, '$.version')) = '2012'")
-                ->where('asset_type', 9)
-                ->orderByDesc('total_players')
-                ->limit($results_per_page)
-                ->offset($offset);
-        } elseif($data['type'] == 'all' && $data['version'] == '2016' && $data['search'] != '') {
-            $results = Asset::select('assets.*', DB::raw('(SELECT COALESCE(SUM(JSON_LENGTH(servers.players)), 0) FROM servers WHERE servers.placeid = assets.id) AS total_players'))
-                ->whereRaw('title LIKE ?', ['%' . htmlspecialchars($data['search']) . '%'])
-                ->whereRaw("JSON_UNQUOTE(JSON_EXTRACT(additional, '$.version')) = '2016'")
-                ->where('asset_type', 9)
-                ->orderByDesc('total_players')
-                ->limit($results_per_page)
-                ->offset($offset);
-        }
 
-        if(!isset($results)) {
+        if(!in_array($data['type'], ['all', 'featured'], true) || !preg_match('/^(all|\d{4})$/', (string) $data['version']) || !is_string($data['search'])) {
             $this->response['code'] = 400;
             $this->response['message'] = 'Bad request';
 
             return response()->json($this->response, 400);
         }
+
+        $query = Asset::where('asset_type', 9);
+
+        if($data['type'] == 'featured') {
+            $query->whereRaw("JSON_UNQUOTE(JSON_EXTRACT(additional, '$.featured')) = 'true'");
+        }
+
+        if($data['version'] != 'all') {
+            $query->whereRaw("JSON_UNQUOTE(JSON_EXTRACT(additional, '$.version')) = ?", [$data['version']]);
+        }
+
+        if($data['search'] != '') {
+            $like = '%' . addcslashes(htmlspecialchars($data['search']), '%_\\') . '%';
+            $query->where('title', 'like', $like);
+        }
+
+        $total_items = (clone $query)->count();
+        $total_pages = max(1, (int) ceil($total_items / $results_per_page));
+        $currentPage = isset($data['page']) ? max(1, intval($data['page'])) : 1;
+        $currentPage = min($currentPage, $total_pages);
+        $offset = ($currentPage - 1) * $results_per_page;
+
+        $results = $query->select('assets.*', DB::raw('(SELECT COALESCE(SUM(JSON_LENGTH(servers.players)), 0) FROM servers WHERE servers.placeid = assets.id) AS total_players'))
+            ->orderByDesc('total_players')
+            ->orderByDesc('id')
+            ->limit($results_per_page)
+            ->offset($offset);
 
         $results = $results->get()->map(fn($item) => $item->toArray());
 
@@ -1235,9 +1167,6 @@ class api extends Controller
                 </div>';
             $this->response['data'][] = $html;
         }
-
-        $total_items = Asset::where('asset_type', 9)->count();
-        $total_pages = ceil($total_items / $results_per_page);
 
         $this->response['info']['pages'] = $total_pages;
         $this->response['info']['current_page'] = $currentPage;

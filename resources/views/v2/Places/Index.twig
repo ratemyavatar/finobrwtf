@@ -744,517 +744,152 @@
             var check2016 = document.getElementById('version-2016');
             var searchInput = document.getElementById('searchInput');
             var searchButton = document.getElementById('searchButton');
+            var prevButton = document.getElementById('input-form-data-v-e236382e-01');
+            var pageInput = document.getElementById('input-form-data-v-e236382e-02');
+            var totalLabel = document.getElementById('input-form-data-v-e236382e-03');
+            var nextButton = document.getElementById('input-form-data-v-e236382e-04');
+            var games = document.getElementById('games');
+            var loader = document.getElementById('loader');
             var gameType = "all";
             var version = "all";
             var searchQuery = "";
             var maxpages = 1;
             var currentPage = 1;
+            var loading = false;
+            var requestId = 0;
 
-            function doSearch() {
-              let query = "?";
-              searchQuery = searchInput.value;
+            function setBusy(busy) {
+              loading = busy;
+              [checkAll, check2012, check2016, searchInput, searchButton, pageInput].forEach(function (el) {
+                el.disabled = busy;
+              });
+              allButton.classList.toggle('disabled', busy || gameType == "all");
+              featuredButton.classList.toggle('disabled', busy || gameType == "featured");
+              prevButton.classList.toggle('disabled', busy || currentPage <= 1);
+              nextButton.classList.toggle('disabled', busy || currentPage >= maxpages);
+            }
 
-              if(gameType == "featured") {
-                query += "type=featured";
-              } else {
-                query += "type=all";
+            function load(page) {
+              page = Math.max(1, parseInt(page, 10) || 1);
+              var id = ++requestId;
+              var query = "?type=" + encodeURIComponent(gameType)
+                + "&version=" + encodeURIComponent(version)
+                + "&page=" + page;
+
+              if(searchQuery != "") {
+                query += "&search=" + encodeURIComponent(searchQuery);
               }
 
-              if(version == "all") {
-                query += "&version=all";
-              } else if(version == "2012") {
-                query += "&version=2012";
-              } else if(version == "2016") {
-                query += "&version=2016";
-              }
+              setBusy(true);
+              games.style.display = "none";
+              loader.style.display = "";
 
-              query += "&search=" + searchQuery;
-
-              if(!allButton.classList.contains('disabled')) {
-                allButton.classList.add('disabled');
-              }
-
-              if(!featuredButton.classList.contains('disabled')) {
-                featuredButton.classList.add('disabled');
-              }
-
-              if(searchInput.disabled != true) {
-                searchInput.disabled = true;
-              }
-
-              if(searchButton.disabled != true) {
-                searchButton.disabled = true;
-              }
-
-              checkAll.disabled = true;
-              check2012.disabled = true;
-              check2016.disabled = true;
-              document.getElementById('input-form-data-v-e236382e-02').disabled = true;
-              document.getElementById('input-form-data-v-e236382e-01').classList.add('disabled');
-              document.getElementById('input-form-data-v-e236382e-04').classList.add('disabled');
-              document.getElementById('games').style.display = "none";
-              document.getElementById('loader').style.display = "";
               fetch('/api/places' + query)
-                .then(response => response.json())
-                .then(json => {
-                  const data = json.data;
-                  const html = data.reduce((acc, data) => acc + data, '');
-                  const pages = json.info.pages;
-                  const currentPg = json.info.current_page;
-                  const parser = new DOMParser();
-                  maxpages = pages;
-                  const doc = parser.parseFromString(html, 'text/html');
-                  const htmlw = doc.body.innerHTML;
-                  document.getElementById('games').innerHTML = htmlw;
-                  document.getElementById('loader').style.display = "none";
-                  document.getElementById('input-form-data-v-e236382e-04').classList.remove('disabled');
-                  document.getElementById('input-form-data-v-e236382e-03').innerHTML = pages;
-                  document.getElementById('input-form-data-v-e236382e-02').value = currentPg;
-                  document.getElementById('input-form-data-v-e236382e-02').disabled = false;
-                  document.getElementById('input-form-data-v-e236382e-01').classList.remove('disabled');
-                  document.getElementById('games').style.display = "";
-                  checkAll.disabled = false;
-                  check2012.disabled = false;
-                  check2016.disabled = false;
-                  searchInput.disabled = false;
-                  searchButton.disabled = false;
-
-                  if(gameType == "featured") {
-                    allButton.classList.remove('disabled');
-                  } else {
-                    featuredButton.classList.remove('disabled');
+                .then(function (response) { return response.json(); })
+                .then(function (json) {
+                  if(id != requestId) {
+                    return;
                   }
+                  var doc = new DOMParser().parseFromString((json.data || []).join(''), 'text/html');
+                  games.innerHTML = doc.body.innerHTML;
+                  maxpages = Math.max(1, parseInt(json.info.pages, 10) || 1);
+                  currentPage = Math.min(maxpages, Math.max(1, parseInt(json.info.current_page, 10) || 1));
+                  totalLabel.innerHTML = maxpages;
+                  pageInput.value = currentPage;
+                  pageInput.max = maxpages;
+                })
+                .catch(function () {
+                  if(id == requestId) {
+                    pageInput.value = currentPage;
+                  }
+                })
+                .then(function () {
+                  if(id != requestId) {
+                    return;
+                  }
+                  loader.style.display = "none";
+                  games.style.display = "";
+                  setBusy(false);
                 });
             }
 
-            fetch('/api/places')
-              .then(response => response.json())
-              .then(json => {
-                const data = json.data;
-                const html = data.reduce((acc, data) => acc + data, '');
-                const pages = json.info.pages;
-                const currentPg = json.info.current_page;
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(html, 'text/html');
-                const htmlw = doc.body.innerHTML;
-                maxpages = pages;
-                currentPage = currentPg;
-                document.getElementById('games').innerHTML = htmlw;
-                document.getElementById('loader').style.display = "none";
-                document.getElementById('input-form-data-v-e236382e-04').classList.remove('disabled');
-                document.getElementById('input-form-data-v-e236382e-03').innerHTML = pages;
-                document.getElementById('input-form-data-v-e236382e-02').value = currentPg;
-                document.getElementById('input-form-data-v-e236382e-02').disabled = false;
-                document.getElementById('input-form-data-v-e236382e-01').classList.remove('disabled');
-              });
+            prevButton.addEventListener('click', function (event) {
+              event.preventDefault();
+              if(!loading && currentPage > 1) {
+                load(currentPage - 1);
+              }
+            });
+
+            nextButton.addEventListener('click', function (event) {
+              event.preventDefault();
+              if(!loading && currentPage < maxpages) {
+                load(currentPage + 1);
+              }
+            });
+
+            pageInput.addEventListener('change', function () {
+              var page = Math.min(maxpages, Math.max(1, parseInt(pageInput.value, 10) || 1));
+              if(page != currentPage) {
+                load(page);
+              } else {
+                pageInput.value = currentPage;
+              }
+            });
+
+            pageInput.addEventListener('keyup', function (event) {
+              if (event.key === 'Enter') {
+                pageInput.blur();
+              }
+            });
+
+            function doSearch() {
+              searchQuery = searchInput.value.trim();
+              load(1);
+            }
+
+            function setVersion(v) {
+              if(version != v) {
+                version = v;
+                load(1);
+              }
+            }
+
+            function setType(t) {
+              if(gameType != t && !loading) {
+                gameType = t;
+                allButton.classList.toggle('active', t == "all");
+                featuredButton.classList.toggle('active', t == "featured");
+                load(1);
+              }
+            }
 
             filterButton.addEventListener('click', function (event) {
               placeListMenu.classList.toggle('place-list-menu-show');
               event.stopPropagation();
             });
 
-			placeListMenu.addEventListener('click', function (event) {
-				event.stopPropagation();
-			});
+            placeListMenu.addEventListener('click', function (event) {
+              event.stopPropagation();
+            });
 
             document.addEventListener('click', function () {
               placeListMenu.classList.remove('place-list-menu-show');
             });
 
             searchInput.addEventListener('keyup', function (event) {
-                if (event.key === 'Enter') {
-                  doSearch();
-                }
+              if (event.key === 'Enter') {
+                doSearch();
+              }
             });
 
             searchButton.addEventListener('click', doSearch);
+            checkAll.addEventListener('click', function () { setVersion("all"); });
+            check2012.addEventListener('click', function () { setVersion("2012"); });
+            check2016.addEventListener('click', function () { setVersion("2016"); });
+            featuredButton.addEventListener('click', function () { setType("featured"); });
+            allButton.addEventListener('click', function () { setType("all"); });
 
-            checkAll.addEventListener('click', function () {
-              if(version != "all") {
-                let query = "?";
-                version = "all";
-
-                if(gameType == "featured") {
-                  query += "type=featured";
-                } else {
-                  query += "type=all";
-                }
-
-                if(version == "all") {
-                  query += "&version=all";
-                } else if(version == "2012") {
-                  query += "&version=2012";
-                } else if(version == "2016") {
-                  query += "&version=2016";
-                }
-
-                if(searchQuery != "") {
-                  query += "&search=" + searchQuery;
-                }
-
-                if(!allButton.classList.contains('disabled')) {
-                  allButton.classList.add('disabled');
-                }
-
-                if(!featuredButton.classList.contains('disabled')) {
-                  featuredButton.classList.add('disabled');
-                }
-
-                if(searchInput.disabled != true) {
-                  searchInput.disabled = true;
-                }
-
-                if(searchButton.disabled != true) {
-                  searchButton.disabled = true;
-                }
-
-                checkAll.disabled = true;
-                check2012.disabled = true;
-                check2016.disabled = true;
-                document.getElementById('input-form-data-v-e236382e-02').disabled = true;
-                document.getElementById('input-form-data-v-e236382e-01').classList.add('disabled');
-                document.getElementById('input-form-data-v-e236382e-04').classList.add('disabled');
-                document.getElementById('games').style.display = "none";
-                document.getElementById('loader').style.display = "";
-                fetch('/api/places' + query)
-                  .then(response => response.json())
-                  .then(json => {
-                    const data = json.data;
-                    const html = data.reduce((acc, data) => acc + data, '');
-                    const pages = json.info.pages;
-                    const currentPg = json.info.current_page;
-                    const parser = new DOMParser();
-                    maxpages = pages;
-                    const doc = parser.parseFromString(html, 'text/html');
-                    const htmlw = doc.body.innerHTML;
-                    document.getElementById('games').innerHTML = htmlw;
-                    document.getElementById('loader').style.display = "none";
-                    document.getElementById('input-form-data-v-e236382e-04').classList.remove('disabled');
-                    document.getElementById('input-form-data-v-e236382e-03').innerHTML = pages;
-                    document.getElementById('input-form-data-v-e236382e-02').value = currentPg;
-                    document.getElementById('input-form-data-v-e236382e-02').disabled = false;
-                    document.getElementById('input-form-data-v-e236382e-01').classList.remove('disabled');
-                    document.getElementById('games').style.display = "";
-                    checkAll.disabled = false;
-                    check2012.disabled = false;
-                    check2016.disabled = false;
-                    searchInput.disabled = false;
-                    searchButton.disabled = false;
-
-                    if(gameType == "featured") {
-                      allButton.classList.remove('disabled');
-                    } else {
-                      featuredButton.classList.remove('disabled');
-                    }
-                  });
-              }
-            });
-
-            check2012.addEventListener('click', function () {
-              if(version != "2012") {
-                let query = "?";
-                version = "2012";
-
-                if(gameType == "featured") {
-                  query += "type=featured";
-                } else {
-                  query += "type=all";
-                }
-
-                if(version == "all") {
-                  query += "&version=all";
-                } else if(version == "2012") {
-                  query += "&version=2012";
-                } else if(version == "2016") {
-                  query += "&version=2016";
-                }
-
-                if(searchQuery != "") {
-                  query += "&search=" + searchQuery;
-                }
-
-                if(!allButton.classList.contains('disabled')) {
-                  allButton.classList.add('disabled');
-                }
-
-                if(!featuredButton.classList.contains('disabled')) {
-                  featuredButton.classList.add('disabled');
-                }
-
-                if(searchInput.disabled != true) {
-                  searchInput.disabled = true;
-                }
-
-                if(searchButton.disabled != true) {
-                  searchButton.disabled = true;
-                }
-
-                checkAll.disabled = true;
-                check2012.disabled = true;
-                check2016.disabled = true;
-                document.getElementById('input-form-data-v-e236382e-02').disabled = true;
-                document.getElementById('input-form-data-v-e236382e-01').classList.add('disabled');
-                document.getElementById('input-form-data-v-e236382e-04').classList.add('disabled');
-                document.getElementById('games').style.display = "none";
-                document.getElementById('loader').style.display = "";
-                fetch('/api/places' + query)
-                  .then(response => response.json())
-                  .then(json => {
-                    const data = json.data;
-                    const html = data.reduce((acc, data) => acc + data, '');
-                    const pages = json.info.pages;
-                    const currentPg = json.info.current_page;
-                    const parser = new DOMParser();
-                    maxpages = pages;
-                    const doc = parser.parseFromString(html, 'text/html');
-                    const htmlw = doc.body.innerHTML;
-                    document.getElementById('games').innerHTML = htmlw;
-                    document.getElementById('loader').style.display = "none";
-                    document.getElementById('input-form-data-v-e236382e-04').classList.remove('disabled');
-                    document.getElementById('input-form-data-v-e236382e-03').innerHTML = pages;
-                    document.getElementById('input-form-data-v-e236382e-02').value = currentPg;
-                    document.getElementById('input-form-data-v-e236382e-02').disabled = false;
-                    document.getElementById('input-form-data-v-e236382e-01').classList.remove('disabled');
-                    document.getElementById('games').style.display = "";
-                    checkAll.disabled = false;
-                    check2012.disabled = false;
-                    check2016.disabled = false;
-                    searchInput.disabled = false;
-                    searchButton.disabled = false;
-
-                    if(gameType == "featured") {
-                      allButton.classList.remove('disabled');
-                    } else {
-                      featuredButton.classList.remove('disabled');
-                    }
-                  });
-              }
-            });
-
-            check2016.addEventListener('click', function () {
-              if(version != "2016") {
-                let query = "?";
-                version = "2016";
-
-                if(gameType == "featured") {
-                  query += "type=featured";
-                } else {
-                  query += "type=all";
-                }
-
-                if(version == "all") {
-                  query += "&version=all";
-                } else if(version == "2012") {
-                  query += "&version=2012";
-                } else if(version == "2016") {
-                  query += "&version=2016";
-                }
-
-                if(searchQuery != "") {
-                  query += "&search=" + searchQuery;
-                }
-
-                if(!allButton.classList.contains('disabled')) {
-                  allButton.classList.add('disabled');
-                }
-
-                if(!featuredButton.classList.contains('disabled')) {
-                  featuredButton.classList.add('disabled');
-                }
-
-                if(searchInput.disabled != true) {
-                  searchInput.disabled = true;
-                }
-
-                if(searchButton.disabled != true) {
-                  searchButton.disabled = true;
-                }
-
-                checkAll.disabled = true;
-                check2012.disabled = true;
-                check2016.disabled = true;
-                document.getElementById('input-form-data-v-e236382e-02').disabled = true;
-                document.getElementById('input-form-data-v-e236382e-01').classList.add('disabled');
-                document.getElementById('input-form-data-v-e236382e-04').classList.add('disabled');
-                document.getElementById('games').style.display = "none";
-                document.getElementById('loader').style.display = "";
-                fetch('/api/places' + query)
-                  .then(response => response.json())
-                  .then(json => {
-                    const data = json.data;
-                    const html = data.reduce((acc, data) => acc + data, '');
-                    const pages = json.info.pages;
-                    const currentPg = json.info.current_page;
-                    const parser = new DOMParser();
-                    maxpages = pages;
-                    const doc = parser.parseFromString(html, 'text/html');
-                    const htmlw = doc.body.innerHTML;
-                    document.getElementById('games').innerHTML = htmlw;
-                    document.getElementById('loader').style.display = "none";
-                    document.getElementById('input-form-data-v-e236382e-04').classList.remove('disabled');
-                    document.getElementById('input-form-data-v-e236382e-03').innerHTML = pages;
-                    document.getElementById('input-form-data-v-e236382e-02').value = currentPg;
-                    document.getElementById('input-form-data-v-e236382e-02').disabled = false;
-                    document.getElementById('input-form-data-v-e236382e-01').classList.remove('disabled');
-                    document.getElementById('games').style.display = "";
-                    checkAll.disabled = false;
-                    check2012.disabled = false;
-                    check2016.disabled = false;
-                    searchInput.disabled = false;
-                    searchButton.disabled = false;
-
-                    if(gameType == "featured") {
-                      allButton.classList.remove('disabled');
-                    } else {
-                      featuredButton.classList.remove('disabled');
-                    }
-                  });
-              }
-            });
-
-            featuredButton.addEventListener('click', function () {
-              if(gameType != "featured") {
-                let query = "?";
-                allButton.classList.remove('active');
-                allButton.classList.add('disabled');
-                featuredButton.classList.add('active');
-                featuredButton.classList.add('disabled');
-                gameType = "featured";
-                checkAll.disabled = true;
-                check2012.disabled = true;
-                check2016.disabled = true;
-                document.getElementById('input-form-data-v-e236382e-02').disabled = true;
-                document.getElementById('input-form-data-v-e236382e-01').classList.add('disabled');
-                document.getElementById('input-form-data-v-e236382e-04').classList.add('disabled');
-                document.getElementById('games').style.display = "none";
-                document.getElementById('loader').style.display = "";
-
-                if(gameType == "featured") {
-                  query += "type=featured";
-                } else {
-                  query += "type=all";
-                }
-
-                if(version == "all") {
-                  query += "&version=all";
-                } else if(version == "2012") {
-                  query += "&version=2012";
-                } else if(version == "2016") {
-                  query += "&version=2016";
-                }
-
-                if(searchQuery != "") {
-                  query += "&search=" + searchQuery;
-                }
-
-                if(searchInput.disabled != true) {
-                  searchInput.disabled = true;
-                }
-
-                if(searchButton.disabled != true) {
-                  searchButton.disabled = true;
-                }
-
-                fetch('/api/places' + query)
-                  .then(response => response.json())
-                  .then(json => {
-                    const data = json.data;
-                    const html = data.reduce((acc, data) => acc + data, '');
-                    const pages = json.info.pages;
-                    const currentPg = json.info.current_page;
-                    const parser = new DOMParser();
-                    maxpages = pages;
-                    const doc = parser.parseFromString(html, 'text/html');
-                    const htmlw = doc.body.innerHTML;
-                    document.getElementById('games').innerHTML = htmlw;
-                    document.getElementById('loader').style.display = "none";
-                    document.getElementById('input-form-data-v-e236382e-04').classList.remove('disabled');
-                    document.getElementById('input-form-data-v-e236382e-03').innerHTML = pages;
-                    document.getElementById('input-form-data-v-e236382e-02').value = currentPg;
-                    document.getElementById('input-form-data-v-e236382e-02').disabled = false;
-                    document.getElementById('input-form-data-v-e236382e-01').classList.remove('disabled');
-                    document.getElementById('games').style.display = "";
-                    allButton.classList.remove('disabled');
-                    checkAll.disabled = false;
-                    check2012.disabled = false;
-                    check2016.disabled = false;
-                    searchInput.disabled = false;
-                    searchButton.disabled = false;
-                  });
-              }
-            });
-
-            allButton.addEventListener('click', function () {
-              if(gameType != "all") {
-                let query = "?";
-                allButton.classList.add('active');
-                allButton.classList.add('disabled');
-                featuredButton.classList.remove('active');
-                featuredButton.classList.add('disabled');
-                gameType = "all";
-                checkAll.disabled = true;
-                check2012.disabled = true;
-                check2016.disabled = true;
-                document.getElementById('input-form-data-v-e236382e-02').disabled = true;
-                document.getElementById('input-form-data-v-e236382e-01').classList.add('disabled');
-                document.getElementById('input-form-data-v-e236382e-04').classList.add('disabled');
-                document.getElementById('games').style.display = "none";
-                document.getElementById('loader').style.display = "";
-
-                if(gameType == "featured") {
-                  query += "type=featured";
-                } else {
-                  query += "type=all";
-                }
-
-                if(version == "all") {
-                  query += "&version=all";
-                } else if(version == "2012") {
-                  query += "&version=2012";
-                } else if(version == "2016") {
-                  query += "&version=2016";
-                }
-
-                if(searchQuery != "") {
-                  query += "&search=" + searchQuery;
-                }
-
-                if(searchInput.disabled != true) {
-                  searchInput.disabled = true;
-                }
-
-                if(searchButton.disabled != true) {
-                  searchButton.disabled = true;
-                }
-
-                fetch('/api/places' + query)
-                  .then(response => response.json())
-                  .then(json => {
-                    const data = json.data;
-                    const html = data.reduce((acc, data) => acc + data, '');
-                    const pages = json.info.pages;
-                    const currentPg = json.info.current_page;
-                    const parser = new DOMParser();
-                    maxpages = pages;
-                    const doc = parser.parseFromString(html, 'text/html');
-                    const htmlw = doc.body.innerHTML;
-                    document.getElementById('games').innerHTML = htmlw;
-                    document.getElementById('loader').style.display = "none";
-                    document.getElementById('input-form-data-v-e236382e-04').classList.remove('disabled');
-                    document.getElementById('input-form-data-v-e236382e-03').innerHTML = pages;
-                    document.getElementById('input-form-data-v-e236382e-02').value = currentPg;
-                    document.getElementById('input-form-data-v-e236382e-02').disabled = false;
-                    document.getElementById('input-form-data-v-e236382e-01').classList.remove('disabled');
-                    document.getElementById('games').style.display = "";
-                    featuredButton.classList.remove('disabled');
-                    checkAll.disabled = false;
-                    check2012.disabled = false;
-                    check2016.disabled = false;
-                    searchInput.disabled = false;
-                    searchButton.disabled = false;
-                  });
-              }
-            });
+            load(1);
           });
 </script>
     </div>
