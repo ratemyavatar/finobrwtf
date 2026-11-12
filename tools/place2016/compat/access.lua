@@ -213,6 +213,7 @@ do
 	end
 	SET.Parent = function(o, v)
 		if not isInstance(o) then return false end
+		if type(v) == "table" and rawget(v, "__instance") then v = v:__instance() end
 		o.Parent = v
 		if transformed[o] or (v and paddingOf[v]) then
 			if isGui(o) then
@@ -444,6 +445,16 @@ do
 		if not isInstance(o) then return false end
 		return true, C.className(o)
 	end
+	GET.Activated = function(o)
+		if not isInstance(o) then return false end
+		local ok, v = pcall(idx, o, "Activated")
+		if ok then return true, v end
+		local okb, click = pcall(idx, o, "MouseButton1Click")
+		if not okb then return false end
+		return true, C.proxySignal(function(fn)
+			return click:connect(function() fn(nil, 1) end)
+		end)
+	end
 	GET.Destroying = function(o)
 		if not isInstance(o) then return false end
 		return true, C.proxySignal(function(fn)
@@ -595,6 +606,30 @@ do
 	}
 	C.DEFAULTS = DEFAULTS
 
+	local EVENT_WORDS = { "Changed", "Added", "Removed", "Finished", "Failed", "Began", "Ended", "Triggered", "Started",
+		"Stopped", "Completed", "Activated", "Deactivated", "Clicked", "Opened", "Closed", "Received", "Fired", "Shown", "Hidden",
+		"Entered", "Left", "Reached", "Loaded", "Updated", "Event", "Signal", "Requested", "Selected", "Pressed", "Released", "Action", "Moved", "Gesture", "Pinch", "Rotate", "Swipe", "Pan", "Tap", "Joined", "Died", "Touched" }
+	function C.looksLikeEvent(k)
+		for _, w in ipairs(EVENT_WORDS) do
+			if k:sub(-#w) == w then return true end
+		end
+		return k:sub(1, 2) == "On"
+	end
+	local dead
+	function C.deadSignal()
+		dead = dead or C.proxySignal(function() return nil end)
+		return dead
+	end
+	local warned = {}
+	function C.warnOnce(k, o)
+		local cn = "?"
+		pcall(function() cn = o.ClassName end)
+		local key = cn .. "." .. k
+		if warned[key] then return end
+		warned[key] = true
+		warn("compat: " .. key .. " is not in this version, using nil")
+	end
+
 	local function lowerFirst(k) return k:sub(1, 1):lower() .. k:sub(2) end
 
 	function C.g(o, k)
@@ -628,7 +663,9 @@ do
 				return d
 			end
 			if EMULATED[k] then return nil end
-			error(v, 2)
+			if C.looksLikeEvent(k) then return C.deadSignal() end
+			C.warnOnce(k, o)
+			return nil
 		end
 		local lk = lowerFirst(k)
 		ok, v = pcall(idx, o, lk)
@@ -644,6 +681,7 @@ do
 			o[k] = v
 			return
 		end
+		if k == "Parent" and type(v) == "table" and rawget(v, "__instance") then v = v:__instance() end
 		if isFakeEnum(v) then
 			setShadow(o, k, v)
 			if C.onFakeEnum then C.onFakeEnum(o, k, v) end
@@ -690,7 +728,12 @@ do
 		setShadow(o, k, v)
 	end
 
+	local DEAD_CONN = { Disconnect = function() end, disconnect = function() end, Connected = false }
 	function C.m(o, name, ...)
+		if o == nil and (name == "Connect" or name == "connect" or name == "Once" or name == "ConnectParallel") then
+			C.warnOnce(name .. " on nil", game)
+			return DEAD_CONN
+		end
 		local t = type(o)
 		if t == "string" then
 			local f = C.stringMethods[name]
@@ -739,6 +782,8 @@ do
 		if inst then
 			local any = C.ANY_METHODS[name]
 			if any then return any(o, ...) end
+			C.warnOnce(name .. "()", o)
+			return nil
 		end
 		error(tostring(name) .. " is not a valid member of " .. (inst and o.ClassName or typeof(o)), 2)
 	end

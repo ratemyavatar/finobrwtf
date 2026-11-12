@@ -435,6 +435,44 @@ do
 	function Font.fromId(id, weight, style) return Font.new(tostring(id), weight, style) end
 	G.Font = Font
 
+	local dbg = extend(debug, {})
+	if not debug.profilebegin then function dbg.profilebegin() end end
+	if not debug.profileend then function dbg.profileend() end end
+	function dbg.setmemorycategory() end
+	function dbg.resetmemorycategory() end
+	if not debug.info then
+		function dbg.info(level, what)
+			if type(what) == "string" and what:find("s") then return "?" end
+			return nil
+		end
+	end
+	G.debug = dbg
+
+	local cs = extend(ColorSequence, {})
+	function cs.new(a, b)
+		local ok, r = pcall(ColorSequence.new, a, b)
+		if ok then return r end
+		if type(a) == "table" and #a > 0 then
+			local first, last = a[1], a[#a]
+			return ColorSequence.new(first.Value, last.Value)
+		end
+		error(r, 2)
+	end
+	G.ColorSequence = cs
+	local ns = extend(NumberSequence, {})
+	function ns.new(a, b)
+		local ok, r = pcall(NumberSequence.new, a, b)
+		if ok then return r end
+		if type(a) == "table" and #a > 0 then
+			local first, last = a[1], a[#a]
+			local ok2, r2 = pcall(NumberSequence.new, first.Value, last.Value)
+			if ok2 then return r2 end
+			return NumberSequence.new(first.Value)
+		end
+		error(r, 2)
+	end
+	G.NumberSequence = ns
+
 	G.NumberRange = NumberRange
 	G.PhysicalProperties = PhysicalProperties
 	G.Rect = Rect or {

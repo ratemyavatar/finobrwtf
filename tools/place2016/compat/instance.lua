@@ -75,13 +75,15 @@ do
 			kps[#kps] = ColorSequenceKeypoint.new(1, kps[#kps].Value)
 			local ok, cs = pcall(ColorSequence.new, kps)
 			if ok then return cs end
-			return ColorSequence.new(kps[1].Value)
+			return ColorSequence.new(kps[1].Value, kps[#kps].Value)
 		end
 		if kind == "NS" then
 			local kps = {}
 			for i = 1, #n, 3 do kps[#kps + 1] = NumberSequenceKeypoint.new(n[i], n[i + 1], n[i + 2]) end
 			local ok, ns = pcall(NumberSequence.new, kps)
 			if ok then return ns end
+			local ok2, ns2 = pcall(NumberSequence.new, n[2] or 0, n[#n - 1] or 0)
+			if ok2 then return ns2 end
 			return NumberSequence.new(n[2] or 0)
 		end
 		return s

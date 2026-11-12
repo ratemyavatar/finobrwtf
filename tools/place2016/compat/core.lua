@@ -14,7 +14,7 @@ local realUDim = UDim
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local IS_SERVER = RunService:IsServer()
+local IS_SERVER = RunService:IsServer() and not rawget(_G, "__COMPAT_CLIENT")
 local IS_CLIENT = not IS_SERVER
 C.IS_SERVER = IS_SERVER
 

@@ -151,6 +151,24 @@ do
 			end,
 		},
 	})
+	reg("Translator", {
+		defaults = { LocaleId = "en-us" },
+		methods = {
+			FormatByKey = function(o, key) error("key not found: " .. tostring(key), 2) end,
+			Translate = function(o, _, text) return text end,
+		},
+	})
+	reg("LocalizationTable", {
+		defaults = { SourceLocaleId = "en-us" },
+		methods = {
+			SetEntries = function() end,
+			GetEntries = function() return {} end,
+			SetContents = function() end,
+			GetContents = function() return "[]" end,
+			SetEntry = function() end,
+			GetTranslator = function() return C.makeDummy("Translator") end,
+		},
+	})
 	reg("UITableLayout", { defaults = { Padding = realUDim2.new(), FillEmptySpaceColumns = false, FillEmptySpaceRows = false, MajorAxis = E.TableMajorAxis.RowMajor, AbsoluteContentSize = realVector2.new() } })
 	reg("UIPadding", { defaults = { PaddingTop = U0, PaddingBottom = U0, PaddingLeft = U0, PaddingRight = U0 } })
 	reg("UIScale", { defaults = { Scale = 1 } })

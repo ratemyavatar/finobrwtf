@@ -27,7 +27,7 @@ GuiState Transparency Color Size Position Rotation Visible Text Value'''.split()
 
 COMPAT_GLOBALS = ['task', 'typeof', 'Random', 'TweenInfo', 'RaycastParams', 'OverlapParams', 'utf8', 'bit32',
                   'Color3', 'CFrame', 'UDim2', 'UDim', 'Vector3', 'Vector2', 'math', 'table', 'string', 'os', 'Enum',
-                  'Instance', 'DateTime', 'NumberRange', 'Font', 'warn', 'Rect', 'PhysicalProperties']
+                  'Instance', 'DateTime', 'NumberRange', 'Font', 'warn', 'Rect', 'PhysicalProperties', 'debug', 'ColorSequence', 'NumberSequence']
 
 
 class Token:
@@ -675,7 +675,7 @@ class Parser:
         return N('table', line, items=items, end_line=end.line)
 
 
-SAFE_READS = {'Parent', 'Name', 'LocalPlayer', 'Character', 'X', 'Y', 'Z', 'Offset', 'R', 'G', 'B'}
+SAFE_READS = {'Parent', 'Name', 'LocalPlayer', 'Character', 'X', 'Y', 'Z', 'Offset'}
 
 
 def hook_read(e):

@@ -236,17 +236,36 @@ do
 		s.__type = "Instance"
 		s.IsA = s.IsA or function(_, c) return c == name or c == "Instance" end
 		s.GetPropertyChangedSignal = s.GetPropertyChangedSignal or function() return Signal.new() end
-		s.FindFirstChild = s.FindFirstChild or function() return nil end
-		s.WaitForChild = s.WaitForChild or function(self, n)
-			local f = self:FindFirstChild(n)
-			if f then return f end
-			return nil
-		end
-		s.GetChildren = s.GetChildren or function() return {} end
 		s.GetAttribute = s.GetAttribute or function() return nil end
 		s.SetAttribute = s.SetAttribute or function() end
 		s.Changed = s.Changed or Signal.new()
 		s.GetFullName = function() return name end
+		s.__instance = function(self)
+			local inst = rawget(self, "__inst")
+			if inst and inst.Parent then return inst end
+			local holder = ReplicatedStorage:FindFirstChild("__compat_services")
+			if not holder then
+				holder = realInstance.new("Folder")
+				holder.Name = "__compat_services"
+				holder.Parent = ReplicatedStorage
+			end
+			inst = holder:FindFirstChild(name)
+			if not inst then
+				inst = realInstance.new("Folder")
+				inst.Name = name
+				inst.Parent = holder
+			end
+			rawset(self, "__inst", inst)
+			return inst
+		end
+		s.FindFirstChild = function(self, n, r) return self:__instance():FindFirstChild(n, r) end
+		s.WaitForChild = function(self, n, t)
+			local f = self:__instance():FindFirstChild(n)
+			if f or t then return f end
+			return self:__instance():WaitForChild(n)
+		end
+		s.GetChildren = function(self) return C.filtered(self:__instance():GetChildren()) end
+		s.GetDescendants = function(self) return C.descendants(self:__instance()) end
 		return setmetatable(s, { __index = function(_, k)
 			local ev = Signal.new()
 			if type(k) == "string" and (k:match("Async$") or k:match("^Get") or k:match("^Set") or k:match("^Is") or k:match("^Prompt") or k:match("^Can")) then
@@ -272,15 +291,11 @@ do
 			}
 		end,
 	})
-	local translatorMeta = { __index = {
-		FormatByKey = function(_, key) return tostring(key) end,
-		Translate = function(_, _, text) return text end,
-		LocaleId = "en-us",
-	} }
+	local function translator() return C.makeDummy("Translator") end
 	services.LocalizationService = stub("LocalizationService", {
-		GetTranslatorForPlayerAsync = function() return setmetatable({}, translatorMeta) end,
-		GetTranslatorForPlayer = function() return setmetatable({}, translatorMeta) end,
-		GetTranslatorForLocaleAsync = function() return setmetatable({}, translatorMeta) end,
+		GetTranslatorForPlayerAsync = translator,
+		GetTranslatorForPlayer = translator,
+		GetTranslatorForLocaleAsync = translator,
 		GetCountryRegionForPlayerAsync = function() return "US" end,
 		RobloxLocaleId = "en-us", SystemLocaleId = "en-us",
 	})
@@ -999,6 +1014,8 @@ do
 	end
 
 	local RunServiceExtra = {
+		IsClient = function() return IS_CLIENT end,
+		IsServer = function() return IS_SERVER end,
 		IsRunning = function() return true end,
 		IsEdit = function() return false end,
 		IsRunMode = function() return false end,

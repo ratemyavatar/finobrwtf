@@ -75,6 +75,14 @@ PART_CLASSES = {'Part', 'WedgePart', 'CornerWedgePart', 'TrussPart', 'SpawnLocat
 PART_2016 = {'Part', 'WedgePart', 'CornerWedgePart', 'TrussPart', 'SpawnLocation', 'Seat', 'VehicleSeat', 'SkateboardPlatform', 'Terrain'}
 
 BRICK_COLORS = None
+KEYCODES = None
+
+
+def keycodes():
+    global KEYCODES
+    if KEYCODES is None:
+        KEYCODES = json.load(open(os.path.join(HERE, 'keycodes.json')))
+    return KEYCODES
 
 
 def text(v):
@@ -744,6 +752,10 @@ def prop_to_value(v, prop=None):
         names = ENUM_TOKENS.get(enum) if enum else None
         if names and 0 <= val < len(names):
             return ('Enum', (enum, names[val]))
+        if prop and prop.endswith('KeyCode'):
+            name = keycodes().get(str(val))
+            if name:
+                return ('Enum', ('KeyCode', name))
         if prop in ('KeyboardKeyCode', 'GamepadKeyCode'):
             if 97 <= val <= 122:
                 return ('Enum', ('KeyCode', chr(val).upper()))
