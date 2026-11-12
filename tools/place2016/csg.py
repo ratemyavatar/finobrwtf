@@ -224,7 +224,12 @@ def main():
     os.makedirs(cache, exist_ok=True)
     os.makedirs(out_dir, exist_ok=True)
     cookie = os.environ.get('FINOBE_ROBLOSECURITY', '')
-    roots, order, errors = rbxl.load(open(place, 'rb').read())
+    data = open(place, 'rb').read()
+    if data.startswith(rbxl.MAGIC):
+        roots, order, errors = rbxl.load(data)
+    else:
+        import rbxlx
+        roots, order, errors = rbxlx.load(data)
     ids = union_ids(order)
     result = {}
     failed = {}

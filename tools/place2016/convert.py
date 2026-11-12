@@ -943,7 +943,11 @@ def main():
     ap.add_argument('--report', default=None)
     a = ap.parse_args()
     data = open(a.input, 'rb').read()
-    roots, order, errors = rbxl.load(data)
+    if data.startswith(rbxl.MAGIC):
+        roots, order, errors = rbxl.load(data)
+    else:
+        import rbxlx
+        roots, order, errors = rbxlx.load(data)
     if errors:
         print('read errors:', errors[:5])
     compat = open(a.compat).read() if a.compat else os.popen(os.path.join(HERE, 'build_compat.sh')).read()
