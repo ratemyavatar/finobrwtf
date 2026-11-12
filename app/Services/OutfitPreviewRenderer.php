@@ -57,7 +57,7 @@ class OutfitPreviewRenderer
         $cacheKey = "outfit_thumbnail_token_{$token}";
         Cache::put($cacheKey, ['userId' => (int) $user->id, 'avatar' => $saved], now()->addMinutes(5));
         $pose = (string) ($saved['pose'] ?? 'default');
-        if (!isset(AvatarRenderer::POSES[$pose])) {
+        if (!AvatarRenderer::poseExists($pose)) {
             $pose = 'default';
         }
 
@@ -72,7 +72,7 @@ class OutfitPreviewRenderer
                 0,
                 2,
                 'ScriptExecution',
-                ["{$site}/asset/OutfitCharacterFetch.ashx?userId={$user->id}&outfitToken={$token}", $site, 'PNG', 512, 512, $pose, $colorArgument]
+                ["{$site}/asset/OutfitCharacterFetch.ashx?userId={$user->id}&outfitToken={$token}", $site, 'PNG', 512, 512, $pose, $colorArgument, AvatarRenderer::poseJoints($pose)]
             );
 
             $image = base64_decode((string) $arbiter->OpenJobEx($job), true);

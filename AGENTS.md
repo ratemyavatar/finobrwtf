@@ -67,3 +67,10 @@
 - the 2016 engine only loads animations from number ids, so `/asset/?id=<dance id>` serves them
 - the gui script is `storage/rbx/files/scripts/dance2016.lua`, sent as a LocalScript from `/asset/?id=dance&name=client`
 - to build the dances again see `tools/dances/README.md`
+
+## uploaded poses
+
+- admins upload a `.rbxm`/`.rbxmx` at `/admin/poses` (a link on the admin panel, no card). it's admin only
+- `PoseExtractor` reads a posed r6 or r15 character from its part positions, or a KeyframeSequence (the most posed keyframe unless you pick one), and turns it into r6 joint C0/C1
+- poses are saved in `custom_poses` and show up as `custom<id>` in character settings for everyone. the render script gets the joints as its 8th argument
+- the upload is capped by php's `upload_max_filesize` and `post_max_size`

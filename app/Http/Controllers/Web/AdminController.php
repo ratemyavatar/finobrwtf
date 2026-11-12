@@ -104,8 +104,10 @@ class AdminController extends Controller
             ['url' => '/admin/elections', 'label' => 'Elections', 'scope' => 'Moderation'],
             ['url' => '/admin/blog', 'label' => 'Blog Management', 'scope' => 'Blog'],
             ['url' => '/admin/invite-keys', 'label' => 'Create Invite Keys (temp)', 'scope' => 'Invites'],
+            ['url' => '/admin/poses', 'label' => 'Upload Pose (.rbxm)', 'scope' => 'Avatar', 'admin' => true],
         ];
-        $allowed = fn(array $i) => in_array($i['scope'], $scopes, true);
+        $isAdmin = $request->user()->status === 'admin';
+        $allowed = fn(array $i) => in_array($i['scope'], $scopes, true) && (empty($i['admin']) || $isAdmin);
         $pageData['tools'] = array_values(array_filter($tools, $allowed));
         $pageData['links'] = array_values(array_filter($links, $allowed));
 

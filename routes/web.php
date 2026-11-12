@@ -218,6 +218,7 @@ Route::middleware([Moderation::class, SerializeWrites::class])->group(function (
             Route::match(['post', 'get'], '/force-username', [AdminToolsController::class, 'forceUsername']);
             Route::get('/invite-tree', [AdminToolsController::class, 'inviteTree']);
             Route::match(['post', 'get'], '/invite-keys', [AdminToolsController::class, 'inviteKeys']);
+            Route::match(['post', 'get'], '/poses', [AdminToolsController::class, 'poses'])->middleware('limit:30,1');
 
             Route::withoutMiddleware([Moderation::class, SerializeWrites::class])->group(function () {
                 Route::get('/users', [WorkbenchController::class, 'users']);

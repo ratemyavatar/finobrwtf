@@ -397,7 +397,7 @@ class api extends Controller
         if (!empty($saved['bodyColors'])) {
             $avatar[0]['bodyColors'] = $saved['bodyColors'];
         }
-        if (isset($saved['pose']) && isset(AvatarRenderer::POSES[$saved['pose']])) {
+        if (isset($saved['pose']) && AvatarRenderer::poseExists((string) $saved['pose'])) {
             $avatar[0]['pose'] = $saved['pose'];
         }
         $user->avatar = $avatar;
@@ -429,7 +429,7 @@ class api extends Controller
 
         if ($data['type'] == 'pose') {
             $pose = (string) ($data['pose'] ?? '');
-            if (!isset(\App\Services\AvatarRenderer::POSES[$pose])) {
+            if (!\App\Services\AvatarRenderer::poseExists($pose)) {
                 $this->response['code'] = 400;
                 $this->response['message'] = 'Bad request';
 

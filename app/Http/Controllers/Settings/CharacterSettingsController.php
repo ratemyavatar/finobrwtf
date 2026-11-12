@@ -14,7 +14,7 @@ class CharacterSettingsController extends Controller
         $user = $request->user();
 
         return $this->page('Settings/Character', [
-            'poses' => AvatarRenderer::POSES,
+            'poses' => AvatarRenderer::poses(),
             'pose' => AvatarRenderer::poseFor($user),
             'animationPacks' => AnimationPacks::PACKS,
             'animationPack' => AnimationPacks::forUser($user),

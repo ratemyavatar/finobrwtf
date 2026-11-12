@@ -197,6 +197,86 @@ class AdminToolsController extends Controller
         return $this->toolPage('PlayerListThumbs', 'Player List Thumbnails', ['users' => $users, 'search' => $search]);
     }
 
+    public function poses(Request $request) {
+        $db = $this->db();
+        $previews = storage_path('app/pose-previews');
+
+        if($request->isMethod('post')) {
+            if((string) $request->input('action') === 'delete') {
+                $id = (int) $request->input('id');
+                $db->table('custom_poses')->where('id', $id)->delete();
+                @unlink("{$previews}/{$id}.png");
+                \App\Services\AvatarRenderer::forgetCustomPoses();
+                return $this->back('Pose deleted. Anyone using it is back to Standing.');
+            }
+
+            $name = trim((string) $request->input('name'));
+            $file = $request->file('model');
+            if($name === '' || mb_strlen($name) > 50) {
+                return $this->back('Give the pose a name (50 characters max).', false);
+            }
+            if($file && in_array($file->getError(), [UPLOAD_ERR_INI_SIZE, UPLOAD_ERR_FORM_SIZE], true)) {
+                return $this->back('That file is bigger than the server upload limit (' . ini_get('upload_max_filesize') . '). Raise upload_max_filesize and post_max_size in php.ini.', false);
+            }
+            if(!$file || !$file->isValid()) {
+                return $this->back('Pick a .rbxm or .rbxmx file.', false);
+            }
+            if($file->getSize() > 20 * 1024 * 1024) {
+                return $this->back('That file is too big (20 MB max).', false);
+            }
+
+            try {
+                [$joints, $source] = \App\Services\PoseExtractor::fromFile(
+                    (string) file_get_contents($file->getRealPath()),
+                    trim((string) $request->input('animation')),
+                    max(0, (int) $request->input('keyframe'))
+                );
+            } catch(\App\Services\ItemImport\ImportException $e) {
+                return $this->back($e->getMessage(), false);
+            } catch(\Throwable $e) {
+                report($e);
+                return $this->back("That file couldn't be read.", false);
+            }
+
+            $encoded = \App\Services\PoseExtractor::encode($joints);
+            $id = $db->table('custom_poses')->insertGetId([
+                'name' => $name,
+                'joints' => $encoded,
+                'source' => mb_substr($source, 0, 120),
+                'created_by' => (int) Auth::id(),
+                'created_at' => now(),
+            ]);
+            \App\Services\AvatarRenderer::forgetCustomPoses();
+
+            $message = "Pose \"{$name}\" added from the {$source}. Everyone can pick it in character settings.";
+            try {
+                if(!is_dir($previews)) {
+                    mkdir($previews, 0755, true);
+                }
+                file_put_contents("{$previews}/{$id}.png", \App\Services\AvatarRenderer::renderPosePreview(Auth::user(), $encoded));
+            } catch(\Throwable $e) {
+                report($e);
+                $message .= " The preview render failed.";
+            }
+
+            return $this->back($message);
+        }
+
+        $poses = $db->table('custom_poses')->orderByDesc('id')->get()->map(function ($pose) use ($previews) {
+            $preview = "{$previews}/{$pose->id}.png";
+            return [
+                'id' => $pose->id,
+                'name' => $pose->name,
+                'source' => $pose->source,
+                'created_at' => $pose->created_at,
+                'creator' => optional(User::find($pose->created_by))->username,
+                'preview' => is_file($preview) ? 'data:image/png;base64,' . base64_encode((string) file_get_contents($preview)) : null,
+            ];
+        })->all();
+
+        return $this->toolPage('Poses', 'Upload Pose', ['poses' => $poses]);
+    }
+
     public function setRank(Request $request) {
         if($request->isMethod('post')) {
             $user = $this->findUser($request->input('user'));

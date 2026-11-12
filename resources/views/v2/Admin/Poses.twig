@@ -1,0 +1,25 @@
+{% extends 'v2/Admin/_layout.twig' %}
+{% block tool %}
+<p class="text-muted">Upload a posed R6 or R15 character, or a model with an animation (KeyframeSequence) in it. The pose gets pulled out and added to the pose list in character settings for everyone.</p>
+<form method="POST" enctype="multipart/form-data" style="max-width: 480px;">
+  <input type="hidden" name="_token" value="{{ data.csrf_token }}">
+  <div class="form-group"><label for="name"><strong>Pose Name</strong></label><input type="text" id="name" name="name" class="form-control" required maxlength="50"></div>
+  <div class="form-group"><label for="model"><strong>File (.rbxm / .rbxmx)</strong></label><input type="file" id="model" name="model" class="form-control-file" accept=".rbxm,.rbxmx" required></div>
+  <div class="form-group"><label for="animation"><strong>Animation Name</strong> <span class="text-muted">(optional)</span></label><input type="text" id="animation" name="animation" class="form-control" maxlength="100" placeholder="leave empty to use the posed character, or the first animation"></div>
+  <div class="form-group"><label for="keyframe"><strong>Keyframe Number</strong> <span class="text-muted">(optional)</span></label><input type="number" id="keyframe" name="keyframe" class="form-control" min="0" placeholder="leave empty to use the most posed keyframe"></div>
+  <button class="btn btn-primary">upload</button>
+</form>
+<hr>
+<div class="row">
+  {% for pose in data.poses %}
+  <div class="col-6 col-md-4 col-lg-3 mb-4 text-center">
+    {% if pose.preview %}<img src="{{ pose.preview }}" alt="{{ pose.name }}" style="width: 160px; height: 160px; object-fit: contain;">{% else %}<div style="height: 160px;" class="d-flex align-items-center justify-content-center text-muted">no preview</div>{% endif %}
+    <p class="mb-0 text-truncate"><strong>{{ pose.name }}</strong></p>
+    <p class="mb-1 small text-muted text-truncate">{{ pose.source }}{% if pose.creator %} - {{ pose.creator }}{% endif %}</p>
+    <form method="POST" class="mb-0" onsubmit="return confirm('Delete this pose?');"><input type="hidden" name="_token" value="{{ data.csrf_token }}"><input type="hidden" name="action" value="delete"><input type="hidden" name="id" value="{{ pose.id }}"><button class="btn btn-sm btn-outline-danger">delete</button></form>
+  </div>
+  {% else %}
+  <p class="col text-muted">No uploaded poses yet.</p>
+  {% endfor %}
+</div>
+{% endblock %}

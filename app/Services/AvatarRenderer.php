@@ -26,11 +26,49 @@ class AvatarRenderer
         $avatar = is_array($user->avatar) ? $user->avatar : [];
         $pose = (string) ($avatar[0]['pose'] ?? 'default');
 
-        return isset(self::POSES[$pose]) ? $pose : 'default';
+        return self::poseExists($pose) ? $pose : 'default';
+    }
+
+    public static function customPoses(): array
+    {
+        return Cache::rememberForever('custom_poses', function () {
+            try {
+                return \Illuminate\Support\Facades\DB::connection('finobe')->table('custom_poses')->orderBy('id')->get(['id', 'name', 'joints'])
+                    ->mapWithKeys(fn ($row) => ['custom' . $row->id => ['name' => (string) $row->name, 'joints' => (string) $row->joints]])
+                    ->all();
+            } catch (\Throwable $e) {
+                return [];
+            }
+        });
+    }
+
+    public static function forgetCustomPoses(): void
+    {
+        Cache::forget('custom_poses');
+    }
+
+    public static function poses(): array
+    {
+        $poses = self::POSES;
+        foreach (self::customPoses() as $key => $pose) {
+            $poses[$key] = $pose['name'];
+        }
+
+        return $poses;
+    }
+
+    public static function poseExists(string $pose): bool
+    {
+        return isset(self::POSES[$pose]) || isset(self::customPoses()[$pose]);
+    }
+
+    public static function poseJoints(string $pose): string
+    {
+        return self::customPoses()[$pose]['joints'] ?? '';
     }
 
     const SCRIPT = '
-        local characterUrl, url, fileExtension, x, y, pose, outfitBodyColorIds = ...
+        local characterUrl, url, fileExtension, x, y, pose, outfitBodyColorIds, poseJoints = ...
 
         settings()["Task Scheduler"].ThreadPoolConfig = Enum.ThreadPoolConfig.PerCore4;
         game:GetService("ContentProvider"):SetThreadPool(16)
@@ -145,6 +183,19 @@ class AvatarRenderer
                     torso["Right Hip"].CurrentAngle = 1.57
                     torso["Right Shoulder"].CurrentAngle = 1.57
                 end
+
+                if type(poseJoints) == "string" and poseJoints ~= "" then
+                    local root = player.Character:FindFirstChild("HumanoidRootPart")
+                    for name, numbers in string.gmatch(poseJoints, "([^|;]+)|([^;]+)") do
+                        local v = {}
+                        for number in string.gmatch(numbers, "%S+") do v[#v + 1] = tonumber(number) or 0 end
+                        local joint = torso:FindFirstChild(name) or (root and root:FindFirstChild(name))
+                        if joint and #v == 24 then
+                            joint.C0 = CFrame.new(v[1], v[2], v[3], v[4], v[5], v[6], v[7], v[8], v[9], v[10], v[11], v[12])
+                            joint.C1 = CFrame.new(v[13], v[14], v[15], v[16], v[17], v[18], v[19], v[20], v[21], v[22], v[23], v[24])
+                        end
+                    end
+                end
             end)
 
             local backpack = player.Backpack or player:FindFirstChild("Backpack")
@@ -158,7 +209,7 @@ class AvatarRenderer
             end
 
             for _, child in pairs(player.Character:GetChildren()) do
-                if child:IsA("Tool") and pose ~= "retro" and pose ~= "peter" and pose ~= "overlord" then
+                if child:IsA("Tool") and pose ~= "retro" and pose ~= "peter" and pose ~= "overlord" and (type(poseJoints) ~= "string" or poseJoints == "") then
                     player.Character.Torso["Right Shoulder"].CurrentAngle = math.rad(90)
                     break
                 end
@@ -200,6 +251,30 @@ class AvatarRenderer
         }
     }
 
+    public static function renderPosePreview(User $user, string $joints): string
+    {
+        $domain = config('finobe.domain');
+        $site = "https://www.{$domain}";
+
+        $arbiter = new RobloxArbiterUtilities(config('finobe.arbiter.host'), (int) config('finobe.arbiter.port'));
+        $job = $arbiter->ConstructJob(
+            RobloxUtilities::GenerateGUID(),
+            self::SCRIPT,
+            60,
+            0,
+            2,
+            "ScriptExecution",
+            ["{$site}/asset/CharacterFetch.ashx?userId={$user->id}", $site, "PNG", 352, 352, "custom", "", $joints]
+        );
+
+        $image = base64_decode((string) $arbiter->OpenJobEx($job), true);
+        if (empty($image) || !str_starts_with($image, "\x89PNG")) {
+            throw new \RuntimeException('The pose preview render returned no image.');
+        }
+
+        return $image;
+    }
+
     public static function render(User $user): string
     {
         $domain = config('finobe.domain');
@@ -213,7 +288,7 @@ class AvatarRenderer
             0,
             2,
             "ScriptExecution",
-            ["{$site}/asset/CharacterFetch.ashx?userId={$user->id}", $site, "PNG", 768, 768, self::poseFor($user)]
+            ["{$site}/asset/CharacterFetch.ashx?userId={$user->id}", $site, "PNG", 768, 768, self::poseFor($user), "", self::poseJoints(self::poseFor($user))]
         );
 
         $image = base64_decode((string) $arbiter->OpenJobEx($job), true);
@@ -251,7 +326,7 @@ class AvatarRenderer
     public static function render3d(User $user): array
     {
         $pose = self::poseFor($user);
-        $key = substr(hash('sha256', json_encode($user->avatar) . '|' . $pose . '|' . $user->pfp), 0, 24);
+        $key = substr(hash('sha256', json_encode($user->avatar) . '|' . $pose . '|' . self::poseJoints($pose) . '|' . $user->pfp), 0, 24);
         $name = "{$user->id}-{$key}";
         $directory = self::model3dDirectory() . "/{$name}";
 
@@ -273,7 +348,7 @@ class AvatarRenderer
             0,
             2,
             "ScriptExecution",
-            ["{$site}/asset/CharacterFetch.ashx?userId={$user->id}", $site, "OBJ", 768, 768, $pose]
+            ["{$site}/asset/CharacterFetch.ashx?userId={$user->id}", $site, "OBJ", 768, 768, $pose, "", self::poseJoints($pose)]
         );
 
         $scene = json_decode((string) $arbiter->OpenJobEx($job), true);
