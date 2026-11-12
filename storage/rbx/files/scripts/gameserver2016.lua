@@ -212,6 +212,25 @@ local function buildR15(player)
 		if mesh ~= nil then mesh.MeshId = url .. "/asset/?id=" .. id end
 	end
 
+	local root = model:FindFirstChild("HumanoidRootPart")
+	local lowest = nil
+	for _, name in pairs({ "LeftFoot", "RightFoot" }) do
+		local foot = model:FindFirstChild(name)
+		if foot ~= nil then
+			local bottom = foot.Position.Y - foot.Size.Y / 2
+			if lowest == nil or bottom < lowest then lowest = bottom end
+		end
+	end
+	if root ~= nil and lowest ~= nil then
+		local hip = (root.Position.Y - root.Size.Y / 2) - lowest
+		local cf = root.CFrame
+		root.FormFactor = Enum.FormFactor.Custom
+		root.Size = Vector3.new(root.Size.X, root.Size.Y + 2 * hip, root.Size.Z)
+		root.CFrame = cf
+		root.CanCollide = false
+		humanoid.HipHeight = 0
+	end
+
 	for _, joint in pairs(R15_JOINTS) do
 		local part0, part1 = model:FindFirstChild(joint[1]), model:FindFirstChild(joint[2])
 		local a0 = part0 and part0:FindFirstChild(joint[3])

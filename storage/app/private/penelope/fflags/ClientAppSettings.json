@@ -881,5 +881,7 @@
     "FFlagR15CompositingEnabled": "True",
     "DFFlagR15CompositingEnabled": "True",
     "FFlagR15CompositingEnabledOnClient": "True",
-    "DFFlagR15CompositingEnabledOnClient": "True"
+    "DFFlagR15CompositingEnabledOnClient": "True",
+    "FFlagEnableHipHeight": "True",
+    "DFFlagEnableHipHeight": "True"
 }
