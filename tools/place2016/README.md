@@ -19,6 +19,15 @@ python3 tools/place2016/convert.py place.rbxl place2016.rbxlx --csg csg.json
 
 then upload place2016.rbxlx as the place and set the game to the 2016 client.
 
+`--scripts DIR` is for saved places where the scripts could not be saved. it empties every saved stub script, then adds each .lua file in DIR. the first line of each file says where it goes:
+
+```
+--@ Script ServerScriptService MyScript
+--@ LocalScript StarterPlayer/StarterPlayerScripts MyClient
+```
+
+a script with the same name and class in that place is replaced. ports/ has the scripts for places made this way.
+
 `--legacy-controls` keeps the 2016 camera and movement scripts instead of the place's own player module.
 
 ## limits

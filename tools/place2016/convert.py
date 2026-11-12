@@ -941,6 +941,7 @@ def main():
     ap.add_argument('--csg', default=None)
     ap.add_argument('--legacy-controls', action='store_true')
     ap.add_argument('--report', default=None)
+    ap.add_argument('--scripts', default=None)
     a = ap.parse_args()
     data = open(a.input, 'rb').read()
     if data.startswith(rbxl.MAGIC):
@@ -950,6 +951,10 @@ def main():
         roots, order, errors = rbxlx.load(data)
     if errors:
         print('read errors:', errors[:5])
+    if a.scripts:
+        import inject
+        for k, v in inject.apply(roots, order, a.scripts).items():
+            print(k, v)
     compat = open(a.compat).read() if a.compat else os.popen(os.path.join(HERE, 'build_compat.sh')).read()
     opts = Opts()
     opts.legacy_controls = a.legacy_controls
