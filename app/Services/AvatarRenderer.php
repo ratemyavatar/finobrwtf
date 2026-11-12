@@ -12,6 +12,8 @@ class AvatarRenderer
 {
     const DEFAULT_PFP = 'avatar/682b8bd6cbc48.png';
 
+    public static ?string $emoteError = null;
+
     const POSES = [
         'default' => 'Standing',
         'walking' => 'Walking',
@@ -277,12 +279,14 @@ class AvatarRenderer
 
     public static function render(User $user): string
     {
+        self::$emoteError = null;
         $emote = EmoteRenderer::emoteFor($user);
         if ($emote !== null) {
             try {
                 return self::store($user, EmoteRenderer::render($user, $emote['slug']));
             } catch (\Throwable $e) {
                 report($e);
+                self::$emoteError = $e->getMessage();
             }
         }
 

@@ -80,6 +80,6 @@
 ## emote renders (user 1 only)
 
 - user 1 gets an emotes tab in the avatar editor with the same white dance thumbnails as the in game wheel. it saves `users.avatar[0].emote`
-- with an emote set, `AvatarRenderer::render` calls `EmoteRenderer`, which renders the dance frame by frame in rcc (12 fps, up to 8 seconds) and saves one animated png (apng) as the normal render. browsers loop it, the 2016 client shows the first frame
+- with an emote set, `AvatarRenderer::render` calls `EmoteRenderer`, which renders the dance frame by frame in rcc (10 fps, up to 6 seconds, 6 frames per rcc job) and saves one animated png (apng) as the normal render. browsers loop it, the 2016 client shows the first frame
 - an invisible box around everywhere the body reaches keeps the camera still between frames
 - the esc menu player list in game doesn't animate. that script is built into the client exe, so it needs a client patch

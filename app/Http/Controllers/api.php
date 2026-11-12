@@ -446,14 +446,18 @@ class api extends Controller
             $user->avatar = $avatar;
             $user->save();
 
-            @set_time_limit(300);
+            @set_time_limit(600);
             try {
                 $this->response['image'] = 'https://cdn.' . config('finobe.domain') . '/' . AvatarRenderer::render($user);
                 $user->render_cooldown = now();
                 $user->save();
+                if (AvatarRenderer::$emoteError !== null) {
+                    $this->response['message'] = 'The emote render failed (' . AvatarRenderer::$emoteError . '), so you got a normal render.';
+                }
             } catch (\Throwable $e) {
                 report($e);
-                $this->response['message'] = 'Emote saved, but the render failed. Press regen in a bit.';
+                $reason = AvatarRenderer::$emoteError !== null ? 'emote: ' . AvatarRenderer::$emoteError . '; normal: ' . $e->getMessage() : $e->getMessage();
+                $this->response['message'] = 'Emote saved, but the render failed (' . mb_substr($reason, 0, 300) . ').';
             }
 
             return response()->json($this->response, 200);

@@ -10,7 +10,7 @@ class EmoteRenderer
 {
     const OWNER_ID = 1;
     const SIZE = 420;
-    const CHUNK = 24;
+    const CHUNK = 6;
 
     const SCRIPT = '
         local characterUrl, url, size, frames, first, last = ...
@@ -144,7 +144,9 @@ class EmoteRenderer
             throw new \RuntimeException("Unknown emote {$slug}");
         }
 
-        [$frames, $delay] = PoseExtractor::frames((string) gzdecode((string) file_get_contents($file)));
+        [$frames, $delay] = PoseExtractor::frames((string) gzdecode((string) file_get_contents($file)), 10, 6, 60);
+        @set_time_limit(600);
+        @ini_set('default_socket_timeout', '300');
         $encoded = implode('#', array_map(fn ($joints) => PoseExtractor::encode($joints), $frames));
 
         $site = 'https://www.' . config('finobe.domain');
@@ -152,22 +154,41 @@ class EmoteRenderer
         $images = [];
         for ($first = 1; $first <= count($frames); $first += self::CHUNK) {
             $last = min(count($frames), $first + self::CHUNK - 1);
-            $job = $arbiter->ConstructJob(
-                RobloxUtilities::GenerateGUID(),
-                self::SCRIPT,
-                180,
-                0,
-                2,
-                'ScriptExecution',
-                ["{$site}/asset/CharacterFetch.ashx?userId={$user->id}", $site, self::SIZE, $encoded, $first, $last]
-            );
-            foreach (explode(';', (string) $arbiter->OpenJobEx($job)) as $chunk) {
-                $png = base64_decode($chunk, true);
-                if (!$png || !str_starts_with($png, "\x89PNG")) {
-                    throw new \RuntimeException("Emote render for user {$user->id} returned no image");
+            $chunk = null;
+            $error = 'no reply';
+            for ($attempt = 0; $attempt < 2 && $chunk === null; $attempt++) {
+                $job = $arbiter->ConstructJob(
+                    RobloxUtilities::GenerateGUID(),
+                    self::SCRIPT,
+                    120,
+                    0,
+                    2,
+                    'ScriptExecution',
+                    ["{$site}/asset/CharacterFetch.ashx?userId={$user->id}", $site, self::SIZE, $encoded, $first, $last]
+                );
+                $result = $arbiter->SoapCallService('OpenJobEx', $job);
+                if (is_soap_fault($result)) {
+                    $error = $result->getMessage();
+                    continue;
                 }
-                $images[] = $png;
+                $value = $result->LuaValue ?? null;
+                $value = is_array($value) ? ($value[0]->value ?? null) : ($value->value ?? null);
+                $pngs = [];
+                foreach (explode(';', (string) $value) as $part) {
+                    $png = base64_decode($part, true);
+                    if (!$png || !str_starts_with($png, "\x89PNG")) {
+                        $pngs = null;
+                        $error = 'rcc sent back no image';
+                        break;
+                    }
+                    $pngs[] = $png;
+                }
+                $chunk = $pngs;
             }
+            if ($chunk === null) {
+                throw new \RuntimeException("frames {$first}-{$last}: " . trim($error));
+            }
+            array_push($images, ...$chunk);
         }
 
         return self::apng($images, $delay);
