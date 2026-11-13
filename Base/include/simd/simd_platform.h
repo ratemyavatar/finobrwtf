@@ -4,7 +4,7 @@
 #include <boost/static_assert.hpp>
 #include <stdint.h>
 
-#if defined( __i386__ ) || defined( _M_IX86 ) // __i386__ on clang, _M_IX86 on MVC
+#if defined( __i386__ ) || defined( _M_IX86 ) || defined( __EMSCRIPTEN__ ) // __i386__ on clang, _M_IX86 on MVC
 #define RBX_SIMD_X86 
 #endif
 
@@ -25,7 +25,9 @@
 #ifdef RBX_SIMD_USE_SSE
 #include <xmmintrin.h>
 #include <emmintrin.h>
+#ifndef __EMSCRIPTEN__
 #include <mmintrin.h>
+#endif
 #endif
 
 #ifdef RBX_SIMD_USE_NEON

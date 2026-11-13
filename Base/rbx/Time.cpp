@@ -15,7 +15,7 @@
 #include <mach/mach_time.h>
 #endif
 
-#ifdef __ANDROID__
+#if (defined(__ANDROID__) || defined(__EMSCRIPTEN__)) 
 #include <unistd.h>
 #endif
 
@@ -153,7 +153,7 @@ static double tick_frequency_helper()
     }
 return static_cast<double>(tinfo.numer/(double)tinfo.denom * 1e-9);
     
-#elif defined(__ANDROID__)
+#elif (defined(__ANDROID__) || defined(__EMSCRIPTEN__))
     return 1e-9;
     
 #endif
@@ -171,7 +171,7 @@ long long Time::getTickCount(){
 #elif defined(__APPLE__)
     uint64_t ticks = mach_absolute_time();
     return ticks;
-#elif defined(__ANDROID__)
+#elif (defined(__ANDROID__) || defined(__EMSCRIPTEN__))
     timespec now;
     clock_gettime(CLOCK_MONOTONIC, &now);
     

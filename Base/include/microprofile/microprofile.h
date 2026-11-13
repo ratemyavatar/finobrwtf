@@ -216,7 +216,7 @@ int64_t MicroProfileGetTick();
 #define MP_GETCURRENTTHREADID() GetCurrentThreadId()
 typedef uint32_t ThreadIdType;
 
-#elif defined(__linux__)
+#elif (defined(__linux__) || defined(__EMSCRIPTEN__))
 #include <unistd.h>
 #include <time.h>
 inline int64_t MicroProfileTicksPerSecondCpu()
@@ -232,7 +232,7 @@ inline int64_t MicroProfileGetTick()
 }
 #define MP_TICK() MicroProfileGetTick()
 #define MP_BREAK() __builtin_trap()
-#ifndef __ANDROID__ // __thread is incompatible with ffunction-sections/fdata-sections
+#if !(defined(__ANDROID__) || defined(__EMSCRIPTEN__))  // __thread is incompatible with ffunction-sections/fdata-sections
 #define MP_THREAD_LOCAL __thread
 #endif
 #define MP_STRCASECMP strcasecmp
@@ -967,7 +967,7 @@ inline void MicroProfileThreadJoin(MicroProfileThread* pThread)
 #define MP_INVALID_SOCKET(f) (f == INVALID_SOCKET)
 #endif
 
-#if defined(__APPLE__) || defined(__linux__)
+#if defined(__APPLE__) || (defined(__linux__) || defined(__EMSCRIPTEN__))
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
@@ -3263,7 +3263,7 @@ void MicroProfileWebServerHello(int nPort)
 {
 	uint32_t nInterfaces = 0;
 
-#if defined(__APPLE__) || defined(__linux__)
+#if defined(__APPLE__) || (defined(__linux__) || defined(__EMSCRIPTEN__))
 	struct ifaddrs* ifal;
 	if(getifaddrs(&ifal) == 0 && ifal)
 	{

@@ -15,13 +15,13 @@
 
 #include "rbx/SystemUtil.h"
 
-#if defined(__APPLE__) || defined(__ANDROID__)
+#if defined(__APPLE__) || (defined(__ANDROID__) || defined(__EMSCRIPTEN__))
 #include <sys/types.h>
 
 #ifdef __APPLE__
 #include <sys/sysctl.h>
 #else
-#include <linux/sysctl.h>
+#include <unistd.h>
 #endif
 
 #include <sys/time.h>
@@ -576,7 +576,7 @@ double DebugSettings::processCores() const
 		return 1;
 	
 	return count;
-#elif __ANDROID__
+#elif (defined(__ANDROID__) || defined(__EMSCRIPTEN__))
     return SystemUtil::getCPULogicalCount();
 #else
 #error Unsupported platform.

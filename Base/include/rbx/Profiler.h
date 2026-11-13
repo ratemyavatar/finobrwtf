@@ -4,7 +4,7 @@
 
 #include "RbxFormat.h" // for RBX_PRINTF_ATTR
 
-#if defined(_WIN32) || defined(__APPLE__) || defined(__ANDROID__)
+#if defined(_WIN32) || defined(__APPLE__) || (defined(__ANDROID__) || defined(__EMSCRIPTEN__))
 #define RBXPROFILER
 #endif
 

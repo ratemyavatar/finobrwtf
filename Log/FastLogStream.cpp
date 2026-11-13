@@ -1,7 +1,7 @@
 #include "FastLogStream.h"
 #include <stdio.h>
 
-#ifdef __ANDROID__
+#if defined(__ANDROID__) || defined(__EMSCRIPTEN__)
 #include <unistd.h>
 #endif
 

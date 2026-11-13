@@ -69,7 +69,7 @@ namespace std
 #define MICROPROFILE_NOCXX11
 #endif
 
-#ifdef __ANDROID__
+#if (defined(__ANDROID__) || defined(__EMSCRIPTEN__)) 
 #include <android/log.h>
 
 #define MICROPROFILE_PRINTF(...) __android_log_print(ANDROID_LOG_DEBUG, "MicroProfile", __VA_ARGS__)

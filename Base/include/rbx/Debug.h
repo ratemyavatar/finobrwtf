@@ -12,7 +12,7 @@
 #include <crtdbg.h>
 #endif
 
-#ifdef __ANDROID__
+#if (defined(__ANDROID__) || defined(__EMSCRIPTEN__)) 
 #include <typeinfo>
 #include <cstdlib>
 #endif

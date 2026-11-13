@@ -6,7 +6,7 @@
 
 DYNAMIC_FASTINTVARIABLE(StreamingMemoryUsagePercent, 50)
 
-#if defined(RBX_PLATFORM_IOS) || defined(__ANDROID__)
+#if defined(RBX_PLATFORM_IOS) || (defined(__ANDROID__) || defined(__EMSCRIPTEN__))
 FASTINTVARIABLE(StreamingSafeMemWatermarkMB, 30)
 FASTINTVARIABLE(StreamingLowMemWatermarkMB, 10)
 FASTINTVARIABLE(StreamingCriticalLowMemWatermarkMB, 5)

@@ -2,7 +2,7 @@
 
 #include "V8DataModel/Test.h"
 #include "V8DataModel/PhysicsSettings.h"
-#include "Network/../../NetworkSettings.h"
+#include "../../Network/NetworkSettings.h"
 #include "V8DataModel/TimerService.h"
 #include "Script/script.h"
 #include "Script/ScriptContext.h"

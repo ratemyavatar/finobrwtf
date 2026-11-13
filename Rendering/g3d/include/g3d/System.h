@@ -29,6 +29,9 @@
 #endif // ROBLOX
 
 #include <stdint.h>
+#ifndef _MSC_VER
+#include <sys/time.h>
+#endif
 
 namespace G3D {
 

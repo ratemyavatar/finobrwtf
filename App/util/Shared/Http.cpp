@@ -1409,7 +1409,7 @@ bool Http::trustCheck(const char* url, bool externalRequest)
 
 bool Http::doHttpGetPostWithNativeFallbackForReporting(bool isPost, std::istream& dataStream, const std::string& contentType, bool compressData, const HttpAux::AdditionalHeaders& additionalHeaders, bool allowExternal, std::string& response)
 {
-#ifdef __ANDROID__
+#if (defined(__ANDROID__) || defined(__EMSCRIPTEN__)) 
 	return false;
 #endif
 

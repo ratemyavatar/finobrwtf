@@ -4,7 +4,7 @@
 
 #ifdef _WIN32
 __declspec(noinline) const char* getStringById(int id);
-#elif __APPLE__ || __ANDROID__
+#elif __APPLE__ || (defined(__ANDROID__) || defined(__EMSCRIPTEN__))
 __attribute__((noinline))  const char* getStringById(int id);
 #else
 #error Unsupported Platform.

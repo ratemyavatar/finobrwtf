@@ -1,3 +1,4 @@
+#include <boost/math/special_functions/fpclassify.hpp>
 #include "stdafx.h"
 
 /* Copyright 2003-2009 ROBLOX Corporation, All Rights Reserved  */

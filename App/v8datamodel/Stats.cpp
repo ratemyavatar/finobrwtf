@@ -20,7 +20,7 @@
 #ifdef _WIN32
 #include "Util/FileSystem.h"
 #include "VersionInfo.h"
-#elif __ANDROID__
+#elif (defined(__ANDROID__) || defined(__EMSCRIPTEN__))
 namespace RBX
 {
 namespace JNI

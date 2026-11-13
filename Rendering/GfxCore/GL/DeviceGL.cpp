@@ -298,7 +298,7 @@ static void GLAPIENTRY debugOutputGLARB(GLenum source, GLenum type, GLuint id, G
 
 static DeviceVRGL* createVR()
 {
-#if defined(RBX_PLATFORM_IOS) || defined(__ANDROID__)
+#if defined(RBX_PLATFORM_IOS) || (defined(__ANDROID__) || defined(__EMSCRIPTEN__))
 	if (DeviceVRGL* result = DeviceVRGL::createCardboard())
 		return result;
 #endif

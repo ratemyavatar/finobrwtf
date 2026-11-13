@@ -54,7 +54,7 @@
 #elif  defined(__FreeBSD__) || defined(__OpenBSD__)
     #define G3D_FREEBSD
     #define G3D_LINUX
-#elif defined(__ANDROID__)
+#elif defined(__ANDROID__) || defined(__EMSCRIPTEN__)
     #define G3D_ANDROID
 #elif defined(__linux__)
     #define G3D_LINUX

@@ -30,7 +30,7 @@ struct NetPmcChallenge
     }
 };
 
-#ifdef _WIN32
+#if defined(_WIN32) || defined(__EMSCRIPTEN__)
 const size_t kNumChallenges = 128;
 extern const volatile NetPmcChallenge kChallenges[kNumChallenges];
 

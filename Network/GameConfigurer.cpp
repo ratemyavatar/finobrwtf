@@ -40,7 +40,7 @@
 #include "GamePerfMonitor.h"
 #include "Network/Players.h"
 #include "util/rbxrandom.h"
-#include "../win/sharedlauncher.h"
+#include "../Win/SharedLauncher.h"
 #include <vector>
 
 #include "StringConv.h"
@@ -294,7 +294,7 @@ void PlayerConfigurer::reportDuration(const std::string& category, const std::st
 	{
         // need to keep this until JoinRate.ashx no longer needs to track iOS join success
         // web uses this data for mobile sort to remove games from the sort that don't work on the specific device
-#if defined(RBX_PLATFORM_IOS) || defined(__ANDROID__)
+#if defined(RBX_PLATFORM_IOS) || (defined(__ANDROID__) || defined(__EMSCRIPTEN__))
         
         std::string url;
         if (FFlag::UseBuildGenericGameUrl)

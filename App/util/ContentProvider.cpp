@@ -1022,12 +1022,12 @@ namespace RBX
             fs::path platformAssetFolderModifier = "../PlatformContent/durango/";
 #elif defined(RBX_PLATFORM_IOS)
             fs::path platformAssetFolderModifier = "../ios/";
-#elif defined(__APPLE__) || defined(_WIN32)
+#elif defined(__APPLE__) || defined(_WIN32) || defined(__EMSCRIPTEN__)
             fs::path platformAssetFolderModifier = "../PlatformContent/pc/";
 #   if  ENABLE_XBOX_STUDIO_BUILD
             platformAssetFolderModifier = "../PlatformContent/Durango/";
 #   endif
-#elif defined(__ANDROID__)
+#elif (defined(__ANDROID__) || defined(__EMSCRIPTEN__))
             fs::path platformAssetFolderModifier = "../android/";
 #else
 #error Unsupported Platform

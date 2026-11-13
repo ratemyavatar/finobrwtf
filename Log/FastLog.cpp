@@ -2,6 +2,7 @@
 
 #ifdef _WIN32
 #include <windows.h>
+#elif defined(__EMSCRIPTEN__)
 #elif __ANDROID__
 #include <sys/atomics.h>
 #else

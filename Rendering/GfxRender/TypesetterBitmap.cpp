@@ -484,7 +484,7 @@ namespace Graphics
 		Vector2int16 intAvailableSpace = Vector2int16(availableSpace / scale);
 		Vector2int16 intSize = layout(s, NULL, sizeIndex, intAvailableSpace, useAvailableSpace, DFFlag::TextScaleDontWrapInWords, textFits);
 
-		if (DFFlag::TextScaleDontWrapInWords && textFits == false) {
+		if (DFFlag::TextScaleDontWrapInWords && !textFits) {
 			intSize = layout(s, NULL, sizeIndex, intAvailableSpace, useAvailableSpace, false, textFits);
 		}
 

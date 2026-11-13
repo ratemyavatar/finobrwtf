@@ -1,0 +1,9 @@
+ClientShared/StringConv.cpp
+Rendering/GfxCore/GL/GearVRGL.cpp
+Rendering/GfxCore/GL/CardboardVRGL.cpp
+App/util/NamedMutex.cpp
+App/util/ProgramMemoryChecker.cpp
+App/util/MachineIdUploader_Windows.cpp
+ClientShared/CountersClient.cpp
+App/util/Shared/HttpPlatformImpl.cpp
+App/util/XboxHttp2.cpp

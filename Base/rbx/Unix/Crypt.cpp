@@ -11,7 +11,7 @@
 #   if defined(__i386__) && !TARGET_IPHONE_SIMULATOR
 #       define RBX_BUILD_CRYPT
 #   endif
-#elif defined(__ANDROID__)
+#elif (defined(__ANDROID__) || defined(__EMSCRIPTEN__))
 #   define RBX_BUILD_CRYPT
 #else
 #   error Unsupported platform.

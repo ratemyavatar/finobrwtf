@@ -6,7 +6,7 @@
 
 #include <stdlib.h>
 
-#ifdef __ANDROID__
+#if (defined(__ANDROID__) || defined(__EMSCRIPTEN__)) 
 #include <malloc.h>
 #endif
 
@@ -255,7 +255,7 @@ namespace array_dynamic_details
         }
 #ifdef _WIN32
         void* p = _aligned_malloc( size, alignment );
-#elif defined( __ANDROID__ )
+#elif (defined(__ANDROID__) || defined(__EMSCRIPTEN__))
         void* p = ::memalign( alignment, size );
 #else
         void* p;

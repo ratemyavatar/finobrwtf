@@ -491,7 +491,7 @@ namespace RBX
 
 		if (FFlag::DebugRenderDownloadAssets)
         {
-        #if defined(__ANDROID__)
+        #if (defined(__ANDROID__) || defined(__EMSCRIPTEN__))
             // Note: the assets that are actually used on Android are loaded from local files
             // We don't have on-disk cache so loading them off CDN would mean poor user experience.
             AddEntryProd("rbxasset://textures/aluminum/diffuse.dds", "153465459");

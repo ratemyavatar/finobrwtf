@@ -649,7 +649,7 @@ FASTINTVARIABLE(FontSizePadding, 1)
 			Vector2int16 intAvailableSpace = Vector2int16(availableSpace / scale);
 			Vector2int16 intSize = layout(stringUnicode, NULL, height, intAvailableSpace, useAvailableSpace, DFFlag::TextScaleDontWrapInWords, textFits);
 
-			if (DFFlag::TextScaleDontWrapInWords && textFits == false) {
+			if (DFFlag::TextScaleDontWrapInWords && !textFits) {
 				intSize = layout(stringUnicode, NULL, height, intAvailableSpace, useAvailableSpace, false, textFits);
 			}
 

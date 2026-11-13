@@ -126,7 +126,7 @@ bool JointInstance::shouldRender3dAdorn() const
 {
 	// We'd like to be able to toggle showSpanningTree in runtime; however, on iPad this costs us ~2% of the frame,
 	// since we call render3dAdorn for many joints even when we don't have to.
-#if defined(RBX_PLATFORM_IOS) || defined(__ANDROID__)
+#if defined(RBX_PLATFORM_IOS) || (defined(__ANDROID__) || defined(__EMSCRIPTEN__))
 	return PartInstance::showSpanningTree;
 #else
 	return true;

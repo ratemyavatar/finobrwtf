@@ -1155,7 +1155,7 @@ void init(Http::CookieSharingPolicy cookieSharingPolicy)
 
         ::cookieSharingPolicy = cookieSharingPolicy;
 
-#ifndef __ANDROID__ // Android initializes curl in JNIMain.cpp
+#if !(defined(__ANDROID__) || defined(__EMSCRIPTEN__))  // Android initializes curl in JNIMain.cpp
         logCurlError(NULL, "curl_global_init", curl_global_init(CURL_GLOBAL_DEFAULT | CURL_GLOBAL_ACK_EINTR));
 #endif
 

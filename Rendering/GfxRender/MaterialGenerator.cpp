@@ -518,7 +518,7 @@ static bool forceFlatPlastic(DataModelMesh* specialShape)
 
 #ifdef RBX_PLATFORM_IOS
 static const std::string kTextureExtension = ".pvr";
-#elif defined(__ANDROID__)
+#elif (defined(__ANDROID__) || defined(__EMSCRIPTEN__))
 static const std::string kTextureExtension = ".pvr";
 #else
 static const std::string kTextureExtension = ".dds";
@@ -907,7 +907,7 @@ MaterialGenerator::Result MaterialGenerator::createDefaultMaterial(PartInstance*
 {
     PartMaterial actualRenderMaterial = renderMaterial;
 
-#if defined(RBX_PLATFORM_IOS) || defined(__ANDROID__)
+#if defined(RBX_PLATFORM_IOS) || (defined(__ANDROID__) || defined(__EMSCRIPTEN__))
     if (!FFlag::RenderMaterialsOnMobile)
     {
         // Force everything to smooth plastic to reduce texture memory

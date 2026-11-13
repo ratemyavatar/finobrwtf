@@ -568,7 +568,7 @@ SceneManager::SceneManager(VisualEngine* visualEngine)
 
 	try
 	{
-	#if !defined(RBX_PLATFORM_IOS) && !defined(__ANDROID__)
+	#if !defined(RBX_PLATFORM_IOS) && !(defined(__ANDROID__) || defined(__EMSCRIPTEN__))
 		shadowMapTexelSize = 0.2f;
 		
 		shadowMaps[0].reset(new ShadowMap(visualEngine, Texture::Format_RGBA8, 256));

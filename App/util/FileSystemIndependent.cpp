@@ -26,7 +26,7 @@ DYNAMIC_FASTFLAGVARIABLE(FileSystemGetCacheDirectoryLikeAndroid, false)
 
 using namespace RBX;
 
-#ifdef __ANDROID__
+#if (defined(__ANDROID__) || defined(__EMSCRIPTEN__)) 
 namespace RBX
 {
 namespace JNI
@@ -66,7 +66,7 @@ void logFileError(const void* caller, const char* operation, bool isError, bool 
 
 boost::filesystem::path getBaseCacheDirectory(bool create)
 {
-#ifdef __ANDROID__
+#if (defined(__ANDROID__) || defined(__EMSCRIPTEN__)) 
     RBXASSERT(!JNI::fileSystemCacheDir.empty());
     return JNI::fileSystemCacheDir;
 #else
@@ -125,7 +125,7 @@ boost::filesystem::path FileSystem::getCacheDirectory(bool create, const char* s
         return path;
     }
 
-#ifndef __ANDROID__
+#if !(defined(__ANDROID__) || defined(__EMSCRIPTEN__)) 
     if (!DFFlag::FileSystemGetCacheDirectoryLikeAndroid)
     {
         path /= subDirectory;
@@ -171,7 +171,7 @@ boost::filesystem::path FileSystem::getCacheDirectory(bool create, const char* s
         {
             throw RBX::runtime_error("Path is not a directory: %s", path.c_str());
         }
-#ifndef __ANDROID__
+#if !(defined(__ANDROID__) || defined(__EMSCRIPTEN__)) 
     } // if (!DFFlag::FileSystemGetCacheDirectoryLikeAndroid)
 #endif // #ifndef __ANDROID__
 

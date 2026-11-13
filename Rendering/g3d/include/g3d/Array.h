@@ -34,7 +34,7 @@
 #   pragma warning( disable : 4786)
 #endif
 
-#if !defined(G3D_IOS) && !defined(__ANDROID__)
+#if !defined(G3D_IOS) && !(defined(__ANDROID__) || defined(__EMSCRIPTEN__))
     #define CALLSPEC __cdecl
 #else
     #define CALLSPEC

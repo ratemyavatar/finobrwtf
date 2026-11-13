@@ -5,7 +5,7 @@
 #include "format_string.h"
 
 
-#if defined(__APPLE__) || defined(__ANDROID__)
+#if defined(__APPLE__) || (defined(__ANDROID__) || defined(__EMSCRIPTEN__))
 inline int _vscprintf(const char* format, va_list argptr) 
 {
 	return vsnprintf(NULL, 0, format, argptr);

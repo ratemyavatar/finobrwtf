@@ -21,6 +21,7 @@
 #include "SpatialHashedScene.h"
 
 #include "rbx/DenseHash.h"
+#include <boost/integer/static_log2.hpp>
 
 #include "rbx/Profiler.h"
 
@@ -38,8 +39,9 @@ LOGVARIABLE(RenderLightGridAgeProportion, 5)
 LOGVARIABLE(RenderLightGridBorderGlobalCutoff, 32)
 LOGVARIABLE(RenderLightGridBorderSkylightCutoff, 32)
 
-#if defined(_WIN32) || (defined(__APPLE__) && !defined(RBX_PLATFORM_IOS))
+#if defined(_WIN32) || defined(__EMSCRIPTEN__) || (defined(__APPLE__) && !defined(RBX_PLATFORM_IOS))
 #define SIMD_SSE2
+#include <emmintrin.h>
 #endif
 
 #if (defined(RBX_PLATFORM_IOS) && !TARGET_IPHONE_SIMULATOR) || defined(__ANDROID__)

@@ -1,4 +1,4 @@
-#if defined(__ANDROID__)
+#if (defined(__ANDROID__) || defined(__EMSCRIPTEN__))
 #include "DeviceGL.h"
 
 #include "FramebufferGL.h"

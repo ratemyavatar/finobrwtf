@@ -457,7 +457,7 @@ namespace RBX {
 		return PLATFORM_XBOXONE;
 #elif defined(_WIN32) && !defined(RBX_PLATFORM_DURANGO) && !defined(RBX_PLATFORM_UWP)
         return PLATFORM_WINDOWS;
-#elif defined(__ANDROID__)
+#elif (defined(__ANDROID__) || defined(__EMSCRIPTEN__))
         return PLATFORM_ANDROID;
 #else
         return PLATFORM_NONE;

@@ -877,7 +877,7 @@ private:
 #pragma pack(pop)
 
 #ifndef getlocaledecpoint
-#ifdef __ANDROID__
+#if (defined(__ANDROID__) || defined(__EMSCRIPTEN__)) 
 #   define getlocaledecpoint() '.'
 #else
 #   define getlocaledecpoint() (localeconv() ? localeconv()->decimal_point[0] : '.');

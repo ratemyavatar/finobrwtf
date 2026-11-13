@@ -1,5 +1,6 @@
 
 #pragma once
+#include <boost/type_traits.hpp>
 
 #include "reflection/Descriptor.h"
 #include <boost/any.hpp>

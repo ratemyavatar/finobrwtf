@@ -1,4 +1,4 @@
-#if defined(RBX_PLATFORM_IOS) || defined(__ANDROID__)
+#if defined(RBX_PLATFORM_IOS) || (defined(__ANDROID__) || defined(__EMSCRIPTEN__))
 #include "DeviceGL.h"
 
 #include "GfxCore/Framebuffer.h"
@@ -22,7 +22,7 @@
 #import <QuartzCore/CABase.h>
 #endif
 
-#ifdef __ANDROID__
+#if (defined(__ANDROID__) || defined(__EMSCRIPTEN__)) 
 #include <android/sensor.h>
 #include <EGL/egl.h>
 #include <time.h>
@@ -375,7 +375,7 @@ private:
 };
 #endif
 
-#ifdef __ANDROID__
+#if (defined(__ANDROID__) || defined(__EMSCRIPTEN__)) 
 enum
 {
 	ASENSOR_TYPE_GAME_ROTATION = 15,
@@ -729,7 +729,7 @@ DeviceVRGL* DeviceVRGL::createCardboard()
 	for (int i = 0; i < 4; ++i)
 		fovPort[i] = atanf(fovPort[i]) / (3.1415926f / 180);
 
-#ifdef __ANDROID__
+#if (defined(__ANDROID__) || defined(__EMSCRIPTEN__)) 
 	eglSwapInterval(eglGetCurrentDisplay(), kUseVsync);
 #else
     (void)kUseVsync;

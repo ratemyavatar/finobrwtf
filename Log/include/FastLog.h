@@ -4,7 +4,7 @@
 #include <stddef.h>
 #include <string>
 
-#ifdef __ANDROID__
+#if (defined(__ANDROID__) || defined(__EMSCRIPTEN__)) 
 #include <stdlib.h>
 #endif
 

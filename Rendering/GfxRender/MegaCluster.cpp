@@ -1850,7 +1850,7 @@ const shared_ptr<IndexBuffer>& MegaCluster::getSharedIB()
 
 #ifdef RBX_PLATFORM_IOS
 static const std::string kTextureExtension = ".pvr";
-#elif defined(__ANDROID__)
+#elif (defined(__ANDROID__) || defined(__EMSCRIPTEN__))
 static const std::string kTextureExtension = ".pvr";
 #else
 static const std::string kTextureExtension = ".dds";

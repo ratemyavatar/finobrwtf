@@ -190,7 +190,7 @@ void GameBasicSettings::setControlMode(ControlMode setting)
 GameBasicSettings::CameraMode GameBasicSettings::getCameraModeWithDefault() const
 {
 	if (cameraMode == GameBasicSettings::CAMERA_MODE_DEFAULT) {
-#if defined(RBX_PLATFORM_IOS) || defined(__ANDROID__)
+#if defined(RBX_PLATFORM_IOS) || (defined(__ANDROID__) || defined(__EMSCRIPTEN__))
 		return GameBasicSettings::CAMERA_MODE_FOLLOW;
 #else
 		return GameBasicSettings::CAMERA_MODE_CLASSIC;

@@ -21,7 +21,7 @@ std::string getCPUMake()
 {
 #ifdef __arm__
     return "ARM";
-#elif __i386__
+#elif defined(__i386__) || defined(__EMSCRIPTEN__)
     return "Intel";
 #else
 #error Unsupported platform.

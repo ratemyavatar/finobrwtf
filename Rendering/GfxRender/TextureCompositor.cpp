@@ -32,7 +32,7 @@ namespace RBX
 namespace Graphics
 {
 
-#if defined(RBX_PLATFORM_IOS) || defined(__ANDROID__)
+#if defined(RBX_PLATFORM_IOS) || (defined(__ANDROID__) || defined(__EMSCRIPTEN__))
 static const size_t kTextureCompositorActiveJobs = 2;
 #else
 static const size_t kTextureCompositorActiveJobs = 8;
@@ -45,7 +45,7 @@ static const unsigned int kTextureCompositorDefaultBudget = 8 * 1024 * 1024;
 static const unsigned int kTextureCompositorOrphanedBudgetLimit = 32 * 1024 * 1024;
 static const unsigned int kTextureCompositorOrphanedKeepAlive = 2;
 
-#if defined(RBX_PLATFORM_IOS) || defined(__ANDROID__)
+#if defined(RBX_PLATFORM_IOS) || (defined(__ANDROID__) || defined(__EMSCRIPTEN__))
 // OpenGL blits are really slow on iPad since they go through system memory (~240 ms for 1024x512)
 static const bool kTextureCompositorUseRenderTextures = true;
 

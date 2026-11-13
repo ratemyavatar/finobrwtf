@@ -29,7 +29,7 @@ using boost::weak_ptr;
 #include "RbxFormat.h"
 #include <pthread.h>
 // This is a hack. Truncates a pointer.
-#define GetCurrentThreadId() (static_cast<unsigned>(reinterpret_cast<long>(pthread_self())))
+#define GetCurrentThreadId() (static_cast<unsigned>((long)(pthread_self())))
 #define SwitchToThread() {sched_yield();}
 // We may decide to use the following instead on Mac, but we would prefer the above.
 //#define SwitchToThread() {struct timespec req = {0, 1}; nanosleep(&req, NULL);}

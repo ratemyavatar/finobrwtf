@@ -12,7 +12,7 @@
 #include "V8DataModel/PhysicsSettings.h"
 #include "V8Tree/Verb.h"
 #include "Network/Players.h"
-#include "Network/../../NetworkSettings.h"
+#include "../../Network/NetworkSettings.h"
 #include "Util/Color.h"
 #include "Util/FileSystem.h"
 #include "Util/profiling.h"

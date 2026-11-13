@@ -459,7 +459,7 @@ void TeleportService::TeleportThreadImpl(shared_ptr<const Reflection::ValueTable
             double timeToSleep = 1000.f - retryTimer.delta().msec();
             if (timeToSleep > 0.f)
             {
-                boost::this_thread::sleep(timeToSleep);
+                boost::this_thread::sleep_for(boost::chrono::milliseconds((int)timeToSleep));
             }
             retryTimer.reset();
         }
