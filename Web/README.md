@@ -48,6 +48,9 @@ until the engine's own loading screen is up, so there's no blank page while it s
 
 needs webgl (2 is used when there, 1 otherwise) and cross-origin isolation. gpus without dxt
 (most arm chromebooks and phones) are fine, the engine decodes dxt textures on the cpu.
+the page checks for wasm simd, atomics and bulk memory first and says what is missing.
+touch controls are on when the main pointer is a touchscreen; `?touch=0` or `?touch=1` overrides
+that and is remembered on the device.
 
 ## serving
 

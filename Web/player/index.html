@@ -87,8 +87,31 @@
   }
   window.addEventListener('resize', function () { if (named) fitPlace(); });
 
+  function touchSetting() {
+    var forced = params.get('touch');
+    if (forced === '0' || forced === '1') {
+      try { localStorage.setItem('finobe_touch', forced); } catch (e) {}
+      return forced;
+    }
+    try {
+      var saved = localStorage.getItem('finobe_touch');
+      if (saved === '0' || saved === '1') return saved;
+    } catch (e) {}
+    var coarse = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+    return coarse && ('ontouchstart' in window || navigator.maxTouchPoints > 0) ? '1' : '0';
+  }
+
   if (!window.crossOriginIsolated || typeof SharedArrayBuffer === 'undefined') {
     fail('This browser can not run the web player here (cross-origin isolation is off). Use a recent Chrome, Edge or Firefox.');
+    return;
+  }
+  var simdOk = false, bulkOk = false;
+  try {
+    simdOk = WebAssembly.validate(new Uint8Array([0,97,115,109,1,0,0,0,1,5,1,96,0,1,123,3,2,1,0,10,10,1,8,0,65,0,253,15,253,98,11]));
+    bulkOk = WebAssembly.validate(new Uint8Array([0,97,115,109,1,0,0,0,1,4,1,96,0,0,3,2,1,0,5,3,1,0,1,10,14,1,12,0,65,0,65,0,65,0,252,10,0,0,11]));
+  } catch (e) {}
+  if (typeof Atomics === 'undefined' || !simdOk || !bulkOk) {
+    fail('This browser is missing WebAssembly features the web player needs (' + [typeof Atomics === 'undefined' ? 'atomics' : '', simdOk ? '' : 'simd', bulkOk ? '' : 'bulk memory'].filter(Boolean).join(', ') + '). Update to a recent Chrome, Edge or Firefox.');
     return;
   }
   var probeCanvas = document.createElement('canvas');
@@ -127,7 +150,7 @@
       placeId: String(placeId),
       width: canvas.width,
       height: canvas.height,
-      touch: ('ontouchstart' in window) ? '1' : '0',
+      touch: touchSetting(),
       proxyOrigin: origin,
       relayUrl: params.get('relay') || ((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/webrelay')
     },

@@ -121,7 +121,7 @@ for mod, proj in PROJECTS.items():
     print(mod, len(seen))
 LINK = ('-O2 -pthread -fexceptions -sPROXY_TO_PTHREAD=1 -sPTHREAD_POOL_SIZE=24 -sOFFSCREENCANVAS_SUPPORT=1 '
         '-sOFFSCREENCANVASES_TO_PTHREAD=#canvas -sMAX_WEBGL_VERSION=2 -sMIN_WEBGL_VERSION=1 -sFULL_ES3=1 -sFETCH=1 '
-        '-sALLOW_MEMORY_GROWTH=1 -sINITIAL_MEMORY=536870912 -sMAXIMUM_MEMORY=2147483648 -sTOTAL_STACK=1048576 '
+        '-sALLOW_MEMORY_GROWTH=1 -sINITIAL_MEMORY=268435456 -sMAXIMUM_MEMORY=2147483648 -sTOTAL_STACK=1048576 '
         '-sDEFAULT_PTHREAD_STACK_SIZE=1048576 -sPROXY_POSIX_SOCKETS=1 -lwebsocket.js -sEXPORTED_RUNTIME_METHODS=UTF8ToString,allocateUTF8 '
         '-sEXPORTED_FUNCTIONS=_main,_malloc,_free -sENVIRONMENT=web,worker -sMODULARIZE=0 -sEXIT_RUNTIME=0 $extra')
 order = ['Shell', 'App', 'Network', 'GfxRender', 'GfxCore', 'GfxBase', 'AppDraw', 'RbxG3D', 'G3D', 'Bullet', 'Boost', 'Base', 'Log']
