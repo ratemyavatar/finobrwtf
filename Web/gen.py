@@ -123,7 +123,7 @@ LINK = ('-O2 -pthread -fexceptions -sPROXY_TO_PTHREAD=1 -sPTHREAD_POOL_SIZE=24 -
         '-sOFFSCREENCANVASES_TO_PTHREAD=#canvas -sMAX_WEBGL_VERSION=2 -sMIN_WEBGL_VERSION=1 -sFULL_ES3=1 -sFETCH=1 '
         '-sALLOW_MEMORY_GROWTH=1 -sINITIAL_MEMORY=268435456 -sMAXIMUM_MEMORY=2147483648 -sTOTAL_STACK=1048576 '
         '-sDEFAULT_PTHREAD_STACK_SIZE=1048576 -lwebsocket.js -sEXPORTED_RUNTIME_METHODS=UTF8ToString,allocateUTF8 '
-        '-sEXPORTED_FUNCTIONS=_main,_malloc,_free -sENVIRONMENT=web,worker -sMODULARIZE=0 -sEXIT_RUNTIME=0 $extra')
+        '-sEXPORTED_FUNCTIONS=_main,_malloc,_free,_rbx_web_set_paste -sENVIRONMENT=web,worker -sMODULARIZE=0 -sEXIT_RUNTIME=0 $extra')
 order = ['Shell', 'App', 'Network', 'GfxRender', 'GfxCore', 'GfxBase', 'AppDraw', 'RbxG3D', 'G3D', 'Bullet', 'Boost', 'Base', 'Log']
 n.append('rule link\n  command = em++ %s -Wl,--start-group $in -Wl,--end-group -o $out\n' % LINK)
 n.append('build WebPlayer.js: link Shell/Web_shell_WebMain.cpp.o %s\n  extra = --preload-file %s@/ -sFORCE_FILESYSTEM=1\n' % (' '.join('lib%s.a' % m for m in order), os.path.join(OUT, 'pkg')))

@@ -53,3 +53,4 @@ Shell ClientShared/Mobile/CookiesEngine.cpp
 Shell Web/src/FmodStub.cpp
 Shell Web/src/WebStubs.cpp
 Shell Web/src/WebUdp.cpp
+Shell Web/src/WebClipboard.cpp

@@ -45,6 +45,10 @@ static int mapKey(const EmscriptenKeyboardEvent* e)
     case 17: return e->location == 2 ? 305 : 306;
     case 18: return e->location == 2 ? 307 : 308;
     case 20: return 301;
+    case 91: return 310;
+    case 92: return 309;
+    case 93: return 309;
+    case 224: return 310;
     case 186: return 59;
     case 187: return 61;
     case 188: return 44;
@@ -78,6 +82,8 @@ static EM_BOOL onKey(int type, const EmscriptenKeyboardEvent* e, void*)
     if (ev.a == 0)
         return EM_FALSE;
     WebUserInput::current->push(ev);
+    if ((e->ctrlKey || e->metaKey) && (ev.a == 'v' || ev.a == 'c' || ev.a == 'x'))
+        return EM_FALSE;
     return (ev.a >= 282 && ev.a <= 293) ? EM_FALSE : EM_TRUE;
 }
 
@@ -183,6 +189,8 @@ ModCode WebUserInput::modCode() const
     if (keys[SDLK_RCTRL]) m |= KMOD_RCTRL;
     if (keys[SDLK_LALT]) m |= KMOD_LALT;
     if (keys[SDLK_RALT]) m |= KMOD_RALT;
+    if (keys[SDLK_LMETA]) m |= KMOD_LMETA;
+    if (keys[SDLK_RMETA]) m |= KMOD_RMETA;
     return (ModCode)m;
 }
 

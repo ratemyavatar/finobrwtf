@@ -12,7 +12,7 @@ the 2016 client built for the browser with emscripten, like economy simulator's 
 - `src/HttpPlatformImplWeb.cpp` http through the browser's fetch instead of curl
 - `shell/` the platform layer, based on the android one: place launcher, view, input, webgl context, main
 - `player/index.html` the page that loads WebPlayer.js
-- `gencs.py` pulls the core scripts out of the patched finobe RobloxPlayerBeta.exe into `LuaGenCS.inl`
+- `gencs.py` pulls the core scripts out of the finobe RobloxPlayerBeta.exe into `LuaGenCS.inl`. use the exe from the live client zip (`prod1-setup.<domain>/<version>-FinobePlayer.zip`) so the web player matches the pc client
 - `src/FmodStub.cpp` no sound for now, fmod calls fail and the sound service turns itself off
 - `mkpkg.py` makes the small startup package (shaders, fonts, a list of platform files)
 - `dist/` a ready built player, so the server doesn't need emscripten

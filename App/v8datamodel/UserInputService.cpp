@@ -61,6 +61,10 @@ FASTFLAGVARIABLE(UserUseNewControlScript, false)
 
 FASTFLAG(UserAllCamerasInLua)
 
+#if defined(__EMSCRIPTEN__)
+namespace RBX { namespace Web { std::string takePasteText(); } }
+#endif
+
 namespace RBX {
     
     namespace Reflection {
@@ -1767,6 +1771,10 @@ namespace RBX {
 		}
 #endif
         
+#if defined(__EMSCRIPTEN__)
+        clipBoardText = RBX::Web::takePasteText();
+#endif
+
 #if defined(__APPLE__)
 #if !RBX_PLATFORM_IOS
         NSString* pasteString = [[NSPasteboard generalPasteboard] stringForType:NSPasteboardTypeString];
@@ -1781,7 +1789,12 @@ namespace RBX {
     std::vector<RBX::ModCode> UserInputService::getCommandModCodes()
     {
         std::vector<RBX::ModCode> modCodes;
-#ifdef _WIN32
+#if defined(__EMSCRIPTEN__)
+        modCodes.push_back(KMOD_LCTRL);
+        modCodes.push_back(KMOD_RCTRL);
+        modCodes.push_back(KMOD_LMETA);
+        modCodes.push_back(KMOD_RMETA);
+#elif defined(_WIN32)
         modCodes.push_back(KMOD_LCTRL);
         modCodes.push_back(KMOD_RCTRL);
 #elif __APPLE__

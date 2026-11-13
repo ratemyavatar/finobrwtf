@@ -162,6 +162,15 @@
     printErr: function (t) { console.warn(t); engineLog(t); },
     onAbort: function (what) { loading.style.display = ''; loading.className = ''; fail('The player crashed: ' + what); }
   };
+  document.addEventListener('paste', function (e) {
+    if (e.target === document.getElementById('kb')) return;
+    var text = e.clipboardData ? e.clipboardData.getData('text/plain') : '';
+    if (!text || typeof Module._rbx_web_set_paste !== 'function') return;
+    e.preventDefault();
+    var ptr = (Module.allocateUTF8 || allocateUTF8)(text.slice(0, 20000));
+    Module._rbx_web_set_paste(ptr);
+    Module._free(ptr);
+  });
   var s = document.createElement('script');
   s.src = 'WebPlayer.js';
   s.onerror = function () { fail('Could not load the web player.'); };
