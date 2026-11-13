@@ -251,7 +251,7 @@ Route::middleware([Moderation::class, SerializeWrites::class])->group(function (
 
     Route::domain('clientsettings.' . $domain)->group(base_path('routes/services/clientsettings.php'));
     Route::domain('clientsettings.api.' . $domain)->name('api.')->group(base_path('routes/services/clientsettings.php'));
-    Route::domain('assetgame.' . $domain)->group(base_path('routes/services/assetgame.php'));
+    Route::domain('assetgame.' . $domain)->name('assetgame.')->group(base_path('routes/services/assetgame.php'));
     Route::domain('www.' . $domain)->group(base_path('routes/services/assetgame.php'));
     Route::domain('gamepersistence.' . $domain)->group(base_path('routes/services/gamepersistence.php'));
     Route::domain('prod1-setup.' . $domain)->group(base_path('routes/services/setup.php'));
