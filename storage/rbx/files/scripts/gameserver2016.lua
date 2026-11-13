@@ -606,6 +606,14 @@ end
 pcall(function()
 	local admin = game:GetObjects(url .. "/asset/?id=admin&accesskey=" .. tostring(accessKey or ""))[1]
 	if admin ~= nil then
+		local loader = Instance.new("BindableFunction")
+		loader.Name = "FinobeAssetLoader"
+		loader.OnInvoke = function(id)
+			id = tonumber(id)
+			if id == nil or id <= 0 or id ~= math.floor(id) or id >= 1e15 then return nil end
+			return game:GetObjects(url .. "/asset/?id=" .. string.format("%.0f", id))
+		end
+		loader.Parent = admin
 		admin.Parent = game:GetService("ServerScriptService")
 	end
 end)

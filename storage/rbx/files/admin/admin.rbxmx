@@ -104,6 +104,48 @@ script.Parent=game:service('ServerScriptService')
 local depholder=script:FindFirstChild('Script Dependencies')
 if not depholder then error('Script Dependencies not found!') end
 local deps={} for i,v in pairs(depholder:children()) do deps[v.Name]=v end
+local assetLoader=script:FindFirstChild('FinobeAssetLoader') if assetLoader then assetLoader.Parent=nil end
+local loadedModules={}
+set.FinobeRequire=function(target)
+	if type(target)=='string' and tonumber(target) then target=tonumber(target) end
+	if type(target)~='number' then return require(target) end
+	if target<=2147483647 and not assetLoader then return require(target) end
+	local module=loadedModules[target]
+	if not module then
+		if not assetLoader then error('Unable to find module for asset id',2) end
+		local objects=assetLoader:Invoke(target)
+		if type(objects)~='table' or #objects==0 then error('Unable to load asset '..string.format('%.0f',target),2) end
+		local holder=Instance.new('Model') holder.Name=string.format('%.0f',target)
+		for _,v in pairs(objects) do
+			if not module and v:IsA('ModuleScript') and v.Name=='MainModule' then module=v end
+			v.Parent=holder
+		end
+		if not module then
+			local function find(o) for _,c in pairs(o:GetChildren()) do if c:IsA('ModuleScript') and c.Name=='MainModule' then return c end local r=find(c) if r then return r end end end
+			module=find(holder)
+		end
+		if not module then error('Asset '..string.format('%.0f',target)..' has no MainModule',2) end
+		local store=game:service('ServerStorage'):FindFirstChild('FinobeModules') or Instance.new('Folder',game:service('ServerStorage'))
+		store.Name='FinobeModules'
+		holder.Parent=store
+		loadedModules[target]=module
+	end
+	return require(module)
+end
+set.RunCode=function(plr,code)
+	local function clean(e)
+		e=tostring(e)
+		e=e:gsub('^.-LuaX:%d+: ','')
+		e=e:gsub('^%[string ".-"%]:(%d+): ','line %1: ')
+		e=e:gsub('^ServerScriptService%..-%((%d+)%): ','line %1: ')
+		return e
+	end
+	local env=setmetatable({require=set.FinobeRequire},{__index=getfenv(1)})
+	local func,err=require(deps.loadstring)(code,env)
+	if not func then set.Remote(plr,'Function','OutputGui','Error: '..clean(err)) return end
+	local ran,failed=ypcall(func)
+	if not ran then set.Remote(plr,'Function','OutputGui','Error: '..clean(failed)) end
+end
 set.OrigLightingSettings = {
 	abt = game:service('Lighting').Ambient,
 	oabt = game:service('Lighting').OutdoorAmbient,
@@ -790,7 +832,7 @@ set.RunCommand=function(command,...)
 	set.ProcessCommand('SYSTEM',com)
 end
 	set.MakeCommand('Lets you run code on the server',3,set.Prefix,{'s','scr','script'},{'code'},1,function(plr,args)
-		require(deps.loadstring)(args[1])()
+		set.RunCode(plr,args[1])
 	end)
 set.ProcessCommand=function(player,chat,dontlog,check)
 	local com,num=set.GetCommand(chat)
@@ -4923,12 +4965,7 @@ end
 set.Remote(plr,'Function','ListGui','Exploit Logs',temp,'exploitlogslist')
 end)
 set.MakeCommand('Lets you run code on the server',3,set.Prefix,{'s','scr','script'},{'code'},1,function(plr,args)
-if set.canuseloadstring then
-set.Output(args[1], plr)
-set.LoadScript('Script',args[1],set.AssignName(),true,game:service('ServerScriptService'))
-else
-set.Hint('LoadStringEnabled is set to false! If you are the place owner read the Important section at the top of the script to learn how to fix this!',{plr})
-end
+set.RunCode(plr,args[1])
 end)
 set.MakeCommand('[NO LONGER WORKS DUE TO ROBLOX UPDATES, LEFT IN IN-CASE THEY CHANGE THEIR MIND] Lets you run code as a local script',3,set.Prefix,{'ls','lscr','localscript'},{'code'},1,function(plr,args)
 set.LoadOnClient(plr,args[1],true,set.AssignName())
@@ -7667,7 +7704,7 @@ set.HelpInfoGui=function()
 	if set.Console then
 		local t4=t1:clone() t4.Parent=main
 		t4.Position=UDim2.new(0,20,0,90)
-		t4.Text='To open the console press '..set.ConsoleKey
+		t4.Text='To open the console press '..set.ConsoleKey..' or ['
 		main.Size=UDim2.new(0,400,0,110)
 	end
 	local c2=c1:clone() c2.Parent=main
@@ -9338,7 +9375,7 @@ set.ConsoleGui=function()
 		end
 	end)
 	mouse.KeyDown:connect(function(key)
-		if key==set.ConsoleKey then
+		if key==set.ConsoleKey or key=='[' then
 			if open then
 				open=false
 				m:ClearAllChildren()
@@ -61448,7 +61485,7 @@ local function Wrap(Chunk, Env, Upvalues)
 				Stack[Idx] = Args[Idx + 1];
 			end;
 		end;
-		local A, B, C	= pcall(Loop);
+		local A, B, C	= (ypcall or pcall)(Loop);
 		if A then
 			if B and (C > 0) then
 				return unpack(B, 1, C);
