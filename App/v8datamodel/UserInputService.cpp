@@ -313,8 +313,14 @@ namespace RBX {
 			case UserInputService::PLATFORM_IOS:
 			case UserInputService::PLATFORM_ANDROID:
             {
+#ifdef __EMSCRIPTEN__
+                lastInputType = InputObject::TYPE_MOUSEMOVEMENT;
+                setMouseEnabled(true);
+                setKeyboardEnabled(true);
+#else
                 lastInputType = InputObject::TYPE_TOUCH;
 				setTouchEnabled(true);
+#endif
                 break;
             }
 			// console

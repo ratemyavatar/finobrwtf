@@ -32,6 +32,12 @@ static Reflection::PropDescriptor<GameBasicSettings, Vector2> prop_startScreenPo
 Reflection::PropDescriptor<GameBasicSettings, float> GameBasicSettings::prop_masterVolume("MasterVolume",category_Data, &GameBasicSettings::getMasterVolume, &GameBasicSettings::setMasterVolume);
 
 static Reflection::PropDescriptor<GameBasicSettings, float> prop_mouseSensitivity("MouseSensitivity",category_Data, &GameBasicSettings::getMouseSensitivity, &GameBasicSettings::setMouseSensitivity);
+static Reflection::PropDescriptor<GameBasicSettings, bool> prop_useBasicMouseSensitivity("UseBasicMouseSensitivity",category_Data, &GameBasicSettings::getUseBasicMouseSensitivity, &GameBasicSettings::setUseBasicMouseSensitivity);
+static Reflection::PropDescriptor<GameBasicSettings, Vector2> prop_mouseSensitivityFirstPerson("MouseSensitivityFirstPerson",category_Data, &GameBasicSettings::getMouseSensitivityFirstPerson, &GameBasicSettings::setMouseSensitivityFirstPerson);
+static Reflection::PropDescriptor<GameBasicSettings, Vector2> prop_mouseSensitivityThirdPerson("MouseSensitivityThirdPerson",category_Data, &GameBasicSettings::getMouseSensitivityThirdPerson, &GameBasicSettings::setMouseSensitivityThirdPerson);
+static Reflection::PropDescriptor<GameBasicSettings, bool> prop_performanceStatsVisible("PerformanceStatsVisible",category_Data, &GameBasicSettings::getPerformanceStatsVisible, &GameBasicSettings::setPerformanceStatsVisible);
+static Reflection::PropDescriptor<GameBasicSettings, int> prop_vrRotationIntensity("VRRotationIntensity",category_Data, &GameBasicSettings::getVRRotationIntensity, &GameBasicSettings::setVRRotationIntensity);
+static Reflection::EventDesc<GameBasicSettings, void(bool)> event_PerformanceStatsVisibleChanged(&GameBasicSettings::performanceStatsVisibleChangedSignal, "PerformanceStatsVisibleChanged", "isPerformanceStatsVisible", Security::None);
 
 static const Reflection::PropDescriptor<GameBasicSettings, bool> prop_isFullscreen("Fullscreen",category_Data, &GameBasicSettings::getFullScreenConst, &GameBasicSettings::setFullScreen, Reflection::PropertyDescriptor::STANDARD, Security::RobloxScript);
 static const Reflection::BoundFuncDesc<GameBasicSettings, bool()> func_inFullscreenMode(&GameBasicSettings::getFullScreen, "InFullScreen", Security::None);
@@ -163,6 +169,11 @@ GameBasicSettings::GameBasicSettings()
 	,startScreenSize(800,600)
 	,masterVolume(1.0f)
 	,mouseSensitivity(1.0f)
+	,useBasicMouseSensitivity(true)
+	,mouseSensitivityFirstPerson(1.0f, 0.77f)
+	,mouseSensitivityThirdPerson(1.0f, 0.77f)
+	,performanceStatsVisible(false)
+	,vrRotationIntensity(1)
 	,startMaximized(true)
 	,usedHideHudShortcut(false)
 {
@@ -573,6 +584,53 @@ void GameBasicSettings::setMouseSensitivity(float value)
 	{
 		mouseSensitivity = value;
 		raisePropertyChanged(prop_mouseSensitivity);
+	}
+}
+
+void GameBasicSettings::setUseBasicMouseSensitivity(bool value)
+{
+	if (value != useBasicMouseSensitivity)
+	{
+		useBasicMouseSensitivity = value;
+		raisePropertyChanged(prop_useBasicMouseSensitivity);
+	}
+}
+
+void GameBasicSettings::setMouseSensitivityFirstPerson(Vector2 value)
+{
+	if (value != mouseSensitivityFirstPerson)
+	{
+		mouseSensitivityFirstPerson = value;
+		raisePropertyChanged(prop_mouseSensitivityFirstPerson);
+	}
+}
+
+void GameBasicSettings::setMouseSensitivityThirdPerson(Vector2 value)
+{
+	if (value != mouseSensitivityThirdPerson)
+	{
+		mouseSensitivityThirdPerson = value;
+		raisePropertyChanged(prop_mouseSensitivityThirdPerson);
+	}
+}
+
+void GameBasicSettings::setPerformanceStatsVisible(bool value)
+{
+	if (value != performanceStatsVisible)
+	{
+		performanceStatsVisible = value;
+		raisePropertyChanged(prop_performanceStatsVisible);
+		performanceStatsVisibleChangedSignal(value);
+	}
+}
+
+void GameBasicSettings::setVRRotationIntensity(int value)
+{
+	value = value < 1 ? 1 : (value > 3 ? 3 : value);
+	if (value != vrRotationIntensity)
+	{
+		vrRotationIntensity = value;
+		raisePropertyChanged(prop_vrRotationIntensity);
 	}
 }
 

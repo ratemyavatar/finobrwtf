@@ -132,6 +132,18 @@ namespace RBX
 		float getMouseSensitivity() const;
 		void setMouseSensitivity(float value);
 
+		bool getUseBasicMouseSensitivity() const { return useBasicMouseSensitivity; }
+		void setUseBasicMouseSensitivity(bool value);
+		Vector2 getMouseSensitivityFirstPerson() const { return mouseSensitivityFirstPerson; }
+		void setMouseSensitivityFirstPerson(Vector2 value);
+		Vector2 getMouseSensitivityThirdPerson() const { return mouseSensitivityThirdPerson; }
+		void setMouseSensitivityThirdPerson(Vector2 value);
+		bool getPerformanceStatsVisible() const { return performanceStatsVisible; }
+		void setPerformanceStatsVisible(bool value);
+		int getVRRotationIntensity() const { return vrRotationIntensity; }
+		void setVRRotationIntensity(int value);
+		rbx::signal<void(bool)> performanceStatsVisibleChangedSignal;
+
 		bool inStudioMode() { return studio; }
 		void setStudioMode(bool value) 
 		{
@@ -187,6 +199,11 @@ namespace RBX
 
 		float masterVolume;
 		float mouseSensitivity;
+		bool useBasicMouseSensitivity;
+		Vector2 mouseSensitivityFirstPerson;
+		Vector2 mouseSensitivityThirdPerson;
+		bool performanceStatsVisible;
+		int vrRotationIntensity;
 
 		std::map<std::string, bool> tutorialState;
 		bool allTutorialsDisabled;

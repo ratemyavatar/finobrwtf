@@ -41,6 +41,10 @@ namespace RBX {
 		void setActive(bool value);
 
 		bool getEnabled() const { return enabled; }
+
+		bool getAlwaysOnTop() const { return alwaysOnTop; }
+
+		void setAlwaysOnTop(bool value);
 		void setEnabled(bool value);
 
 		void setCanvasSize( Vector2 s );
@@ -63,6 +67,8 @@ namespace RBX {
 		boost::shared_ptr<Instance> getPart() const;
 
 		bool enabled;
+
+		bool alwaysOnTop;
 		bool active;
 		Vector2 canvasSize;
 		static int s_numInstances;

@@ -33,6 +33,7 @@ namespace RBX {
 	static const Reflection::RefPropDescriptor< SurfaceGui, Instance>	prop_adornee("Adornee", category_Data, &SurfaceGui::getAdornee, &SurfaceGui::setAdornee);
 	static const Reflection::PropDescriptor<SurfaceGui, bool>	  prop_Enabled("Enabled", category_Data, &SurfaceGui::getEnabled, &SurfaceGui::setEnabled);
 	static const Reflection::PropDescriptor<SurfaceGui, bool>	  prop_Active("Active", category_Data, &SurfaceGui::getActive, &SurfaceGui::setActive);
+	static const Reflection::PropDescriptor<SurfaceGui, bool>	  prop_AlwaysOnTop("AlwaysOnTop", category_Data, &SurfaceGui::getAlwaysOnTop, &SurfaceGui::setAlwaysOnTop);
 	static const Reflection::PropDescriptor<SurfaceGui, Vector2>   prop_CanvasSize( "CanvasSize", category_Data, &SurfaceGui::getCanvasSize, &SurfaceGui::setCanvasSize);
 	static const Reflection::EnumPropDescriptor<SurfaceGui, NormalId > prop_Surface("Face", category_Data, &SurfaceGui::getFace, &SurfaceGui::setFace);
    	static const Reflection::PropDescriptor<SurfaceGui, float>    prop_maxDistance("ToolPunchThroughDistance", category_Data, &SurfaceGui::getToolPunchThroughDistance, &SurfaceGui::setToolPunchThroughDistance);
@@ -45,6 +46,7 @@ namespace RBX {
 		,canvasSize(Vector2(800,600))
 		,faceID(NORM_Z_NEG)
         ,toolPunchThroughDistance(0)
+		,alwaysOnTop(false)
 	{
 		++s_numInstances;
 		setAbsoluteSize(canvasSize);
@@ -214,6 +216,15 @@ namespace RBX {
 			enabled = value;
 			raisePropertyChanged(prop_Enabled);
 			shouldRenderSetDirty();
+		}
+	}
+
+	void SurfaceGui::setAlwaysOnTop(bool value)
+	{
+		if(alwaysOnTop != value)
+		{
+			alwaysOnTop = value;
+			raisePropertyChanged(prop_AlwaysOnTop);
 		}
 	}
 

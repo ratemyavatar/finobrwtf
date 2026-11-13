@@ -466,6 +466,7 @@ namespace RBX
 		void setStudioEmulatingMobileEnabled(bool value);
 
 		InputObject::UserInputType getLastInputType() { return lastInputType; }
+		void setInitialInputType(InputObject::UserInputType value) { lastInputType = value; }
 
         // textBox functions
         void textboxDidFinishEditing(const char* text, bool shouldReturn);

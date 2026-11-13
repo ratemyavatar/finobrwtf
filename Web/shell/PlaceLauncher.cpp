@@ -443,6 +443,7 @@ static void initControlView(RobloxView* rbxView, bool isTouchDevice)
 			inputService->setTouchEnabled(isTouchDevice);
             inputService->setKeyboardEnabled(true);
             inputService->setMouseEnabled(true);
+            inputService->setInitialInputType(isTouchDevice ? RBX::InputObject::TYPE_TOUCH : RBX::InputObject::TYPE_MOUSEMOVEMENT);
 		}
 	}
 }
