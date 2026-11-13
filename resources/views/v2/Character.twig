@@ -231,6 +231,7 @@
 									<div class="col-md-4 mb-4 pr-3 {{ (item.equipped) ? 'equipped' : 'unequipped' }}" id="{{ item.assetid }}">
 										<div class="card">
 											<div class="card-body">
+												{% include 'v2/Modules/item_badges.twig' %}
 												<div class="d-flex justify-content-center align-items-center item-thumb">
 													<img src="{{ (item.visibility != 'n') ? '/s/img/spinnerv2.gif' : item.thumbnail }}" style="max-width: 100%; max-height: 100%;">
 												</div>
@@ -662,6 +663,7 @@
 									<div class="col-md-4 mb-4 pr-3 {{ (item.equipped) ? 'equipped' : 'unequipped' }}" id="{{ item.assetid }}">
 										<div class="card">
 											<div class="card-body">
+												{% include 'v2/Modules/item_badges.twig' %}
 												<div class="d-flex justify-content-center align-items-center item-thumb">
 													<img src="{{ (item.visibility != 'n') ? '/s/img/spinnerv2.gif' : item.thumbnail }}" style="max-width: 100%; max-height: 100%;">
 												</div>
@@ -685,6 +687,7 @@
 									<div class="col-md-4 mb-4 pr-3 {{ (item.equipped) ? 'equipped' : 'unequipped' }}" id="{{ item.assetid }}">
 										<div class="card">
 											<div class="card-body">
+												{% include 'v2/Modules/item_badges.twig' %}
 												<div class="d-flex justify-content-center align-items-center item-thumb">
 													<img src="{{ (item.visibility != 'n') ? '/s/img/spinnerv2.gif' : item.thumbnail }}" style="max-width: 100%; max-height: 100%;">
 												</div>
@@ -708,6 +711,7 @@
 										<div class="col-md-4 mb-4 pr-3 {{ (item.equipped) ? 'equipped' : 'unequipped' }}" id="{{ item.assetid }}">
 											<div class="card">
 												<div class="card-body">
+												{% include 'v2/Modules/item_badges.twig' %}
 													<div class="d-flex justify-content-center align-items-center item-thumb">
 														<img src="{{ (item.visibility != 'n') ? '/s/img/spinnerv2.gif' : item.thumbnail }}" style="max-width: 100%; max-height: 100%;">
 													</div>
@@ -731,6 +735,7 @@
 										<div class="col-md-4 mb-4 pr-3 {{ (item.equipped) ? 'equipped' : 'unequipped' }}" id="{{ item.assetid }}">
 											<div class="card">
 												<div class="card-body">
+												{% include 'v2/Modules/item_badges.twig' %}
 													<div class="d-flex justify-content-center align-items-center item-thumb">
 														<img src="{{ (item.visibility != 'n') ? '/s/img/spinnerv2.gif' : item.thumbnail }}" style="max-width: 100%; max-height: 100%;">
 													</div>
@@ -754,6 +759,7 @@
 										<div class="col-md-4 mb-4 pr-3 {{ (item.equipped) ? 'equipped' : 'unequipped' }}" id="{{ item.assetid }}">
 											<div class="card">
 												<div class="card-body">
+												{% include 'v2/Modules/item_badges.twig' %}
 													<div class="d-flex justify-content-center align-items-center item-thumb">
 														<img src="{{ (item.visibility != 'n') ? '/s/img/spinnerv2.gif' : item.thumbnail }}" style="max-width: 100%; max-height: 100%;">
 													</div>
@@ -777,6 +783,7 @@
                                                                                 <div class="col-md-4 mb-4 pr-3 {{ (item.equipped) ? 'equipped' : 'unequipped' }}" id="{{ item.assetid }}">
                                                                                         <div class="card">
                                                                                                 <div class="card-body">
+												{% include 'v2/Modules/item_badges.twig' %}
                                                                                                         <div class="d-flex justify-content-center align-items-center item-thumb">
                                                                                                                 <img src="{{ (item.visibility != 'n') ? '/s/img/spinnerv2.gif' : item.thumbnail }}" style="max-width: 100%; max-height: 100%;">
                                                                                                         </div>
@@ -800,6 +807,7 @@
                                                                                 <div class="col-md-4 mb-4 pr-3 {{ (item.equipped) ? 'equipped' : 'unequipped' }}" id="{{ item.assetid }}">
                                                                                         <div class="card">
                                                                                                 <div class="card-body">
+												{% include 'v2/Modules/item_badges.twig' %}
                                                                                                         <div class="d-flex justify-content-center align-items-center item-thumb">
                                                                                                                 <img src="{{ (item.visibility != 'n') ? '/s/img/spinnerv2.gif' : item.thumbnail }}" style="max-width: 100%; max-height: 100%;">
                                                                                                         </div>
@@ -822,6 +830,7 @@
                               <div class="row" id="emote-list">
                                 <div class="col-md-4 mb-4 pr-3 emote-option" data-emote="">
                                   <div class="card"><div class="card-body">
+												{% include 'v2/Modules/item_badges.twig' %}
                                     <div class="d-flex justify-content-center align-items-center item-thumb"><i class="fas fa-fw fa-ban fa-3x text-muted"></i></div>
                                     <p class="mt-2 mb-0">None</p>
                                     <button class="btn btn-{{ data.emote == '' ? 'danger' : 'primary' }} full-width mt-2 emote-button" onclick="setEmote('');">{{ data.emote == '' ? 'using' : 'use' }}</button>
@@ -830,6 +839,7 @@
                                 {% for emote in data.emotes %}
                                 <div class="col-md-4 mb-4 pr-3 emote-option" data-emote="{{ emote.slug }}">
                                   <div class="card"><div class="card-body">
+												{% include 'v2/Modules/item_badges.twig' %}
                                     <div class="d-flex justify-content-center align-items-center item-thumb"><img src="/app/emote-thumb/{{ emote.slug }}" loading="lazy" alt="" style="max-width: 100%; max-height: 100%;"></div>
                                     <p class="mt-2 mb-0 text-truncate">{{ emote.title }}</p>
                                     <button class="btn btn-{{ data.emote == emote.slug ? 'danger' : 'primary' }} full-width mt-2 emote-button" onclick="setEmote('{{ emote.slug }}');">{{ data.emote == emote.slug ? 'using' : 'use' }}</button>

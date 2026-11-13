@@ -69,14 +69,15 @@ class CatalogController extends Controller
         $listed = function () use ($data, $sections, $section, $filters, $price) {
             $query = Asset::where('asset_type', $sections[$section])
                 ->where('visibility', 'n')
-                ->where(fn($q) => $q->whereNull('additional->onSale')->orWhere('additional->onSale', true)->orWhere('additional->isLimited', true));
+                ->where(fn($q) => $q->whereNull('additional->onSale')->orWhere('additional->onSale', true)->orWhere('additional->isLimited', true)->orWhere('additional->isUnique', true));
             if (isset($data['q'])) {
                 $query->whereRaw('LOWER(title) LIKE LOWER(?)', ['%' . htmlspecialchars($data['q']) . '%']);
             }
             if ($filters['tradables'] === 'only') {
-                $query->where('additional->isLimited', true);
+                $query->where(fn($q) => $q->where('additional->isLimited', true)->orWhere('additional->isUnique', true));
             } elseif ($filters['tradables'] === 'hide') {
-                $query->where(fn($q) => $q->whereNull('additional->isLimited')->orWhere('additional->isLimited', false));
+                $query->where(fn($q) => $q->whereNull('additional->isLimited')->orWhere('additional->isLimited', false))
+                    ->where(fn($q) => $q->whereNull('additional->isUnique')->orWhere('additional->isUnique', false));
             }
             if ($filters['min'] !== null) {
                 $query->whereRaw("COALESCE($price, 0) >= ?", [$filters['min']]);
@@ -104,8 +105,12 @@ class CatalogController extends Controller
             ->get()
             ->map(fn($item) => $item->toArray());
 
+        $asks = \App\Services\Reselling::lowestAsks(collect($results)->filter(fn($r) => \App\Services\Trading::kind($r['additional']) === 'unique')->pluck('id')->all());
+
         foreach($results as $result) {
             $result['title'] = htmlspecialchars(WordFilter::apply($result['title']));
+            $result['lowestAsk'] = $asks[$result['id']] ?? null;
+            $result['unique'] = \App\Services\Trading::kind($result['additional']) === 'unique';
 
             if($result['asset_type'] == 3) {
                 $result['duration'] = Format::duration($result['additional']['duration']);
@@ -203,7 +208,17 @@ class CatalogController extends Controller
         }
 
         $item['isOwned'] = Purchases::where('username', Auth::user()->username)->where('assetid', $id)->where('type', 1)->exists();
-        $item['sales'] = number_format(Purchases::where('assetid', $id)->count());
+        $item['sales'] = number_format(Purchases::where('assetid', $id)->where('type', 1)->count());
+        $item['ownedCount'] = Purchases::where('username', Auth::user()->username)->where('assetid', $id)->where('type', 1)->count();
+        $item['resale'] = null;
+        if (\App\Services\Trading::kind($item['additional']) === 'unique') {
+            $history = \App\Services\Reselling::history((int) $id);
+            $item['resale'] = [
+                'listings' => \App\Services\Reselling::listings((int) $id),
+                'total' => (int) ($item['additional']['stock'] ?? 0) ?: (int) Purchases::where('assetid', $id)->whereIn('type', [1, \App\Services\Trading::TYPE_TRADED, \App\Services\Reselling::TYPE_SOLD])->max('serial'),
+                'chart' => \App\Services\Reselling::chart($history),
+            ];
+        }
 
         $item['contents'] = [];
         if((int) $item['asset_type'] === 32) {

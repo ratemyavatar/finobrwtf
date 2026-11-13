@@ -83,3 +83,13 @@
 - with an emote set, `AvatarRenderer::render` calls `EmoteRenderer`, which renders the dance frame by frame in rcc (10 fps, up to 6 seconds, 6 frames per rcc job) and saves one animated png (apng) as the normal render. browsers loop it, the 2016 client shows the first frame
 - an invisible box around everywhere the body reaches keeps the camera still between frames
 - the esc menu player list in game doesn't animate. that script is built into the client exe, so it needs a client patch
+
+## trading and reselling
+
+- trading doesn't need 2fa. it's optional
+- only unique items with a serial can be resold. the sell menu (≡) is on the item card in the character page
+- `/item/sell/<purchase id>` is the sell page. max price is 499800
+- listings live in `resellers`, keyed by the purchase row. a listing only shows while that row is still owned (type 1) by the seller, so trades and resales hide old listings by themselves
+- buying a resale marks the old row type 7 (sold), gives the buyer a new type 1 row with the same serial and pays the seller. there's no tax
+- every resale price is saved in `resale_history` for the price history chart on the item page
+- off-sale uniques still show in the catalog, with the lowest ask or n/a

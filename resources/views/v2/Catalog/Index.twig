@@ -142,7 +142,7 @@
                             <p class="catalog-card-name catalog-no-overflow-plz mb-0">{{ item.title|raw }}</p>
                             <p class="text-muted">by {{ item.author }}</p>
                             <div class="col-auto text-muted">
-                              <img src="/s/img/diu_16.png" alt="Diu" title="Diu" class="img-responsive align-middle"> {{ item.additional.price }}
+                              {% if item.unique and item.lowestAsk is not null %}<img src="/s/img/diu_16.png" alt="Diu" title="Diu" class="img-responsive align-middle"> {{ item.lowestAsk }} (Lowest Ask){% elseif item.unique and not item.additional.onSale %}<img src="/s/img/diu_16.png" alt="Diu" title="Diu" class="img-responsive align-middle"> N/A{% else %}<img src="/s/img/diu_16.png" alt="Diu" title="Diu" class="img-responsive align-middle"> {{ item.additional.price }}{% endif %}
                             </div>
                           </div>
                         </div>

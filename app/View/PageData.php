@@ -130,6 +130,8 @@ final class PageData
         return [
             'successv2' => Session::pull('successv2', false),
             'success' => Session::pull('success', false),
+            'resale_selling' => Session::pull('resale_selling', false),
+            'resale_bought' => Session::pull('resale_bought', false),
             'error' => Session::pull('error', false) ?: $tooBig,
             'announcements' => Announcement::select('message', 'expire', 'author', 'color')
                 ->where('expire', '>', now())->orderByDesc('id')->get()->toArray(),

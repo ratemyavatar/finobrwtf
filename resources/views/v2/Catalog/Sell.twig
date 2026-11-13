@@ -1,0 +1,35 @@
+<html>
+  <head>
+    {% include ('v2/Modules/head.twig') %}
+  </head>
+  <body>
+    <div id="app">
+      {% include ('v2/Modules/nav.twig') %}
+      <div class="container">
+        <div class="row">
+          <div class="col-md-12">
+            <div class="card" style="margin: 10px 0px 10px 0px;">
+              <div class="card-header">Sell Asset</div>
+              <div class="card-body">
+                <h4>{{ data.sell.title|raw }}</h4>
+                <p class="mb-3">Value: <img src="/s/img/diu_16.png" alt="Diu" title="Diu" class="img-responsive align-middle" style="margin-top:-3px;"> {{ data.sell.value|number_format }}</p>
+                <p><b>Max Sell Price:</b> <img src="/s/img/diu_16.png" alt="Diu" title="Diu" class="img-responsive align-middle" style="margin-top:-3px;"> {{ data.sell.max }}</p>
+                <form method="POST" action="/item/sell/{{ data.sell.purchase_id }}">
+                  <input type="hidden" name="_token" value="{{ data.csrf_token }}">
+                  <div class="form-group">
+                    <label for="price">Price</label>
+                    <input type="number" class="form-control" id="price" name="price" min="1" max="{{ data.sell.max }}" step="1" value="{{ data.sell.price }}" required>
+                    <small class="form-text text-muted">So, how much do you want to sell this thing for?</small>
+                  </div>
+                  <button type="submit" class="btn btn-primary">sell</button>
+                  <a href="/item/{{ data.sell.assetid }}" class="btn btn-link">cancel</a>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% include ('v2/Modules/footer.twig') %}
+  </body>
+</html>

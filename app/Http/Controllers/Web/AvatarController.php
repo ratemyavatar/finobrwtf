@@ -55,6 +55,7 @@ class AvatarController extends Controller
             $result['title'] = htmlspecialchars($item['title']);
             $result['uuid'] = $item['author'];
             $result['author'] = User::where('id', $item['author'])->value('username');
+            $result['kind'] = \App\Services\Trading::kind($item['additional']);
             $result['equipped'] = in_array($result['assetid'], Auth::user()->avatar[0]['equippedGearVersionIds']);
 
             if(in_array($item['asset_type'], [2, 8, 11, 12, 17, 18, 19, 32])) {

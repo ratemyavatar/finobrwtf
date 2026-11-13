@@ -85,12 +85,6 @@ class Trading
         if ((int) $sender->id === (int) $receiver->id) {
             return "You can't trade with yourself.";
         }
-        if (!TwoFactor::enabled($sender)) {
-            return 'Enable 2FA to trade.';
-        }
-        if (!TwoFactor::enabled($receiver)) {
-            return $receiver->username . " doesn't have 2FA on, so they can't trade.";
-        }
         if (!Privacy::allows($receiver, 'trades', $sender)) {
             return $receiver->username . " isn't accepting trades from you.";
         }
@@ -173,9 +167,6 @@ class Trading
 
     public static function accept(int $tradeId, User $viewer): void
     {
-        if (!TwoFactor::enabled($viewer)) {
-            throw new \RuntimeException('Enable 2FA to trade.');
-        }
         $moved = [];
         $db = DB::connection('finobe');
         $db->transaction(function () use ($db, $tradeId, $viewer, &$moved) {
@@ -208,6 +199,9 @@ class Trading
                     $row = $rows[$id];
                     $row->type = self::TYPE_TRADED;
                     $row->save();
+                    if (Reselling::available()) {
+                        $db->table('resellers')->where('purchase_id', $row->id)->delete();
+                    }
                     Purchases::create([
                         'username' => $to->username,
                         'assetid' => $row->assetid,

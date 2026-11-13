@@ -14,6 +14,7 @@ use App\Http\Controllers\Web\GamesController;
 use App\Http\Controllers\Web\LegalController;
 use App\Http\Controllers\Web\VideoController;
 use App\Http\Controllers\Web\TradesController;
+use App\Http\Controllers\Web\ResaleController;
 use App\Http\Controllers\Web\AvatarController;
 use App\Http\Controllers\Auth\EmailVerificationController;
 use App\Http\Controllers\Auth\LoginController;
@@ -98,6 +99,9 @@ Route::middleware([Moderation::class, SerializeWrites::class])->group(function (
         Route::get('/item/{id}', [CatalogController::class, 'item']);
         Route::match(['post', 'get'], '/item/{id}/settings', [CatalogController::class, 'settings']);
         Route::post('/item/{id}/delete', [CatalogController::class, 'delete'])->whereNumber('id');
+        Route::match(['get', 'post'], '/item/sell/{purchaseId}', [ResaleController::class, 'sell'])->whereNumber('purchaseId')->middleware('limit:30,1');
+        Route::post('/item/resale/{listingId}/buy', [ResaleController::class, 'buy'])->whereNumber('listingId')->middleware('limit:30,1');
+        Route::post('/item/resale/{listingId}/remove', [ResaleController::class, 'remove'])->whereNumber('listingId')->middleware('limit:30,1');
 
         Route::get('/catalog', fn () => redirect('/catalog/hats'));
         Route::match(['post', 'get', 'options'], '/catalog/new', [CatalogController::class, 'new']);

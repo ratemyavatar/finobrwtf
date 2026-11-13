@@ -197,6 +197,16 @@
 	});
 </script>
 {% endif %}
+{% for kind in ['resale_selling', 'resale_bought'] %}
+{% if attribute(data.alerts, kind) %}
+<div class="text-center alert alert-logged resale-alert" role="alert" style="z-index:1;border:0;border-radius:0;background-color:{{ kind == 'resale_bought' ? '#be74ca' : '#009f55' }};">
+	<div class="container success-container" style="color:white;">
+		<button type="button" class="close" data-dismiss="alert" aria-hidden="true" style="color:white;">×</button>
+		{{ attribute(data.alerts, kind)|raw }}
+	</div>
+</div>
+{% endif %}
+{% endfor %}
 {% if data.alerts.success %}
 <div class="alert alert-success alert-skinny my-0 text-center">
 	<p class="mb-0 text-white">{{ data.alerts.success }}</p>
