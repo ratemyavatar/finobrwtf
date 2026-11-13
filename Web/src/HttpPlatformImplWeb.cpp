@@ -173,3 +173,83 @@ void perform(HttpOptions& options, std::string& response)
 
 }
 }
+
+#include <boost/filesystem.hpp>
+#include <boost/thread/mutex.hpp>
+#include <set>
+#include <fstream>
+#include <mutex>
+#include <pthread.h>
+
+namespace RBX
+{
+namespace Web
+{
+static boost::mutex missingLock;
+static std::set<std::string> missing;
+
+bool fetchContentFile(const std::string& relative, const std::string& target)
+{
+    if (proxyOrigin.empty() || relative.empty() || relative.find("..") != std::string::npos || relative[0] == '/')
+        return false;
+    {
+        boost::mutex::scoped_lock lock(missingLock);
+        if (missing.count(relative))
+            return false;
+    }
+
+    std::string url = proxyOrigin + "/play/web/files/" + relative;
+    emscripten_fetch_attr_t attr;
+    emscripten_fetch_attr_init(&attr);
+    strcpy(attr.requestMethod, "GET");
+    attr.attributes = EMSCRIPTEN_FETCH_LOAD_TO_MEMORY | EMSCRIPTEN_FETCH_SYNCHRONOUS | EMSCRIPTEN_FETCH_REPLACE;
+    emscripten_fetch_t* f = emscripten_fetch(&attr, url.c_str());
+    if (!f)
+        return false;
+
+    bool ok = f->status == 200;
+    if (ok)
+    {
+        boost::system::error_code ec;
+        boost::filesystem::path p(target);
+        boost::filesystem::create_directories(p.parent_path(), ec);
+        char suffix[32];
+        snprintf(suffix, sizeof(suffix), ".part%lu", (unsigned long)pthread_self());
+        std::string tmp = target + suffix;
+        {
+            std::ofstream out(tmp.c_str(), std::ios::binary | std::ios::trunc);
+            out.write(f->data, f->numBytes);
+            ok = out.good();
+        }
+        if (ok)
+            boost::filesystem::rename(tmp, target, ec);
+        ok = ok && !ec;
+    }
+    else
+    {
+        boost::mutex::scoped_lock lock(missingLock);
+        missing.insert(relative);
+    }
+    emscripten_fetch_close(f);
+    return ok;
+}
+
+bool fetchAssetFile(const std::string& name, const std::string& platformTarget, const std::string& contentTarget)
+{
+    static std::once_flag once;
+    static std::set<std::string>* platformFiles = new std::set<std::string>();
+    std::call_once(once, [] {
+        std::ifstream in("/pcfiles.txt");
+        std::string line;
+        while (std::getline(in, line))
+            if (!line.empty())
+                platformFiles->insert(line);
+    });
+    if (platformFiles->empty())
+        return fetchContentFile("PlatformContent/pc/" + name, platformTarget) || fetchContentFile("content/" + name, contentTarget);
+    if (platformFiles->count(name))
+        return fetchContentFile("PlatformContent/pc/" + name, platformTarget);
+    return fetchContentFile("content/" + name, contentTarget);
+}
+}
+}

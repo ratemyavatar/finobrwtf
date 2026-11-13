@@ -126,6 +126,6 @@ LINK = ('-O2 -pthread -fexceptions -sPROXY_TO_PTHREAD=1 -sPTHREAD_POOL_SIZE=24 -
         '-sEXPORTED_FUNCTIONS=_main,_malloc,_free -sENVIRONMENT=web,worker -sMODULARIZE=0 -sEXIT_RUNTIME=0 $extra')
 order = ['Shell', 'App', 'Network', 'GfxRender', 'GfxCore', 'GfxBase', 'AppDraw', 'RbxG3D', 'G3D', 'Bullet', 'Boost', 'Base', 'Log']
 n.append('rule link\n  command = em++ %s -Wl,--start-group $in -Wl,--end-group -o $out\n' % LINK)
-n.append('build WebPlayer.js: link Shell/Web_shell_WebMain.cpp.o %s\n  extra = --preload-file /tmp/claude-0/web/pkg/root@/ -sFORCE_FILESYSTEM=1\n' % ' '.join('lib%s.a' % m for m in order))
+n.append('build WebPlayer.js: link Shell/Web_shell_WebMain.cpp.o %s\n  extra = --preload-file %s@/ -sFORCE_FILESYSTEM=1\n' % (' '.join('lib%s.a' % m for m in order), os.path.join(OUT, 'pkg')))
 open(os.path.join(OUT, 'build.ninja'), 'w').write('\n'.join(n))
 print('total', total)

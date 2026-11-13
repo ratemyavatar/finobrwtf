@@ -14,6 +14,7 @@ the 2016 client built for the browser with emscripten, like economy simulator's 
 - `player/index.html` the page that loads WebPlayer.js
 - `gencs.py` pulls the core scripts out of the patched finobe RobloxPlayerBeta.exe into `LuaGenCS.inl`
 - `src/FmodStub.cpp` no sound for now, fmod calls fail and the sound service turns itself off
+- `mkpkg.py` makes the small startup package (shaders, fonts, a list of platform files)
 - `dist/` a ready built player, so the server doesn't need emscripten
 
 ## build
@@ -24,6 +25,7 @@ the compiled boost parts (thread, filesystem, iostreams) come from `apt-get sour
 ```
 python3 Web/casefix.py /tmp/web/case
 python3 Web/gencs.py <finobe client>/RobloxPlayerBeta.exe /tmp/web/gen/LuaGenCS.inl
+python3 Web/mkpkg.py <client root with content, PlatformContent and shaders> /tmp/web/b
 python3 Web/gen.py /tmp/web/b
 ninja -C /tmp/web/b WebPlayer.js
 ```
@@ -33,6 +35,12 @@ ninja -C /tmp/web/b WebPlayer.js
 browsers can't send udp, so raknet's sockets go over a websocket to `tools/webrelay` on the site
 (emscripten's posix socket proxy with an allow list, so it only reaches game servers).
 
+## loading
+
+only shaders and fonts are in `WebPlayer.data` (about 4 mb). every other content file is fetched
+the first time the game asks for it, from `/play/web/files/content/...` or
+`/play/web/files/PlatformContent/pc/...`.
+
 ## serving
 
 the page needs `Cross-Origin-Opener-Policy: same-origin` and `Cross-Origin-Embedder-Policy: require-corp`
@@ -40,7 +48,8 @@ so threads (SharedArrayBuffer) work.
 
 ## server setup
 
-1. copy `dist/` to the server and run `gunzip WebPlayer.data.gz`
+1. copy `dist/` to `/var/www/finobe-play/` and run `tar -xzf files.tar.gz --one-top-level=files` there
+   (so you get `/var/www/finobe-play/files/content` and `/var/www/finobe-play/files/PlatformContent/pc`)
 2. nginx on the main site (finobe.wtf):
 
 ```

@@ -88,6 +88,9 @@ namespace {
 	}
 }
 
+#ifdef __EMSCRIPTEN__
+namespace RBX { namespace Web { bool fetchAssetFile(const std::string& name, const std::string& platformTarget, const std::string& contentTarget); } }
+#endif
 namespace RBX {
 	extern void ThrowLastError(const char* message);
 
@@ -959,6 +962,12 @@ namespace RBX
 
 		
         boost::system::error_code ec;
+#ifdef __EMSCRIPTEN__
+        if (contentId.isAsset() && !boost::filesystem::exists(filePath, ec) && !boost::filesystem::exists(assetFolderPath / pathName, ec))
+        {
+            RBX::Web::fetchAssetFile(pathName, pathToString(filePath), pathToString(assetFolderPath / pathName));
+        }
+#endif
         if (!boost::filesystem::exists(filePath, ec))
 		{
             isPlatformAsset = false;

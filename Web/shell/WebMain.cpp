@@ -162,6 +162,11 @@ int main()
         emscripten_websocket_get_ready_state(bridge, &state);
         if (state == 1)
             break;
+        if (state > 1)
+        {
+            fprintf(stderr, "[web] relay connection failed: %s\n", relayUrl.c_str());
+            break;
+        }
         usleep(10000);
     }
 
