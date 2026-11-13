@@ -1456,7 +1456,7 @@ void ProcessWebSocketMessageAsynchronouslyInBackgroundThread(int client_fd, uint
 #include <stdlib.h>
 #include <arpa/inet.h>
 
-static bool RelayAddressAllowed(const uint8_t *addr, uint32_t len)
+bool RelayAddressAllowed(const uint8_t *addr, uint32_t len)
 {
   if (len < 8) return false;
   uint16_t family = addr[0] | (addr[1] << 8);

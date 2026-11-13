@@ -3,7 +3,10 @@
 lets the browser web player talk to game servers. browsers can't send udp, so the player's
 raknet sockets go over one websocket to this relay, which makes the real udp calls.
 
-it's emscripten's websocket_to_posix_proxy with an allow list on top:
+the web player connects to `/webrelay?udp=1`: each binary message is one udp datagram
+(4 bytes ipv4, 2 bytes port, payload) and the relay pushes replies back as they arrive.
+
+without `udp=1` it's emscripten's websocket_to_posix_proxy with an allow list on top:
 
 - only ipv4 udp sockets
 - bind only to port 0

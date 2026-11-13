@@ -9,6 +9,8 @@
 #include <sys/types.h>
 
 #include "posix_sockets.h"
+#include "udp_mode.h"
+#include <signal.h>
 #include "threads.h"
 #include "sha1.h"
 #include "websocket_to_posix_proxy.h"
@@ -222,6 +224,17 @@ THREAD_RETURN_T connection_thread(void *arg)
     EXIT_THREAD(0);
   }
   SendHandshake(client_fd, headers.c_str());
+  std::string requestLine = headers.substr(0, headers.find("\r\n"));
+  UdpSession *udp = 0;
+  if (requestLine.find("udp=1") != std::string::npos)
+  {
+    udp = UdpOpen(client_fd);
+    if (!udp)
+    {
+      CloseWebSocket(client_fd);
+      EXIT_THREAD(0);
+    }
+  }
 
   std::vector<uint8_t> fragmentData(request.begin() + headerEnd + 4, request.end());
 
@@ -284,7 +297,13 @@ THREAD_RETURN_T connection_thread(void *arg)
 
       switch(header->opcode)
       {
-      case 0x02:  ProcessWebSocketMessage(client_fd, payload, payloadLength); break;
+      case 0x02:
+        if (udp) UdpFrame(udp, payload, payloadLength);
+        else ProcessWebSocketMessage(client_fd, payload, payloadLength);
+        break;
+      case 0x09:
+      case 0x0A:
+        break;
       case 0x08: connectionAlive = false; break;
       default:
         fprintf(stderr, "Unknown WebSocket opcode received %x!\n", header->opcode);
@@ -299,6 +318,7 @@ THREAD_RETURN_T connection_thread(void *arg)
     }
   }
   printf("Proxy connection closed\n");
+  UdpClose(udp);
   CloseWebSocket(client_fd);
   EXIT_THREAD(0);
 }
@@ -308,6 +328,7 @@ MUTEX_T socketRegistryLock;
 
 int main(int argc, char *argv[])
 {
+  signal(SIGPIPE, SIG_IGN);
   if (argc < 2) on_error("websocket_to_posix_proxy creates a bridge that allows WebSocket connections on a web page to proxy out to perform TCP/UDP connections.\nUsage: %s [port]\n", argv[0]);
 
 #ifdef _WIN32
