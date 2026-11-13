@@ -26,7 +26,7 @@ static Reflection::BoundFuncDesc<Lighting, void(double)> func_SetMinutesAfterMid
 static Reflection::BoundFuncDesc<Lighting, double()> func_dep_GetMinutesAfterMidnight(&Lighting::getMinutesAfterMidnight, "getMinutesAfterMidnight", Security::None, Reflection::Descriptor::Attributes::deprecated(func_GetMinutesAfterMidnight));
 static Reflection::BoundFuncDesc<Lighting, void(double)> func_dep_SetMinutesAfterMidnight(&Lighting::setMinutesAfterMidnight, "setMinutesAfterMidnight", "minutes", Security::None, Reflection::Descriptor::Attributes::deprecated(func_SetMinutesAfterMidnight));
 
-static Reflection::PropDescriptor<Lighting, G3D::Color3> desc_ShadowColor("ShadowColor", category_Appearance, &Lighting::getShadowColor, &Lighting::setShadowColor);
+static Reflection::PropDescriptor<Lighting, G3D::Color3> desc_ShadowColor("ShadowColor", category_Appearance, &Lighting::getShadowColor, &Lighting::setShadowColor, Reflection::PropertyDescriptor::STANDARD_NO_REPLICATE);
 static Reflection::PropDescriptor<Lighting, G3D::Color3> desc_FogColor("FogColor", "Fog", &Lighting::getFogColor, &Lighting::setFogColor);
 static Reflection::PropDescriptor<Lighting, float> desc_FogStart("FogStart", "Fog", &Lighting::getFogStart, &Lighting::setFogStart);
 static Reflection::PropDescriptor<Lighting, float> desc_FogEnd("FogEnd", "Fog", &Lighting::getFogEnd, &Lighting::setFogEnd);

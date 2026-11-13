@@ -32,12 +32,10 @@ static Reflection::PropDescriptor<GameBasicSettings, Vector2> prop_startScreenPo
 Reflection::PropDescriptor<GameBasicSettings, float> GameBasicSettings::prop_masterVolume("MasterVolume",category_Data, &GameBasicSettings::getMasterVolume, &GameBasicSettings::setMasterVolume);
 
 static Reflection::PropDescriptor<GameBasicSettings, float> prop_mouseSensitivity("MouseSensitivity",category_Data, &GameBasicSettings::getMouseSensitivity, &GameBasicSettings::setMouseSensitivity);
-static Reflection::PropDescriptor<GameBasicSettings, bool> prop_useBasicMouseSensitivity("UseBasicMouseSensitivity",category_Data, &GameBasicSettings::getUseBasicMouseSensitivity, &GameBasicSettings::setUseBasicMouseSensitivity);
-static Reflection::PropDescriptor<GameBasicSettings, Vector2> prop_mouseSensitivityFirstPerson("MouseSensitivityFirstPerson",category_Data, &GameBasicSettings::getMouseSensitivityFirstPerson, &GameBasicSettings::setMouseSensitivityFirstPerson);
-static Reflection::PropDescriptor<GameBasicSettings, Vector2> prop_mouseSensitivityThirdPerson("MouseSensitivityThirdPerson",category_Data, &GameBasicSettings::getMouseSensitivityThirdPerson, &GameBasicSettings::setMouseSensitivityThirdPerson);
-static Reflection::PropDescriptor<GameBasicSettings, bool> prop_performanceStatsVisible("PerformanceStatsVisible",category_Data, &GameBasicSettings::getPerformanceStatsVisible, &GameBasicSettings::setPerformanceStatsVisible);
+static Reflection::PropDescriptor<GameBasicSettings, bool> prop_useBasicMouseSensitivity("UseBasicMouseSensitivity",category_Data, &GameBasicSettings::getUseBasicMouseSensitivity, &GameBasicSettings::setUseBasicMouseSensitivity, Reflection::PropertyDescriptor::STANDARD_NO_REPLICATE);
+static Reflection::PropDescriptor<GameBasicSettings, Vector2> prop_mouseSensitivityFirstPerson("MouseSensitivityFirstPerson",category_Data, &GameBasicSettings::getMouseSensitivityFirstPerson, &GameBasicSettings::setMouseSensitivityFirstPerson, Reflection::PropertyDescriptor::STANDARD_NO_REPLICATE);
+static Reflection::PropDescriptor<GameBasicSettings, Vector2> prop_mouseSensitivityThirdPerson("MouseSensitivityThirdPerson",category_Data, &GameBasicSettings::getMouseSensitivityThirdPerson, &GameBasicSettings::setMouseSensitivityThirdPerson, Reflection::PropertyDescriptor::STANDARD_NO_REPLICATE);
 static Reflection::PropDescriptor<GameBasicSettings, int> prop_vrRotationIntensity("VRRotationIntensity",category_Data, &GameBasicSettings::getVRRotationIntensity, &GameBasicSettings::setVRRotationIntensity);
-static Reflection::EventDesc<GameBasicSettings, void(bool)> event_PerformanceStatsVisibleChanged(&GameBasicSettings::performanceStatsVisibleChangedSignal, "PerformanceStatsVisibleChanged", "isPerformanceStatsVisible", Security::None);
 
 static const Reflection::PropDescriptor<GameBasicSettings, bool> prop_isFullscreen("Fullscreen",category_Data, &GameBasicSettings::getFullScreenConst, &GameBasicSettings::setFullScreen, Reflection::PropertyDescriptor::STANDARD, Security::RobloxScript);
 static const Reflection::BoundFuncDesc<GameBasicSettings, bool()> func_inFullscreenMode(&GameBasicSettings::getFullScreen, "InFullScreen", Security::None);
@@ -619,7 +617,6 @@ void GameBasicSettings::setPerformanceStatsVisible(bool value)
 	if (value != performanceStatsVisible)
 	{
 		performanceStatsVisible = value;
-		raisePropertyChanged(prop_performanceStatsVisible);
 		performanceStatsVisibleChangedSignal(value);
 	}
 }

@@ -101,7 +101,7 @@ VisualEngine::VisualEngine(Device* device, CRenderSettings* settings)
         for (Text::Font font = Text::FONT_LEGACY; font != Text::FONT_LAST; font=Text::Font(font+1))
         {
             static const char* kFontTTFPaths[] = {
-                "fonts/arial.ttf", "fonts/arial.ttf", "fonts/arialbd.ttf", "fonts/SourceSansPro-Regular.ttf", "fonts/SourceSansPro-Bold.ttf", "fonts/SourceSansPro-Light.ttf", "fonts/SourceSansPro-It.ttf"
+                "fonts/arial.ttf", "fonts/arial.ttf", "fonts/arialbd.ttf", "fonts/SourceSansPro-Regular.ttf", "fonts/SourceSansPro-Bold.ttf", "fonts/SourceSansPro-Light.ttf", "fonts/SourceSansPro-It.ttf", "fonts/Guru-Regular.otf", "fonts/AccanthisADFStd-Regular.otf"
             };
 
             float legacyHeightScale = (font == Text::FONT_LEGACY) ? 1.5f : 1.f;
@@ -115,7 +115,7 @@ VisualEngine::VisualEngine(Device* device, CRenderSettings* settings)
             static const char* kFontPaths[Text::FONT_LAST] =
             {
                 "fonts/Arial.font", "fonts/Arial.font", "fonts/ArialBold.font", "fonts/SourceSans.font", "fonts/SourceSansBold.font",
-                "fonts/SourceSansLight.font", "fonts/SourceSansItalic.font",
+                "fonts/SourceSansLight.font", "fonts/SourceSansItalic.font", "fonts/SourceSans.font", "fonts/SourceSans.font",
             };
 
             static const char* kTexturePath = "rbxasset://fonts/fonts.dds";

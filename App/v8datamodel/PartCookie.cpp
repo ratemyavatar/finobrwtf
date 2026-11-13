@@ -17,6 +17,9 @@ unsigned int PartCookie::compute(RBX::PartInstance* part)
 {
 	unsigned int cookie = part->getCookie() & IS_HUMANOID_PART;
 
+	if (getMeshPartShape(part))
+		return cookie | HAS_SPECIALSHAPE | HAS_FILEMESH;
+
 	if (const copy_on_write_ptr<Instances>& children = part->getChildren())
 	{
 		for (size_t i = 0; i < children->size(); ++i)

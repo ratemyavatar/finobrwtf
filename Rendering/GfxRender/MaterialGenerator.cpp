@@ -436,6 +436,11 @@ static const char* getMaterialName(PartMaterial material)
 	case FABRIC_MATERIAL: return "Fabric";
 	case ICE_MATERIAL: return "Ice";
     case COBBLESTONE_MATERIAL: return "Cobblestone";
+    case ASPHALT_MATERIAL: return "Concrete";
+    case LEAFYGRASS_MATERIAL: return "Grass";
+    case SALT_MATERIAL: return "Sand";
+    case LIMESTONE_MATERIAL: return "Concrete";
+    case PAVEMENT_MATERIAL: return "Slate";
 
 	default:
 		RBXASSERT(false);
@@ -467,6 +472,11 @@ static int getMaterialId(PartMaterial material, bool reflectance)
     case FABRIC_MATERIAL: return 19;
     case ICE_MATERIAL: return 20;
 	case NEON_MATERIAL: return 21;
+    case ASPHALT_MATERIAL: return 8;
+    case LEAFYGRASS_MATERIAL: return 17;
+    case SALT_MATERIAL: return 18;
+    case LIMESTONE_MATERIAL: return 8;
+    case PAVEMENT_MATERIAL: return 7;
 
     default:
 		return -1;

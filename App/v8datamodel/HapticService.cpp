@@ -22,6 +22,8 @@ namespace RBX
 			addPair(HapticService::MOTOR_SMALL, "Small");
 			addPair(HapticService::MOTOR_LEFTTRIGGER, "LeftTrigger");
 			addPair(HapticService::MOTOR_RIGHTTRIGGER, "RightTrigger");
+			addPair(HapticService::MOTOR_LEFTHAND, "LeftHand");
+			addPair(HapticService::MOTOR_RIGHTHAND, "RightHand");
 		}
 
 		template<>

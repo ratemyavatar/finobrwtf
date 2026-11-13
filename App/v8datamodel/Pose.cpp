@@ -21,8 +21,8 @@ const Reflection::PropDescriptor<Pose, float> prop_MaskWeight("MaskWeight", cate
 REFLECTION_END();
 
 // DFFlag::AnimationEasingStylesEnabled
-// static Reflection::EnumPropDescriptor<Pose, Pose::PoseEasingStyle> prop_EasingStyle("EasingStyle", category_Data, &Pose::getEasingStyle, &Pose::setEasingStyle);
-// static Reflection::EnumPropDescriptor<Pose, Pose::PoseEasingDirection> prop_EasingDirection("EasingDirection", category_Data, &Pose::getEasingDirection, &Pose::setEasingDirection);
+static Reflection::EnumPropDescriptor<Pose, Pose::PoseEasingStyle> prop_EasingStyle("EasingStyle", category_Data, &Pose::getEasingStyle, &Pose::setEasingStyle);
+static Reflection::EnumPropDescriptor<Pose, Pose::PoseEasingDirection> prop_EasingDirection("EasingDirection", category_Data, &Pose::getEasingDirection, &Pose::setEasingDirection);
 
 namespace Reflection
 {
@@ -131,7 +131,7 @@ void Pose::setEasingStyle(PoseEasingStyle value)
 	{
 		easingStyle = value;
 // DFFlag::AnimationEasingStylesEnabled
-//		raisePropertyChanged(prop_EasingStyle);
+		raisePropertyChanged(prop_EasingStyle);
 		invalidate();
 	}
 }
@@ -142,7 +142,7 @@ void Pose::setEasingDirection(Pose::PoseEasingDirection value)
 	{
 		easingDirection = value;
 // DFFlag::AnimationEasingStylesEnabled
-//		raisePropertyChanged(prop_EasingDirection);
+		raisePropertyChanged(prop_EasingDirection);
 		invalidate();
 	}
 }

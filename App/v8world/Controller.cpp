@@ -14,7 +14,8 @@ namespace Reflection {
 		addPair(LegacyController::LEFT_TRACK_INPUT, "LeftTread");
 		addPair(LegacyController::RIGHT_TRACK_INPUT, "RightTread");
 		addPair(LegacyController::RIGHT_LEFT_INPUT, "Steer");
-		addPair(LegacyController::BACK_FORWARD_INPUT, "Throtle");
+		addPair(LegacyController::BACK_FORWARD_INPUT, "Throttle");
+		addLegacyName("Throtle", LegacyController::BACK_FORWARD_INPUT);
 		addPair(LegacyController::UP_DOWN_INPUT, "UpDown");
 		addPair(LegacyController::BUTTON_1_INPUT, "Action1");
 		addPair(LegacyController::BUTTON_2_INPUT, "Action2");

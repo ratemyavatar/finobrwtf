@@ -13,7 +13,7 @@
 #include "V8World/Primitive.h"
 #include "Util/Color.h"
 
-// #define ENABLE_AXES_API
+#define ENABLE_AXES_API
 
 namespace RBX {
 

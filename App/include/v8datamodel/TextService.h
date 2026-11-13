@@ -66,8 +66,10 @@ namespace RBX {
 			FONT_SOURCESANSBOLD = 4,
 			FONT_SOURCESANSLIGHT = 5,
 			FONT_SOURCESANSITALIC = 6,
+			FONT_BODONI = 7,
+			FONT_GARAMOND = 8,
 
-			FONT_LAST = 7
+			FONT_LAST = 9
 		};
 
 		static Font FromTextFont(Text::Font font);

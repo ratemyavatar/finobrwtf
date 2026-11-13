@@ -197,6 +197,11 @@ EnumDesc<PartMaterial>::EnumDesc()
 	addPair(GROUND_MATERIAL, "Ground");
 	addPair(CRACKED_LAVA_MATERIAL, "CrackedLava");
     addPair(NEON_MATERIAL, "Neon");
+	addPair(ASPHALT_MATERIAL, "Asphalt");
+	addPair(LEAFYGRASS_MATERIAL, "LeafyGrass");
+	addPair(SALT_MATERIAL, "Salt");
+	addPair(LIMESTONE_MATERIAL, "Limestone");
+	addPair(PAVEMENT_MATERIAL, "Pavement");
 
 	addLegacyName("Corroded Metal", RUST_MATERIAL);
 	addLegacyName("Aluminum", ALUMINUM_MATERIAL);

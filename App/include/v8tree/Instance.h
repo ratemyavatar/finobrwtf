@@ -18,6 +18,8 @@
 #include "boost/enable_shared_from_this.hpp"
 #include <boost/static_assert.hpp>
 #include <boost/flyweight.hpp>
+#include <boost/any.hpp>
+#include <boost/function.hpp>
 
 namespace RBX {
 
@@ -724,6 +726,53 @@ public:
 
 	void raisePropertyChanged(const RBX::Reflection::PropertyDescriptor& descriptor);
 	void raiseEventInvocation(const RBX::Reflection::EventDescriptor& descriptor, const RBX::Reflection::EventArguments& args, const SystemAddress* target);
+
+	static void registerExtraProperty(int id, const boost::any& defaultValue);
+	static void bindExtraDescriptor(int id, const RBX::Reflection::PropertyDescriptor* descriptor);
+	const boost::any* findExtraValue(int id) const;
+	void storeExtraValue(int id, const boost::any& value);
+	boost::shared_ptr<void> findExtraSignal(int id, const boost::function<boost::shared_ptr<void>()>& create);
+	static const boost::any& extraDefault(int id);
+	void raiseExtraChanged(int id);
+
+	template<class T, int ID>
+	T getExtra() const
+	{
+		const boost::any* v = findExtraValue(ID);
+		return boost::any_cast<T>(v ? *v : extraDefault(ID));
+	}
+
+	template<class T, int ID>
+	void setExtra(const T& value)
+	{
+		const boost::any* v = findExtraValue(ID);
+		if (v && boost::any_cast<T>(*v) == value)
+			return;
+		storeExtraValue(ID, boost::any(value));
+		raiseExtraChanged(ID);
+	}
+
+	Instance* getExtraRefImpl(int id) const;
+	void setExtraRefImpl(int id, Instance* value);
+
+	template<int ID>
+	Instance* getExtraRef() const { return getExtraRefImpl(ID); }
+
+	template<int ID>
+	void setExtraRef(Instance* value) { setExtraRefImpl(ID, value); }
+
+	template<class SignalT, int ID>
+	SignalT* getExtraSignal(bool create)
+	{
+		boost::shared_ptr<void> p = findExtraSignal(ID, create ? boost::function<boost::shared_ptr<void>()>(&Instance::makeExtraSignal<SignalT>) : boost::function<boost::shared_ptr<void>()>());
+		return static_cast<SignalT*>(p.get());
+	}
+
+	template<class SignalT>
+	static boost::shared_ptr<void> makeExtraSignal()
+	{
+		return boost::shared_ptr<void>(new SignalT());
+	}
 
 	//////////////////////////////////////////////////////////////////////////////////////////
 

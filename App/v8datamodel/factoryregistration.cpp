@@ -569,6 +569,25 @@ RBX_REGISTER_CLASS(GamepadService);
 RBX_REGISTER_CLASS(LuaSourceContainer);
 RBX_REGISTER_CLASS(HapticService);
 
+#include "V8DataModel/SchemaCompat.h"
+RBX_REGISTER_CLASS(ReplicatedConstraint);
+RBX_REGISTER_CLASS(BallSocketConstraint);
+RBX_REGISTER_CLASS(HingeConstraint);
+RBX_REGISTER_CLASS(MoveToConstraint);
+RBX_REGISTER_CLASS(RodConstraint);
+RBX_REGISTER_CLASS(RopeConstraint);
+RBX_REGISTER_CLASS(SlidingBallConstraint);
+RBX_REGISTER_CLASS(CylindricalConstraint);
+RBX_REGISTER_CLASS(PrismaticConstraint);
+RBX_REGISTER_CLASS(SpringConstraint);
+RBX_REGISTER_CLASS(PostEffect);
+RBX_REGISTER_CLASS(BloomEffect);
+RBX_REGISTER_CLASS(BlurEffect);
+RBX_REGISTER_CLASS(ColorCorrectionEffect);
+RBX_REGISTER_CLASS(SunRaysEffect);
+RBX_REGISTER_CLASS(ThumbnailGenerator);
+RBX_REGISTER_CLASS(MeshPart);
+
 // Xbox
 #if defined(RBX_PLATFORM_DURANGO)
 #include "v8datamodel/PlatformService.h"
@@ -603,6 +622,8 @@ FactoryRegistrator::FactoryRegistrator()
 RBX_REGISTER_ENUM(ChangeHistoryService::RuntimeUndoBehavior);
 RBX_REGISTER_ENUM(FunctionalTest::Result);
 RBX_REGISTER_ENUM(TaskScheduler::PriorityMethod);
+RBX_REGISTER_ENUM(ActuatorType);
+RBX_REGISTER_ENUM(GameAvatarType);
 RBX_REGISTER_ENUM(TaskScheduler::Job::SleepAdjustMethod);
 RBX_REGISTER_ENUM(TaskScheduler::ThreadPoolConfig);
 RBX_REGISTER_ENUM(Action::ActionType);

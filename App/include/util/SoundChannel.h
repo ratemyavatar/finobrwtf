@@ -25,7 +25,9 @@ namespace RBX {
 		enum RollOffMode
 		{
 			Inverse = 0,
-			Linear,
+			Linear = 1,
+			LinearSquare = 2,
+			InverseTapered = 3,
 		};
 		// A simple sound object
 		extern const char* const sSoundChannel;
@@ -150,6 +152,8 @@ namespace RBX {
 			bool isPlaying() const;
 			bool isPaused() const;
 			bool isSoundLoaded() const;
+			bool getPlaying() const { return isPlaying(); }
+			void setPlaying(bool value);
 
 			double getSoundLength() const;
 

@@ -261,7 +261,6 @@ namespace RBX {
 	static Reflection::BoundFuncDesc<UserInputService, void(InputObject::UserInputType, bool)> func_setNavigationGamepad(&UserInputService::setNavigationGamepad, "SetNavigationGamepad", "gamepadEnum", "enabled", Security::None);
 
 	// VR Stuff
-    static const Reflection::PropDescriptor<UserInputService, bool> prop_IsVREnabled("IsVREnabled", category_Data, &UserInputService::getVREnabled, NULL, Reflection::PropertyDescriptor::Attributes::deprecated());
 	static const Reflection::PropDescriptor<UserInputService, CoordinateFrame> prop_UserHeadCFrame("UserHeadCFrame", category_Data, &UserInputService::getUserHeadCFrame, NULL, Reflection::PropertyDescriptor::Attributes::deprecated());
 
     static const Reflection::PropDescriptor<UserInputService, bool> prop_VREnabled("VREnabled", category_Data, &UserInputService::getVREnabled, NULL);
@@ -2474,7 +2473,6 @@ namespace RBX {
 		{
 			vrEnabled = value;
 			raisePropertyChanged(prop_VREnabled);
-			raisePropertyChanged(prop_IsVREnabled);
 		}
 	}
 

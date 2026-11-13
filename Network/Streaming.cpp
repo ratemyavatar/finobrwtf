@@ -1433,13 +1433,15 @@ void DescriptorReceiver<ClassDescriptor>::learnName(std::string s, int i, uint32
 		{
 			idToDesc[i].desc = *iter;
             idToDesc[i].outdated = !verifyChecksum((*iter), checksum);
+            if (idToDesc[i].outdated)
+                StandardOut::singleton()->printf(MESSAGE_WARNING, "SCHEMA class outdated %s SCHEMA_CK %u", s.c_str(), checksum);
             *((*iter)->isOutdated) = idToDesc[i].outdated;
             *((*iter)->isReplicable) = true;
 			return;
 		}
 		++iter;
 	}
-	StandardOut::singleton()->printf(MESSAGE_WARNING, "ClassDescriptor failed to learn %s", s.c_str());
+	StandardOut::singleton()->printf(MESSAGE_WARNING, "ClassDescriptor failed to learn %s SCHEMA_CK %u", s.c_str(), checksum);
 	idToDesc[i].desc = NULL;
     idToDesc[i].outdated = false;
 }
@@ -1473,7 +1475,7 @@ void DescriptorReceiver<EventDescriptor>::learnName(std::string s, int i, uint32
                 
                 if (idToDesc[i].outdated)
                 {
-                    StandardOut::singleton()->printf(MESSAGE_WARNING, "EventDescriptor %s is out of date, replication will be ignored", s.c_str());
+                    StandardOut::singleton()->printf(MESSAGE_WARNING, "EventDescriptor %s is out of date, replication will be ignored SCHEMA_CK %u", s.c_str(), checksum);
                 }
 
                 *(desc->isOutdated) = idToDesc[i].outdated;
@@ -1485,7 +1487,7 @@ void DescriptorReceiver<EventDescriptor>::learnName(std::string s, int i, uint32
 		}
 		++iter;
 	}
-	StandardOut::singleton()->printf(MESSAGE_WARNING, "EventDescriptor failed to learn %s", s.c_str());
+	StandardOut::singleton()->printf(MESSAGE_WARNING, "EventDescriptor failed to learn %s SCHEMA_CK %u", s.c_str(), checksum);
 	idToDesc[i].desc = NULL;
     idToDesc[i].outdated = false;
 }
@@ -1517,6 +1519,8 @@ void DescriptorReceiver<PropertyDescriptor>::learnName(std::string s, int i, uin
 			{
 				idToDesc[i].desc = desc;
                 idToDesc[i].outdated = !verifyChecksum(desc, checksum);
+                if (idToDesc[i].outdated)
+                    StandardOut::singleton()->printf(MESSAGE_WARNING, "SCHEMA property outdated %s %s SCHEMA_CK %u", s.c_str(), desc->type.name.c_str(), checksum);
                 *(desc->isOutdated) = idToDesc[i].outdated;
                 *(desc->isReplicable) = true;
 				return;
@@ -1527,6 +1531,7 @@ void DescriptorReceiver<PropertyDescriptor>::learnName(std::string s, int i, uin
 		++iter;
 	}
 
+	StandardOut::singleton()->printf(MESSAGE_WARNING, "SCHEMA property missing %s SCHEMA_CK %u", s.c_str(), checksum);
 	idToDesc[i].desc = NULL;
     idToDesc[i].outdated = false;
 }
@@ -1550,11 +1555,13 @@ void DescriptorReceiver<Type>::learnName(std::string s, int i, uint32_t checksum
 		{
 			idToDesc[i].desc = types[ti];
             idToDesc[i].outdated = !verifyChecksum(types[ti], checksum);
+            if (idToDesc[i].outdated)
+                StandardOut::singleton()->printf(MESSAGE_WARNING, "SCHEMA type outdated %s SCHEMA_CK %u", s.c_str(), checksum);
 			return;
 		}
 	}
 
-	StandardOut::singleton()->printf(MESSAGE_WARNING, "Type failed to learn %s", s.c_str());
+	StandardOut::singleton()->printf(MESSAGE_WARNING, "Type failed to learn %s SCHEMA_CK %u", s.c_str(), checksum);
 	idToDesc[i].desc = NULL;
     idToDesc[i].outdated = false;
 }

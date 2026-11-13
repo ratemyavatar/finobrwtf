@@ -84,7 +84,6 @@ public:
 	static Reflection::PropDescriptor<Workspace, bool> prop_ExpSolverEnabled_Replicate;
 	static Reflection::PropDescriptor<Workspace, bool> prop_FilteringEnabled;
 	static Reflection::PropDescriptor<Workspace, bool> prop_allowThirdPartySales;
-	static Reflection::EnumPropDescriptor<Workspace, PhysicalPropertiesMode> prop_physicalPropertiesMode;
 	bool getExperimentalSolverEnabled() const { return experimentalSolverEnabled; }
 	void setExperimentalSolverEnabled(bool value);
 	bool experimentalSolverIsEnabled();  // getter for script accessibility

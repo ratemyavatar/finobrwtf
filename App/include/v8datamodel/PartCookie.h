@@ -28,9 +28,14 @@ namespace RBX {
 		static unsigned int compute(RBX::PartInstance* part);
 	};
 
+	DataModelMesh* getMeshPartShape(PartInstance* part);
+
 	// Return the special shape for the part - i.e. the LAST child of type DataModelMesh
 	inline DataModelMesh* getSpecialShape(PartInstance* part)
 	{
+		if (DataModelMesh* meshPartShape = getMeshPartShape(part))
+			return meshPartShape;
+
 		if ((part->getCookie() & PartCookie::HAS_SPECIALSHAPE) == 0)
 			return NULL;
 

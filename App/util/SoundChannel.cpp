@@ -1,5 +1,6 @@
 /* Copyright 2003-2014 ROBLOX Corporation, All Rights Reserved */
 #include "stdafx.h"
+#include "V8DataModel/SchemaCompat.h"
 
 #include "Util/SoundChannel.h"
 #include "V8DataModel/ContentProvider.h"
@@ -42,6 +43,8 @@ EnumDesc<RBX::Soundscape::RollOffMode>::EnumDesc()
 {
 	addPair(RBX::Soundscape::Inverse, "Inverse");
 	addPair(RBX::Soundscape::Linear, "Linear");
+	addPair(RBX::Soundscape::InverseTapered, "InverseTapered");
+	addPair(RBX::Soundscape::LinearSquare, "LinearSquare");
 }
 template<>
 RBX::Soundscape::RollOffMode& Variant::convert<RBX::Soundscape::RollOffMode>(void)
@@ -72,11 +75,19 @@ static Reflection::PropDescriptor<SoundChannel, float> sound_desc_Volume("Volume
 static Reflection::PropDescriptor<SoundChannel, float> sound_desc_Pitch("Pitch", category_Data, &SoundChannel::getPitch, &SoundChannel::setPitch);
 static Reflection::PropDescriptor<SoundChannel, float> sound_desc_MinDistance("MinDistance", category_Data, &SoundChannel::getMinDistance, &SoundChannel::setMinDistance);
 static Reflection::PropDescriptor<SoundChannel, float> sound_desc_MaxDistance("MaxDistance", category_Data, &SoundChannel::getMaxDistance, &SoundChannel::setMaxDistance);
-// DFFLag::RollOffModeEnabled 
-// static Reflection::EnumPropDescriptor<SoundChannel, RollOffMode> sound_desc_RollOffMode("RollOffMode", category_Data, &SoundChannel::getRollOffMode, &SoundChannel::setRollOffMode);
+static Reflection::EnumPropDescriptor<SoundChannel, RollOffMode> sound_desc_RollOffMode("RollOffMode", category_Data, &SoundChannel::getRollOffMode, &SoundChannel::setRollOffMode, Reflection::PropertyDescriptor::STANDARD_NO_REPLICATE);
+static Reflection::PropDescriptor<SoundChannel, bool> sound_desc_IsLoaded("IsLoaded", category_Data, &SoundChannel::isSoundLoaded, NULL, Reflection::PropertyDescriptor::UI);
+static Reflection::PropDescriptor<SoundChannel, bool> sound_desc_Playing("Playing", category_Data, &SoundChannel::getPlaying, &SoundChannel::setPlaying, Reflection::PropertyDescriptor::STANDARD);
+static Reflection::EventDesc<SoundChannel, void(std::string), rbx::signal<void(std::string)>, rbx::signal<void(std::string)>* (SoundChannel::*)(bool)> sound_loadedEvent(&Instance::getExtraSignal<rbx::signal<void(std::string)>, SchemaId::EventSoundLoaded>, "Loaded", "soundId");
+static Reflection::EventDesc<SoundChannel, void(std::string), rbx::signal<void(std::string)>, rbx::signal<void(std::string)>* (SoundChannel::*)(bool)> sound_resumedEvent(&Instance::getExtraSignal<rbx::signal<void(std::string)>, SchemaId::EventSoundResumed>, "Resumed", "soundId");
+static Reflection::RemoteEventDesc<SoundChannel, void(bool), rbx::remote_signal<void(bool)>, rbx::remote_signal<void(bool)>* (SoundChannel::*)(bool)> sound_playingFromClient(&Instance::getExtraSignal<rbx::remote_signal<void(bool)>, SchemaId::EventSoundPlayingFromClient>, "PlayingUpdatedFromClient", "value", Security::Roblox, Reflection::RemoteEventCommon::REPLICATE_ONLY, Reflection::RemoteEventCommon::CLIENT_SERVER);
+static Reflection::RemoteEventDesc<SoundChannel, void(bool), rbx::remote_signal<void(bool)>, rbx::remote_signal<void(bool)>* (SoundChannel::*)(bool)> sound_playingFromServer(&Instance::getExtraSignal<rbx::remote_signal<void(bool)>, SchemaId::EventSoundPlayingFromServer>, "PlayingUpdatedFromServer", "value", Security::Roblox, Reflection::RemoteEventCommon::REPLICATE_ONLY, Reflection::RemoteEventCommon::BROADCAST);
+static Reflection::RemoteEventDesc<SoundChannel, void(double, double), rbx::remote_signal<void(double, double)>, rbx::remote_signal<void(double, double)>* (SoundChannel::*)(bool)> sound_timeFromClient(&Instance::getExtraSignal<rbx::remote_signal<void(double, double)>, SchemaId::EventSoundTimeFromClient>, "TimePositionUpdatedFromClient", "newPositionSeconds", "lastLuaSetTimePosition", Security::Roblox, Reflection::RemoteEventCommon::REPLICATE_ONLY, Reflection::RemoteEventCommon::CLIENT_SERVER);
+static Reflection::RemoteEventDesc<SoundChannel, void(double, double), rbx::remote_signal<void(double, double)>, rbx::remote_signal<void(double, double)>* (SoundChannel::*)(bool)> sound_timeFromServer(&Instance::getExtraSignal<rbx::remote_signal<void(double, double)>, SchemaId::EventSoundTimeFromServer>, "TimePositionUpdatedFromServer", "newPositionSeconds", "lastLuaSetTimePosition", Security::Roblox, Reflection::RemoteEventCommon::REPLICATE_ONLY, Reflection::RemoteEventCommon::BROADCAST);
+static Reflection::RemoteEventDesc<SoundChannel, void(int), rbx::remote_signal<void(int)>, rbx::remote_signal<void(int)>* (SoundChannel::*)(bool)> sound_playbackActionSync(&Instance::getExtraSignal<rbx::remote_signal<void(int)>, SchemaId::EventSoundPlaybackActionSync>, "playbackActionSync", "action", Security::Roblox, Reflection::RemoteEventCommon::REPLICATE_ONLY, Reflection::RemoteEventCommon::BROADCAST);
 
 static Reflection::PropDescriptor<SoundChannel, double> sound_desc_SoundLength("TimeLength", category_Data, &SoundChannel::getSoundLength, NULL, Reflection::PropertyDescriptor::UI);
-static Reflection::PropDescriptor<SoundChannel, double> sound_desc_SoundPosition("TimePosition", category_Data, &SoundChannel::getSoundPosition, &SoundChannel::setSoundPositionLua, Reflection::PropertyDescriptor::UI);
+static Reflection::PropDescriptor<SoundChannel, double> sound_desc_SoundPosition("TimePosition", category_Data, &SoundChannel::getSoundPosition, &SoundChannel::setSoundPositionLua, Reflection::PropertyDescriptor::STANDARD);
 
 static Reflection::PropDescriptor<SoundChannel, bool> sound_desc_Looped("Looped", category_Behavior, &SoundChannel::getLooped, &SoundChannel::setLooped);
 Reflection::BoundProp< bool> SoundChannel::sound_desc_playOnRemove("PlayOnRemove", category_Behavior, &SoundChannel::playOnRemove);
@@ -134,6 +145,17 @@ SoundChannel::SoundChannel()
 	,lastSoundPositionMsec(0)
 {
 	this->setName("Sound");
+}
+
+void SoundChannel::setPlaying(bool value)
+{
+	if (value == isPlaying())
+		return;
+	if (value)
+		playLocal();
+	else
+		pauseLocal();
+	raisePropertyChanged(sound_desc_Playing);
 }
 
 SoundChannel::~SoundChannel()

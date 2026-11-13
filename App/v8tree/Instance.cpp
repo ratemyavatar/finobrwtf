@@ -861,9 +861,95 @@ Instance::Instance(const char* name)
 {
 }
 
+namespace
+{
+	struct ExtraData
+	{
+		std::map<int, boost::any> values;
+		std::map<int, boost::shared_ptr<void> > signals;
+	};
+	boost::mutex& extraMutex() { static boost::mutex m; return m; }
+	std::map<const Instance*, ExtraData>& extraData() { static std::map<const Instance*, ExtraData> d; return d; }
+	std::map<int, boost::any>& extraDefaults() { static std::map<int, boost::any> d; return d; }
+	std::map<int, const Reflection::PropertyDescriptor*>& extraDescriptors() { static std::map<int, const Reflection::PropertyDescriptor*> d; return d; }
+}
+
+void Instance::registerExtraProperty(int id, const boost::any& defaultValue)
+{
+	extraDefaults()[id] = defaultValue;
+}
+
+void Instance::bindExtraDescriptor(int id, const Reflection::PropertyDescriptor* descriptor)
+{
+	extraDescriptors()[id] = descriptor;
+}
+
+const boost::any& Instance::extraDefault(int id)
+{
+	return extraDefaults()[id];
+}
+
+const boost::any* Instance::findExtraValue(int id) const
+{
+	boost::mutex::scoped_lock lock(extraMutex());
+	std::map<const Instance*, ExtraData>::iterator it = extraData().find(this);
+	if (it == extraData().end())
+		return NULL;
+	std::map<int, boost::any>::iterator v = it->second.values.find(id);
+	return v == it->second.values.end() ? NULL : &v->second;
+}
+
+void Instance::storeExtraValue(int id, const boost::any& value)
+{
+	boost::mutex::scoped_lock lock(extraMutex());
+	extraData()[this].values[id] = value;
+}
+
+boost::shared_ptr<void> Instance::findExtraSignal(int id, const boost::function<boost::shared_ptr<void>()>& create)
+{
+	boost::mutex::scoped_lock lock(extraMutex());
+	if (!create)
+	{
+		std::map<const Instance*, ExtraData>::iterator it = extraData().find(this);
+		if (it == extraData().end())
+			return boost::shared_ptr<void>();
+		std::map<int, boost::shared_ptr<void> >::iterator s = it->second.signals.find(id);
+		return s == it->second.signals.end() ? boost::shared_ptr<void>() : s->second;
+	}
+	boost::shared_ptr<void>& slot = extraData()[this].signals[id];
+	if (!slot)
+		slot = create();
+	return slot;
+}
+
+Instance* Instance::getExtraRefImpl(int id) const
+{
+	const boost::any* v = findExtraValue(id);
+	if (!v)
+		return NULL;
+	return boost::any_cast<boost::weak_ptr<Instance> >(*v).lock().get();
+}
+
+void Instance::setExtraRefImpl(int id, Instance* value)
+{
+	if (getExtraRefImpl(id) == value)
+		return;
+	storeExtraValue(id, boost::any(value ? boost::weak_ptr<Instance>(shared_from(value)) : boost::weak_ptr<Instance>()));
+	raiseExtraChanged(id);
+}
+
+void Instance::raiseExtraChanged(int id)
+{
+	std::map<int, const Reflection::PropertyDescriptor*>::iterator it = extraDescriptors().find(id);
+	if (it != extraDescriptors().end() && it->second)
+		raisePropertyChanged(*it->second);
+}
+
 Instance::~Instance() 
 {
 	RBXASSERT(parent==NULL);
+	boost::mutex::scoped_lock lock(extraMutex());
+	extraData().erase(this);
 }
 
 void Instance::remove()

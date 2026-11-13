@@ -27,6 +27,8 @@ namespace
 	}
 }
 
+#include "V8DataModel/SchemaCompat.h"
+
 namespace RBX
 {	
 	GfxBinding::~GfxBinding()
@@ -144,7 +146,11 @@ namespace RBX
 
 	void GfxBinding::onPropertyChanged(const Reflection::PropertyDescriptor* descriptor)
 	{
-		if (*descriptor==PartInstance::prop_CFrame)
+		if (MeshPart::isMeshPartProperty(*descriptor) || (*descriptor==PartInstance::prop_Size && Instance::fastDynamicCast<MeshPart>(partInstance.get())))
+		{
+			onSpecialShapeChangedEx();
+		}
+		else if (*descriptor==PartInstance::prop_CFrame)
 		{
 			onCoordinateFrameChanged();
 		} 

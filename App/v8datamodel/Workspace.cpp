@@ -107,12 +107,6 @@ Reflection::PropDescriptor<Workspace, bool> Workspace::prop_FilteringEnabled("Fi
 static Reflection::PropDescriptor<Workspace, float> prop_fallenPartDestroyHeight("FallenPartsDestroyHeight", category_Behavior, &Workspace::getFallenPartDestroyHeight, &Workspace::setFallenPartDestroyHeight, Reflection::PropertyDescriptor::STANDARD_NO_SCRIPTING);
 Reflection::PropDescriptor<Workspace, bool> Workspace::prop_allowThirdPartySales("AllowThirdPartySales", category_Behavior, &Workspace::getAllowThirdPartySales, &Workspace::setAllowThirdPartySales, Reflection::PropertyDescriptor::STANDARD_NO_REPLICATE);
 
-// Use ReleastTest build to ask whether or not we have a certain PhysicalProperties mode enabled
-#ifndef RBX_TEST_BUILD
-	Reflection::EnumPropDescriptor<Workspace, PhysicalPropertiesMode> Workspace::prop_physicalPropertiesMode("PhysicalPropertiesMode", category_Behavior, &Workspace::getPhysicalPropertiesMode, &Workspace::setPhysicalPropertiesMode, Reflection::PropertyDescriptor::STANDARD_NO_SCRIPTING);
-#else
-	Reflection::EnumPropDescriptor<Workspace, PhysicalPropertiesMode> Workspace::prop_physicalPropertiesMode("PhysicalPropertiesMode", category_Behavior, &Workspace::getPhysicalPropertiesMode, &Workspace::setPhysicalPropertiesMode, Reflection::PropertyDescriptor::STANDARD);
-#endif
 
 static Reflection::BoundFuncDesc<Workspace, shared_ptr<const Instances>(int)> func_getIssueGroup(&Workspace::getPhysicsAnalyzerIssue, "GetPhysicsAnalyzerIssue", "index", Security::Plugin);
 static Reflection::BoundFuncDesc<Workspace, void(bool)> func_setPhysicsAnalyzerBreakOnIssue(&Workspace::setPhysicsAnalyzerBreakOnIssue, "SetPhysicsAnalyzerBreakOnIssue", "enable", Security::Plugin);
@@ -1779,7 +1773,6 @@ void Workspace::setPhysicalPropertiesMode(PhysicalPropertiesMode mode)
 		if (rs && rs->getRunState() != RS_RUNNING && rs->getRunState() != RS_PAUSED)
 		{
 			getWorld()->setPhysicalPropertiesMode(mode);
-			raiseChanged(prop_physicalPropertiesMode);
 		}
 		else
 		{

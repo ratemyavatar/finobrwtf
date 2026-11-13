@@ -25,7 +25,9 @@ namespace RBX
 			MOTOR_SMALL = 1,
 			MOTOR_LEFTTRIGGER = 2,
 			MOTOR_RIGHTTRIGGER = 3,
-			MOTOR_NONE = 4,
+			MOTOR_LEFTHAND = 4,
+			MOTOR_RIGHTHAND = 5,
+			MOTOR_NONE = 6,
 		} VibrationMotor;
 
 	private:

@@ -43,6 +43,8 @@ EnumDesc<TextService::Font>::EnumDesc()
 	addPair(TextService::FONT_SOURCESANSBOLD, "SourceSansBold");
 	addPair(TextService::FONT_SOURCESANSLIGHT, "SourceSansLight");
 	addPair(TextService::FONT_SOURCESANSITALIC, "SourceSansItalic");
+	addPair(TextService::FONT_BODONI, "Bodoni");
+	addPair(TextService::FONT_GARAMOND, "Garamond");
 }
 
 template<>
@@ -89,6 +91,8 @@ TextService::Font TextService::FromTextFont(Text::Font font)
 	case Text::FONT_SOURCESANSBOLD:	return FONT_SOURCESANSBOLD;
 	case Text::FONT_SOURCESANSLIGHT:	return FONT_SOURCESANSLIGHT;
 	case Text::FONT_SOURCESANSITALIC:	return FONT_SOURCESANSITALIC;
+	case Text::FONT_BODONI:	return FONT_BODONI;
+	case Text::FONT_GARAMOND:	return FONT_GARAMOND;
 	default:
 		RBXASSERT(0);
 		return FONT_LEGACY;
@@ -105,6 +109,8 @@ Text::Font TextService::ToTextFont(Font font)
 	case FONT_SOURCESANSBOLD:	return Text::FONT_SOURCESANSBOLD;
 	case FONT_SOURCESANSLIGHT:	return Text::FONT_SOURCESANSLIGHT;
 	case FONT_SOURCESANSITALIC:	return Text::FONT_SOURCESANSITALIC;
+	case FONT_BODONI:	return Text::FONT_BODONI;
+	case FONT_GARAMOND:	return Text::FONT_GARAMOND;
 	default:
 		RBXASSERT(0);
 		return Text::FONT_LEGACY;
