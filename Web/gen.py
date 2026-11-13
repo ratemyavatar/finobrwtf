@@ -22,7 +22,7 @@ PROJECTS = {
 
 SKIP = re.compile(r'(^|/)(Win|win32|D3D9|D3D11|Durango|XboxOne|Xbox|DirectX|Wininet|WinInet)(/|\.|$)|'
                   r'ContextGLWin32|ContextGLAndroid|ContextGLEAGL|ContextGLNSGL|DeviceD3D|VMProtect|'
-                  r'CrashReporter|DumpErrorUploader|RegistryUtil|ATL|Telemetry|stdafx\.cpp$', re.I)
+                  r'CrashReporter|DumpErrorUploader|RegistryUtil|(^|/)ATL/|Telemetry|stdafx\.cpp$', re.I)
 
 EXTRA_SKIP = set(l.strip() for l in open(os.path.join(ROOT, 'Web', 'skip.txt')) if l.strip() and not l.startswith('#')) \
     if os.path.exists(os.path.join(ROOT, 'Web', 'skip.txt')) else set()
@@ -82,7 +82,7 @@ def parse(proj):
     return srcs, incs
 
 
-COMMON_INC_TAIL = ['/tmp/claude-0/web/case']
+COMMON_INC_TAIL = ['/tmp/claude-0/web/case', '/tmp/claude-0/web/gen']
 COMMON_INC = [os.path.join(ROOT, 'Web', 'include'), os.path.join(ROOT, 'Web', 'libwww'), os.path.join(ROOT, 'zlib'), os.path.join(CONTRIB, 'boost_1_55_0', 'include'), os.path.join(ROOT, 'Base', 'include'),
               os.path.join(ROOT, 'Log', 'include'), os.path.join(ROOT, 'ClientShared'), os.path.join(ROOT, 'App', 'include'),
               os.path.join(ROOT, 'App', 'lua-5.1.4', 'src'), os.path.join(ROOT, 'Network', 'include'), os.path.join(ROOT, 'App.BulletPhysics'),
@@ -121,11 +121,11 @@ for mod, proj in PROJECTS.items():
     print(mod, len(seen))
 LINK = ('-O2 -pthread -fexceptions -sPROXY_TO_PTHREAD=1 -sPTHREAD_POOL_SIZE=24 -sOFFSCREENCANVAS_SUPPORT=1 '
         '-sOFFSCREENCANVASES_TO_PTHREAD=#canvas -sMAX_WEBGL_VERSION=2 -sMIN_WEBGL_VERSION=1 -sFULL_ES3=1 -sFETCH=1 '
-        '-sALLOW_MEMORY_GROWTH=1 -sINITIAL_MEMORY=536870912 -sMAXIMUM_MEMORY=2147483648 -sSTACK_SIZE=1048576 '
+        '-sALLOW_MEMORY_GROWTH=1 -sINITIAL_MEMORY=536870912 -sMAXIMUM_MEMORY=2147483648 -sTOTAL_STACK=1048576 '
         '-sDEFAULT_PTHREAD_STACK_SIZE=1048576 -sPROXY_POSIX_SOCKETS=1 -lwebsocket.js -sEXPORTED_RUNTIME_METHODS=UTF8ToString,allocateUTF8 '
-        '-sENVIRONMENT=web,worker -sMODULARIZE=0 -sEXIT_RUNTIME=0 $extra')
+        '-sEXPORTED_FUNCTIONS=_main,_malloc,_free -sENVIRONMENT=web,worker -sMODULARIZE=0 -sEXIT_RUNTIME=0 $extra')
 order = ['Shell', 'App', 'Network', 'GfxRender', 'GfxCore', 'GfxBase', 'AppDraw', 'RbxG3D', 'G3D', 'Bullet', 'Boost', 'Base', 'Log']
 n.append('rule link\n  command = em++ %s -Wl,--start-group $in -Wl,--end-group -o $out\n' % LINK)
-n.append('build WebPlayer.js: link %s\n  extra = --preload-file /tmp/claude-0/web/pkg/root@/ -sFORCE_FILESYSTEM=1\n' % ' '.join('lib%s.a' % m for m in order))
+n.append('build WebPlayer.js: link Shell/Web_shell_WebMain.cpp.o %s\n  extra = --preload-file /tmp/claude-0/web/pkg/root@/ -sFORCE_FILESYSTEM=1\n' % ' '.join('lib%s.a' % m for m in order))
 open(os.path.join(OUT, 'build.ninja'), 'w').write('\n'.join(n))
 print('total', total)

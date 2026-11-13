@@ -28,6 +28,10 @@ typedef uint64_t GLuint64;
     // Core GLES
     #define glClearDepth glClearDepthf
 
+#ifdef __EMSCRIPTEN__
+extern "C" {
+#endif
+
     // OES_vertex_array_object
     GLvoid glBindVertexArray(GLuint array);
     GLvoid glDeleteVertexArrays(GLsizei n, const GLuint *arrays);
@@ -104,6 +108,9 @@ typedef uint64_t GLuint64;
 
 	// GLES 3.0 invalidate FBO
 	GLvoid glInvalidateFramebuffer(GLenum target, GLsizei numAttachments, const GLenum* attachments);
+#ifdef __EMSCRIPTEN__
+}
+#endif
 #endif
 
 // EXT_texture_compression_s3tc

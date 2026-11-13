@@ -26,10 +26,10 @@
     fail('This browser can not run the web player here (cross-origin isolation is off). Use a recent Chrome, Edge or Firefox.');
     return;
   }
+  var origin = location.protocol + '//' + location.host;
   var dpr = window.devicePixelRatio || 1;
   canvas.width = Math.floor(canvas.clientWidth * dpr);
   canvas.height = Math.floor(canvas.clientHeight * dpr);
-  var origin = location.protocol + '//' + location.host;
   window.Module = {
     canvas: canvas,
     rbxConfig: {
@@ -38,7 +38,8 @@
       width: canvas.width,
       height: canvas.height,
       touch: ('ontouchstart' in window) ? '1' : '0',
-      relayUrl: (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/webrelay'
+      proxyOrigin: origin,
+      relayUrl: params.get('relay') || ((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/webrelay')
     },
     setStatus: function (t) { if (t) status.textContent = t; },
     monitorRunDependencies: function (left) { if (left === 0) status.style.display = 'none'; },

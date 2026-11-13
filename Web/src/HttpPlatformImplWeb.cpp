@@ -6,8 +6,47 @@
 #include <sstream>
 #include <vector>
 #include <string>
+#include <ctype.h>
 
 LOGGROUP(Http)
+
+namespace RBX
+{
+namespace Web
+{
+std::string proxyOrigin;
+std::string proxyDomain;
+}
+}
+
+static std::string rewriteUrl(const std::string& url)
+{
+    const std::string& origin = RBX::Web::proxyOrigin;
+    const std::string& domain = RBX::Web::proxyDomain;
+    if (origin.empty() || domain.empty())
+        return url;
+    size_t p = url.find("://");
+    if (p == std::string::npos)
+        return url;
+    size_t hs = p + 3;
+    size_t he = url.find_first_of("/?#:", hs);
+    std::string host = url.substr(hs, he == std::string::npos ? std::string::npos : he - hs);
+    for (size_t i = 0; i < host.size(); ++i)
+        host[i] = tolower(host[i]);
+    std::string suffix = "." + domain;
+    if (host.size() <= suffix.size() || host.compare(host.size() - suffix.size(), std::string::npos, suffix) != 0)
+        return url;
+    std::string sub = host.substr(0, host.size() - suffix.size());
+    std::string rest = he == std::string::npos ? "/" : url.substr(he);
+    if (!rest.empty() && rest[0] == ':')
+    {
+        size_t slash = rest.find_first_of("/?#");
+        rest = slash == std::string::npos ? "/" : rest.substr(slash);
+    }
+    if (rest.empty() || rest[0] != '/')
+        rest = "/" + rest;
+    return origin + "/web/" + sub + rest;
+}
 
 namespace RBX
 {
@@ -112,8 +151,9 @@ void perform(HttpOptions& options, std::string& response)
         attr.requestDataSize = body.size();
     }
 
-    FASTLOGS(FLog::Http, "web fetch %s", options.url.c_str());
-    emscripten_fetch_t* f = emscripten_fetch(&attr, options.url.c_str());
+    std::string url = rewriteUrl(options.url);
+    FASTLOGS(FLog::Http, "web fetch %s", url.c_str());
+    emscripten_fetch_t* f = emscripten_fetch(&attr, url.c_str());
     if (!f)
         throw RBX::http_status_error(0, "fetch failed to start");
 

@@ -106,6 +106,15 @@ std::string getApiUrl()
 }
 }
 
+namespace RBX
+{
+namespace Web
+{
+extern std::string proxyOrigin;
+extern std::string proxyDomain;
+}
+}
+
 static std::string readConfig(const char* key, const char* fallback)
 {
     char* v = (char*)MAIN_THREAD_EM_ASM_INT({
@@ -126,7 +135,7 @@ static void tick()
     RBX::Web::processAppEvents();
 }
 
-int main(int argc, char** argv)
+int main()
 {
     using namespace RBX;
     Web::uiThread = pthread_self();
@@ -136,6 +145,14 @@ int main(int argc, char** argv)
     int width = atoi(readConfig("width", "1280").c_str());
     int height = atoi(readConfig("height", "720").c_str());
     bool touch = readConfig("touch", "0") == "1";
+
+    Web::proxyOrigin = readConfig("proxyOrigin", "");
+    {
+        size_t hs = baseUrl.find("://");
+        hs = hs == std::string::npos ? 0 : hs + 3;
+        std::string host = baseUrl.substr(hs, baseUrl.find_first_of("/:", hs) - hs);
+        Web::proxyDomain = host.compare(0, 4, "www.") == 0 ? host.substr(4) : host;
+    }
 
     std::string relayUrl = readConfig("relayUrl", "wss://www.finobe.wtf/webrelay");
     EMSCRIPTEN_WEBSOCKET_T bridge = emscripten_init_websocket_to_posix_socket_bridge(relayUrl.c_str());

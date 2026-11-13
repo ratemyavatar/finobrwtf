@@ -5,7 +5,7 @@
 #include "v8datamodel/UserController.h"
 #include "v8datamodel/Workspace.h"
 #include "v8datamodel/Camera.h"
-#include "v8datamodel/RunService.h"
+#include "util/RunStateOwner.h"
 
 #include <emscripten.h>
 #include <emscripten/html5.h>
