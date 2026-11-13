@@ -52,7 +52,21 @@
 #define connect__ connect
 #define socket__ socket
 #define bind__ bind
+#if defined(__EMSCRIPTEN__)
+#include <string.h>
+static inline int rbx_web_getsockname(int, struct sockaddr* address, socklen_t* address_len)
+{
+	if (address && address_len)
+	{
+		memset(address, 0, *address_len);
+		address->sa_family = AF_INET;
+	}
+	return 0;
+}
+#define getsockname__ rbx_web_getsockname
+#else
 #define getsockname__ getsockname
+#endif
 #define getsockopt__ getsockopt
 #define inet_addr__ inet_addr
 #define ioctlsocket__ ioctlsocket

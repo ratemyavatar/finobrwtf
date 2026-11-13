@@ -4,6 +4,7 @@
 
 #include <emscripten/fetch.h>
 #include <sstream>
+#include <stdio.h>
 #include <vector>
 #include <string>
 #include <ctype.h>
@@ -152,6 +153,8 @@ void perform(HttpOptions& options, std::string& response)
     }
 
     std::string url = rewriteUrl(options.url);
+    if (!RBX::Web::proxyOrigin.empty() && url.compare(0, RBX::Web::proxyOrigin.size(), RBX::Web::proxyOrigin) != 0)
+        throw RBX::http_status_error(0, "blocked request to another site");
     FASTLOGS(FLog::Http, "web fetch %s", url.c_str());
     emscripten_fetch_t* f = emscripten_fetch(&attr, url.c_str());
     if (!f)

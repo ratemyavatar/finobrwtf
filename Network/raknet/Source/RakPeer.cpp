@@ -458,12 +458,14 @@ StartupResult RakPeer::Startup( unsigned short maxConnections, SocketDescriptor 
 			rns->boundAddress.SetToLoopback(4);
 #endif
 
+#ifndef __EMSCRIPTEN__
 		int zero=0;
 		if (SocketLayer::SendTo((SOCKET)rns->s, (const char*) &zero,4,rns->boundAddress, rns->remotePortRakNetWasStartedOn_PS3_PSP2, rns->extraSocketOptions, _FILE_AND_LINE_)!=0)
 		{
 			DerefAllSockets();
 			return SOCKET_FAILED_TEST_SEND;
 		}
+#endif
 
 		socketList.Push(rns, _FILE_AND_LINE_ );
 

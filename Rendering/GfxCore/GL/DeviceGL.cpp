@@ -64,7 +64,11 @@ static DeviceCapsGL createDeviceCaps(ContextGL* context, const std::set<std::str
     const char* renderer = reinterpret_cast<const char*>(glGetString(GL_RENDERER));
 	const char* version = reinterpret_cast<const char*>(glGetString(GL_VERSION));
     
+#ifdef __EMSCRIPTEN__
+    bool version3 = strncmp(version, "OpenGL ES ", 10) == 0 && version[10] >= '3';
+#else
     bool version3 = FFlag::GraphicsGL3 && strncmp(version, "OpenGL ES ", 10) == 0 && version[10] >= '3';
+#endif
     
     DeviceCapsGL caps;
     
@@ -80,7 +84,11 @@ static DeviceCapsGL createDeviceCaps(ContextGL* context, const std::set<std::str
     caps.supportsStencil = stencilBits >= 8;
     caps.supportsIndex32 = version3 || extensions.count("GL_OES_element_index_uint");
     
+#ifdef __EMSCRIPTEN__
+    caps.supportsTextureDXT = extensions.count("GL_WEBGL_compressed_texture_s3tc") || extensions.count("WEBGL_compressed_texture_s3tc") || extensions.count("GL_EXT_texture_compression_s3tc");
+#else
     caps.supportsTextureDXT = false;
+#endif
     caps.supportsTexturePVR = extensions.count("GL_IMG_texture_compression_pvrtc");
     caps.supportsTextureHalfFloat = version3 || extensions.count("GL_OES_texture_half_float");
     caps.supportsTexture3D = version3;
@@ -122,6 +130,11 @@ static DeviceCapsGL createDeviceCaps(ContextGL* context, const std::set<std::str
     caps.extDebugMarkers = extensions.count("GL_EXT_debug_marker");
     caps.extSync = version3;
     
+#ifdef __EMSCRIPTEN__
+    caps.extMapBuffer = false;
+    caps.extMapBufferRange = false;
+#endif
+
     return caps;
 }
 #else

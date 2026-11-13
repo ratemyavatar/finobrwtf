@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Finobe Web Player</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #000; color: #fff; font-family: sans-serif; overflow: hidden; }
+  #canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; outline: none; }
+  #status { position: absolute; left: 0; right: 0; top: 45%; text-align: center; font-size: 15px; }
+  #status.error { color: #ff6b6b; }
+  #kb { position: absolute; opacity: 0; left: -1000px; }
+</style>
+</head>
+<body>
+<canvas id="canvas" tabindex="0" oncontextmenu="event.preventDefault()"></canvas>
+<div id="status">Loading Finobe...</div>
+<input id="kb" type="text" autocomplete="off">
+<script>
+(function () {
+  var status = document.getElementById('status');
+  var canvas = document.getElementById('canvas');
+  var params = new URLSearchParams(location.search);
+  function fail(msg) { status.className = 'error'; status.style.display = 'block'; status.textContent = msg; }
+  if (!window.crossOriginIsolated || typeof SharedArrayBuffer === 'undefined') {
+    fail('This browser can not run the web player here (cross-origin isolation is off). Use a recent Chrome, Edge or Firefox.');
+    return;
+  }
+  var origin = location.protocol + '//' + location.host;
+  var dpr = window.devicePixelRatio || 1;
+  canvas.width = Math.floor(canvas.clientWidth * dpr);
+  canvas.height = Math.floor(canvas.clientHeight * dpr);
+  window.Module = {
+    canvas: canvas,
+    rbxConfig: {
+      baseUrl: params.get('base') || (location.protocol + '//www.finobe.wtf/'),
+      placeId: params.get('placeId') || '0',
+      width: canvas.width,
+      height: canvas.height,
+      touch: ('ontouchstart' in window) ? '1' : '0',
+      proxyOrigin: origin,
+      relayUrl: params.get('relay') || ((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/webrelay')
+    },
+    setStatus: function (t) { if (t) status.textContent = t; },
+    monitorRunDependencies: function (left) { if (left === 0) status.style.display = 'none'; },
+    onExitGame: function (err) { if (err) fail('Disconnected: ' + err); else location.href = origin + '/'; },
+    showKeyboard: function () { document.getElementById('kb').focus(); },
+    hideKeyboard: function () { canvas.focus(); },
+    print: function (t) { console.log(t); },
+    printErr: function (t) { console.warn(t); },
+    onAbort: function (what) { fail('The player crashed: ' + what); }
+  };
+  var s = document.createElement('script');
+  s.src = 'WebPlayer.js';
+  s.onerror = function () { fail('Could not load the web player.'); };
+  document.body.appendChild(s);
+})();
+</script>
+</body>
+</html>
