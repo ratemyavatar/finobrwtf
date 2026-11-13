@@ -253,7 +253,7 @@ Route::middleware([Moderation::class, SerializeWrites::class])->group(function (
     Route::domain('prod1-setup.' . $domain)->group(base_path('routes/services/setup.php'));
     Route::domain('versioncompatibility.' . $domain)->group(base_path('routes/services/versioncompatibility.php'));
 
-    Route::domain('api.' . $domain)->group(function () {
+    $apiRoutes = function () {
         Route::get('/universes/validate-place-join', [rbxAPIs::class, 'validatePlaceJoin']);
         Route::any('/marketplace/productinfo', [rbxAPIs::class, 'productInfo']);
         Route::get('/ownership/hasasset', [\App\Http\Controllers\Client\MarketplaceController::class, 'ownsAsset']);
@@ -262,5 +262,18 @@ Route::middleware([Moderation::class, SerializeWrites::class])->group(function (
         Route::post('/marketplace/purchase', [\App\Http\Controllers\Client\MarketplaceController::class, 'purchase'])->middleware('limit:30,1');
         Route::post('/login/v1', [\App\Http\Controllers\Client\LoginApiController::class, 'login'])->middleware('limit:10,1');
         Route::post('/mobileapi/login', [\App\Http\Controllers\Client\LoginApiController::class, 'mobile'])->middleware('limit:10,1');
-    });
+    };
+    Route::domain('api.' . $domain)->group($apiRoutes);
+
+    $webServices = [
+        'www' => 'assetgame',
+        'assetgame' => 'assetgame',
+        'clientsettings' => 'clientsettings',
+        'gamepersistence' => 'gamepersistence',
+        'versioncompatibility' => 'versioncompatibility',
+    ];
+    foreach ($webServices as $sub => $file) {
+        Route::domain($siteHost)->prefix('web/' . $sub)->name('web.' . $sub . '.')->group(base_path('routes/services/' . $file . '.php'));
+    }
+    Route::domain($siteHost)->prefix('web/api')->name('web.api.')->group($apiRoutes);
 });

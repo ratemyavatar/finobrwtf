@@ -21,9 +21,13 @@ class NormalizeClientPaths
             return redirect()->away($request->getScheme() . "://www.{$domain}{$lower}" . ($query ? '?' . $query : ''));
         }
 
+        $webProxied = $host === $domain
+            && (str_starts_with($lower, '/web/www/') || str_starts_with($lower, '/web/assetgame/'));
+
         if ($lower !== $path
-            && in_array($host, ["www.{$domain}", "assetgame.{$domain}"], true)
-            && !str_starts_with($lower, '/api/gameserver/')) {
+            && ($webProxied || in_array($host, ["www.{$domain}", "assetgame.{$domain}"], true))
+            && !str_starts_with($lower, '/api/gameserver/')
+            && !preg_match('#^/web/[a-z]+/api/gameserver/#', $lower)) {
             $server = $request->server->all();
             $query = $request->server->get('QUERY_STRING');
             $server['REQUEST_URI'] = $lower . ($query !== null && $query !== '' ? '?' . $query : '');
