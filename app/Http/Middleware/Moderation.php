@@ -93,6 +93,13 @@ final class Moderation
         return $request->isMethod('post') && $request->path() === '/';
     }
 
+    public static function restricted(User $user): bool
+    {
+        $moderation = new self();
+
+        return $moderation->activeWarning($user) !== null || $moderation->activeBan($user) !== null;
+    }
+
     private function activeWarning(User $user): ?object
     {
         return DB::connection('finobe')->table('warning')

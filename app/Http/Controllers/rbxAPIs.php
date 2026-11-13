@@ -97,6 +97,15 @@ class rbxAPIs extends Controller
         if (($data['id'] ?? null) === 'admin') {
             return $this->adminModel();
         }
+        if (($data['id'] ?? null) === 'studiodecal') {
+            return \App\Http\Controllers\Studio\StudioDataController::decal((int) ($data['target'] ?? 0));
+        }
+        if (($data['id'] ?? null) === 'studiosound') {
+            return \App\Http\Controllers\Studio\StudioDataController::audio((int) ($data['target'] ?? 0));
+        }
+        if (($data['id'] ?? null) === 'template') {
+            return \App\Http\Controllers\Studio\StudioDataController::templateFile((string) ($data['name'] ?? ''));
+        }
         if (($data['id'] ?? null) === 'dance') {
             return $this->danceAsset((string) ($data['name'] ?? ''));
         }

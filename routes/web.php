@@ -252,6 +252,8 @@ Route::middleware([Moderation::class, SerializeWrites::class])->group(function (
     Route::domain('clientsettings.' . $domain)->group(base_path('routes/services/clientsettings.php'));
     Route::domain('clientsettings.api.' . $domain)->name('api.')->group(base_path('routes/services/clientsettings.php'));
     Route::domain('assetgame.' . $domain)->name('assetgame.')->group(base_path('routes/services/assetgame.php'));
+    Route::domain('www.' . $domain)->group(base_path('routes/services/studio.php'));
+    Route::domain('assetgame.' . $domain)->name('assetgame.')->group(base_path('routes/services/studio.php'));
     Route::domain('www.' . $domain)->group(base_path('routes/services/assetgame.php'));
     Route::domain('gamepersistence.' . $domain)->group(base_path('routes/services/gamepersistence.php'));
     Route::domain('prod1-setup.' . $domain)->group(base_path('routes/services/setup.php'));
@@ -266,6 +268,12 @@ Route::middleware([Moderation::class, SerializeWrites::class])->group(function (
         Route::post('/marketplace/purchase', [\App\Http\Controllers\Client\MarketplaceController::class, 'purchase'])->middleware('limit:30,1');
         Route::post('/login/v1', [\App\Http\Controllers\Client\LoginApiController::class, 'login'])->middleware('limit:10,1');
         Route::post('/mobileapi/login', [\App\Http\Controllers\Client\LoginApiController::class, 'mobile'])->middleware('limit:10,1');
+        Route::get('/universes/get-universe-containing-place', [\App\Http\Controllers\Studio\StudioDataController::class, 'universeOfPlace']);
+        Route::get('/universes/get-info', [\App\Http\Controllers\Studio\StudioDataController::class, 'universeInfo']);
+        Route::get('/universes/get-universe-places', [\App\Http\Controllers\Studio\StudioDataController::class, 'universePlaces']);
+        Route::get('/universes/{universeId}/cloudeditenabled', fn () => response()->json(['enabled' => false]))->whereNumber('universeId');
+        Route::get('/universes/{universeId}/game-start-info', [\App\Http\Controllers\Studio\StudioDataController::class, 'gameStartInfo'])->whereNumber('universeId');
+        Route::get('/users/{userId}/canmanage/{assetId}', [\App\Http\Controllers\Studio\StudioDataController::class, 'canManage'])->whereNumber(['userId', 'assetId']);
     };
     Route::domain('api.' . $domain)->group($apiRoutes);
 

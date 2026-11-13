@@ -59,7 +59,7 @@ final class AssetApprovalController extends Controller
             ? (string) $media['textureAssetId']
             : null;
         $asset->type_name = match ((int) $asset->asset_type) {
-            2 => 'T-Shirt', 3 => 'Audio', 8 => 'Hat', 9 => 'Place',
+            2 => 'T-Shirt', 3 => 'Audio', 8 => 'Hat', 9 => 'Place', 10 => 'Model',
             11 => 'Shirt', 12 => 'Pants', 18 => 'Face', default => 'Asset',
         };
         $asset->uploader = $asset->uploader ?: 'User #' . $asset->author;

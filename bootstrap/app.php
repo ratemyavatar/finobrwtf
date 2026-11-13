@@ -41,6 +41,10 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias(['admin' => \App\Http\Middleware\RequireAdmin::class, 'limit' => \App\Http\Middleware\LimitRoute::class]);
         $middleware->validateCsrfTokens([
             '/marketplace/productinfo',
+            '/data/upload.ashx',
+            '/game/logout.aspx',
+            '/data/newasset.ashx',
+            '/error/dmp.ashx',
             '/login/v1',
             '/mobileapi/login',
             '/asset/getscriptstate.ashx',

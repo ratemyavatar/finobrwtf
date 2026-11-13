@@ -63,6 +63,16 @@ class AuthenticationController extends Controller
         return response('');
     }
 
+    public function clientLogout(Request $request)
+    {
+        $clientSession = $request->cookie(self::CLIENT_COOKIE);
+        if (is_string($clientSession) && $clientSession !== '') {
+            Cache::forget("client_session_{$clientSession}");
+        }
+
+        return response('')->withCookie(cookie()->forget(self::CLIENT_COOKIE, '/', config('session.domain') ?: '.' . config('finobe.domain')));
+    }
+
     public function getCurrentUser(Request $request)
     {
         $id = Auth::id() ?? self::clientUserId($request);

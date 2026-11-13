@@ -25,7 +25,7 @@ class NormalizeClientPaths
             && (str_starts_with($lower, '/web/www/') || str_starts_with($lower, '/web/assetgame/'));
 
         if ($lower !== $path
-            && ($webProxied || in_array($host, ["www.{$domain}", "assetgame.{$domain}"], true))
+            && ($webProxied || in_array($host, ["www.{$domain}", "assetgame.{$domain}", "api.{$domain}"], true))
             && !str_starts_with($lower, '/api/gameserver/')
             && !preg_match('#^/web/[a-z]+/api/gameserver/#', $lower)) {
             $server = $request->server->all();
