@@ -243,7 +243,14 @@ class Converter:
         self.game = game
         self.services = services
         holder = None
-        rs = services['ReplicatedStorage']
+        rs = services.get('ReplicatedStorage')
+        if rs is None:
+            rs = Inst('ReplicatedStorage', -1)
+            rs.set('Name', 'string', b'ReplicatedStorage')
+            rs.parent = game
+            rs.children = []
+            game.children.append(rs)
+            services['ReplicatedStorage'] = rs
         for r in self.roots:
             if r.cls in FOLDER_SERVICES and r.children:
                 if holder is None:
@@ -622,7 +629,14 @@ class Converter:
         visit(layer, 1)
 
     def add_runtime(self, services):
-        rs = services['ReplicatedStorage']
+        rs = services.get('ReplicatedStorage')
+        if rs is None:
+            rs = Inst('ReplicatedStorage', -1)
+            rs.set('Name', 'string', b'ReplicatedStorage')
+            rs.parent = self.game
+            rs.children = []
+            self.game.children.append(rs)
+            services['ReplicatedStorage'] = rs
         mod = self.new('ModuleScript', '__Compat2016', rs)
         mod.set('Source', 'ProtectedString', self.compat)
         remote = self.new('RemoteEvent', '__compat_remote', rs)

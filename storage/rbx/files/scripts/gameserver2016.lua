@@ -625,7 +625,7 @@ game:GetService("RunService"):Run()
 local function shutdown()
 	pcall(function() game:HttpGet(url .. "/api/gameserver/shutdown/" .. game.JobId .. auth) end)
 end
-game.OnClose = shutdown
+pcall(function() game.OnClose = shutdown end)
 
 spawn(function()
 	local startedAt = tick()
