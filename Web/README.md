@@ -32,8 +32,10 @@ ninja -C /tmp/web/b WebPlayer.js
 
 ## networking
 
-browsers can't send udp, so raknet's sockets go over a websocket to `tools/webrelay` on the site
-(emscripten's posix socket proxy with an allow list, so it only reaches game servers).
+browsers can't send udp, so raknet's udp socket is swapped for a websocket to `tools/webrelay`
+on the site (`/webrelay?udp=1`). every datagram is one binary message: 4 bytes ipv4, 2 bytes port,
+then the payload. the relay pushes packets as they arrive, so nothing waits on a round trip.
+it only talks to game server ips in `WEBRELAY_ALLOW`.
 
 ## loading
 

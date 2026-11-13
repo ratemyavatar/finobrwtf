@@ -12,7 +12,6 @@
 #include <emscripten.h>
 #include <emscripten/threading.h>
 #include <emscripten/websocket.h>
-#include <emscripten/posix_socket.h>
 #include <unistd.h>
 #include <deque>
 #include <string>
@@ -111,6 +110,7 @@ namespace RBX
 namespace Web
 {
 extern std::string proxyOrigin;
+extern std::string udpRelayUrl;
 extern std::string proxyDomain;
 }
 }
@@ -155,20 +155,7 @@ int main()
     }
 
     std::string relayUrl = readConfig("relayUrl", "wss://www.finobe.wtf/webrelay");
-    EMSCRIPTEN_WEBSOCKET_T bridge = emscripten_init_websocket_to_posix_socket_bridge(relayUrl.c_str());
-    for (int i = 0; i < 1000; ++i)
-    {
-        unsigned short state = 0;
-        emscripten_websocket_get_ready_state(bridge, &state);
-        if (state == 1)
-            break;
-        if (state > 1)
-        {
-            fprintf(stderr, "[web] relay connection failed: %s\n", relayUrl.c_str());
-            break;
-        }
-        usleep(10000);
-    }
+    Web::udpRelayUrl = relayUrl + (relayUrl.find('?') == std::string::npos ? "?udp=1" : "&udp=1");
 
     JNI::fileSystemCacheDir = "/cache";
     JNI::fileSystemFilesDir = "/files";
