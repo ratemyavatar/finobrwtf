@@ -26,7 +26,7 @@ static const double kAnimLength = 2.f;
 
 #ifdef RBX_PLATFORM_IOS
 static const char* kTextureExt = "pvr";
-#elif (defined(__ANDROID__) || defined(__EMSCRIPTEN__))
+#elif defined(__ANDROID__)
 static const char* kTextureExt = "pvr";
 #else
 static const char* kTextureExt = "dds";

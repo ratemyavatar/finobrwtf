@@ -178,6 +178,9 @@ void perform(HttpOptions& options, std::string& response)
 #include <boost/thread/mutex.hpp>
 #include <set>
 #include <fstream>
+#include <map>
+#include <set>
+#include <cctype>
 #include <mutex>
 #include <pthread.h>
 
@@ -234,21 +237,50 @@ bool fetchContentFile(const std::string& relative, const std::string& target)
     return ok;
 }
 
+static std::string lowerPath(const std::string& s)
+{
+    std::string r(s);
+    for (size_t i = 0; i < r.size(); ++i)
+        r[i] = (char)tolower((unsigned char)r[i]);
+    return r;
+}
+
+static void loadManifest(const char* path, std::set<std::string>& names, std::map<std::string, std::string>& folded)
+{
+    std::ifstream in(path);
+    std::string line;
+    while (std::getline(in, line))
+        if (!line.empty())
+        {
+            names.insert(line);
+            folded.insert(std::make_pair(lowerPath(line), line));
+        }
+}
+
 bool fetchAssetFile(const std::string& name, const std::string& platformTarget, const std::string& contentTarget)
 {
     static std::once_flag once;
     static std::set<std::string>* platformFiles = new std::set<std::string>();
+    static std::map<std::string, std::string>* platformFolded = new std::map<std::string, std::string>();
+    static std::set<std::string>* contentFiles = new std::set<std::string>();
+    static std::map<std::string, std::string>* contentFolded = new std::map<std::string, std::string>();
     std::call_once(once, [] {
-        std::ifstream in("/pcfiles.txt");
-        std::string line;
-        while (std::getline(in, line))
-            if (!line.empty())
-                platformFiles->insert(line);
+        loadManifest("/pcfiles.txt", *platformFiles, *platformFolded);
+        loadManifest("/contentfiles.txt", *contentFiles, *contentFolded);
     });
     if (platformFiles->empty())
         return fetchContentFile("PlatformContent/pc/" + name, platformTarget) || fetchContentFile("content/" + name, contentTarget);
     if (platformFiles->count(name))
         return fetchContentFile("PlatformContent/pc/" + name, platformTarget);
+    if (contentFiles->empty() || contentFiles->count(name))
+        return fetchContentFile("content/" + name, contentTarget);
+    std::string folded = lowerPath(name);
+    std::map<std::string, std::string>::const_iterator it = platformFolded->find(folded);
+    if (it != platformFolded->end())
+        return fetchContentFile("PlatformContent/pc/" + it->second, platformTarget);
+    it = contentFolded->find(folded);
+    if (it != contentFolded->end())
+        return fetchContentFile("content/" + it->second, contentTarget);
     return fetchContentFile("content/" + name, contentTarget);
 }
 }

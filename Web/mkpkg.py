@@ -19,3 +19,11 @@ for d, _, files in os.walk(pc):
 with open(os.path.join(pkg, 'pcfiles.txt'), 'w') as f:
     f.write('\n'.join(sorted(names)) + '\n')
 print(pkg, len(names))
+content = os.path.join(root, 'content')
+cnames = []
+for d, _, files in os.walk(content):
+    for f in files:
+        cnames.append(os.path.relpath(os.path.join(d, f), content).replace(os.sep, '/'))
+with open(os.path.join(pkg, 'contentfiles.txt'), 'w') as f:
+    f.write('\n'.join(sorted(cnames)) + '\n')
+print('content', len(cnames))

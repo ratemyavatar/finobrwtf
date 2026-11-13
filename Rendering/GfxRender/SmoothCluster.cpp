@@ -224,7 +224,7 @@ const shared_ptr<VertexLayout>& SmoothClusterBase::getVertexLayout()
 
 #ifdef RBX_PLATFORM_IOS
 static const std::string kTextureExtension = ".pvr";
-#elif (defined(__ANDROID__) || defined(__EMSCRIPTEN__))
+#elif defined(__ANDROID__)
 static const std::string kTextureExtension = ".pvr";
 #else
 static const std::string kTextureExtension = ".dds";

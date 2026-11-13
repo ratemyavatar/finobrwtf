@@ -49,7 +49,7 @@ DYNAMIC_FASTINTVARIABLE(LuaChatFloodCheckMessages, 7)
 DYNAMIC_FASTINTVARIABLE(LuaChatFloodCheckInterval, 15)
 FASTFLAGVARIABLE(LuaChatFiltering, false)
 
-DYNAMIC_FASTFLAGVARIABLE(GetFocusedTextBoxEnabled, false)
+DYNAMIC_FASTFLAGVARIABLE(GetFocusedTextBoxEnabled, true)
 
 FASTFLAGVARIABLE(FlyCamOnRenderStep, false)
 

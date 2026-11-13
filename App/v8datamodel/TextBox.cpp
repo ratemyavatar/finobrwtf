@@ -13,7 +13,7 @@
 
 DYNAMIC_FASTFLAGVARIABLE(DisplayTextBoxTextWhileTypingMobile, false)
 DYNAMIC_FASTFLAGVARIABLE(PasteWithCapsLockOn, false)
-DYNAMIC_FASTFLAGVARIABLE(TextBoxIsFocusedEnabled, false)
+DYNAMIC_FASTFLAGVARIABLE(TextBoxIsFocusedEnabled, true)
 
 #define CURSOR_BLINK_RATE_SECONDS 0.3f
 

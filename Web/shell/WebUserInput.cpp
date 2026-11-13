@@ -234,6 +234,19 @@ void WebUserInput::processInput()
     for (size_t i = 0; i < events.size(); ++i)
     {
         const Event& e = events[i];
+        if (e.kind == EV_MOUSEBUTTON && e.b == 0 && i > 0)
+        {
+            bool pressedThisFrame = false;
+            for (size_t j = 0; j < i; ++j)
+                if (events[j].kind == EV_MOUSEBUTTON && events[j].b != 0 && events[j].a == e.a)
+                    pressedThisFrame = true;
+            if (pressedThisFrame)
+            {
+                boost::mutex::scoped_lock l(lock);
+                queue.insert(queue.begin(), events.begin() + i, events.end());
+                break;
+            }
+        }
         switch (e.kind)
         {
         case EV_KEY:

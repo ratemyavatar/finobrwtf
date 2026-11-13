@@ -82,8 +82,72 @@ float lua_tofloat(lua_State *L, int idx)
 template<>
 const char* Bridge<G3D::Color3>::className("Color3");
 
+static int color3FromRGB(lua_State *L)
+{
+	float c[3];
+	for (int i = 0; i < 3; i++)
+		c[i] = (i < lua_gettop(L) ? lua_tofloat(L, i + 1) : 0.0f) / 255.0f;
+	Bridge<G3D::Color3>::pushNewObject(L, G3D::Color3(c[0], c[1], c[2]));
+	return 1;
+}
+
+static int color3FromHSV(lua_State *L)
+{
+	float h = lua_tofloat(L, 1), s = lua_tofloat(L, 2), v = lua_tofloat(L, 3);
+	h = h - floorf(h);
+	float r = v, g = v, b = v;
+	if (s > 0.0f)
+	{
+		float hh = h * 6.0f;
+		int i = (int)floorf(hh) % 6;
+		float f = hh - floorf(hh);
+		float p = v * (1.0f - s), q = v * (1.0f - s * f), t = v * (1.0f - s * (1.0f - f));
+		switch (i)
+		{
+		case 0: r = v; g = t; b = p; break;
+		case 1: r = q; g = v; b = p; break;
+		case 2: r = p; g = v; b = t; break;
+		case 3: r = p; g = q; b = v; break;
+		case 4: r = t; g = p; b = v; break;
+		default: r = v; g = p; b = q; break;
+		}
+	}
+	Bridge<G3D::Color3>::pushNewObject(L, G3D::Color3(r, g, b));
+	return 1;
+}
+
+static int color3ToHSV(lua_State *L)
+{
+	G3D::Color3& c = Bridge<G3D::Color3>::getObject(L, 1);
+	float mx = std::max(c.r, std::max(c.g, c.b)), mn = std::min(c.r, std::min(c.g, c.b));
+	float d = mx - mn, h = 0.0f;
+	if (d > 0.0f)
+	{
+		if (mx == c.r) h = (c.g - c.b) / d + (c.g < c.b ? 6.0f : 0.0f);
+		else if (mx == c.g) h = (c.b - c.r) / d + 2.0f;
+		else h = (c.r - c.g) / d + 4.0f;
+		h /= 6.0f;
+	}
+	lua_pushnumber(L, h);
+	lua_pushnumber(L, mx > 0.0f ? d / mx : 0.0f);
+	lua_pushnumber(L, mx);
+	return 3;
+}
+
+static int lerpColor3(lua_State *L)
+{
+	G3D::Color3& self = Bridge<G3D::Color3>::getObject(L, 1);
+	G3D::Color3& c = Bridge<G3D::Color3>::getObject(L, 2);
+	float a = lua_tofloat(L, 3);
+	Bridge<G3D::Color3>::pushNewObject(L, G3D::Color3(self.r + (c.r - self.r) * a, self.g + (c.g - self.g) * a, self.b + (c.b - self.b) * a));
+	return 1;
+}
+
 const luaL_reg Color3Bridge::classLibrary[] = {
 	{"new", newColor3},
+	{"fromRGB", color3FromRGB},
+	{"fromHSV", color3FromHSV},
+	{"toHSV", color3ToHSV},
 	{NULL, NULL}
 };
     
@@ -132,8 +196,12 @@ int Bridge<G3D::Color3>::on_index(const G3D::Color3& object, const char* name, l
 		lua_pushnumber(L, object.b);
 		return 1;
 	}
+	if (strcmp(name,"lerp")==0 || strcmp(name,"Lerp")==0)
+	{
+		lua_pushcfunction(L, lerpColor3);
+		return 1;
+	}
 
-	// Failure
 	throw RBX::runtime_error("%s is not a valid member", name);
 }
 

@@ -12,7 +12,7 @@ FASTSTRINGVARIABLE(GroupAlliesUrl, "%sgroups/%i/allies")
 FASTSTRINGVARIABLE(GroupEnemiesUrl, "%sgroups/%i/enemies")
 FASTSTRINGVARIABLE(GetGroupsUrl, "%susers/%i/groups")
 
-DYNAMIC_FASTFLAGVARIABLE(GetGroupsAsyncEnabled, false)
+DYNAMIC_FASTFLAGVARIABLE(GetGroupsAsyncEnabled, true)
 
 namespace RBX
 {
