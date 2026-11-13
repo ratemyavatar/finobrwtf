@@ -41,6 +41,14 @@ only shaders and fonts are in `WebPlayer.data` (about 4 mb). every other content
 the first time the game asks for it, from `/play/web/files/content/...` or
 `/play/web/files/PlatformContent/pc/...`.
 
+the page itself shows a copy of the 2016 loading screen (game name, creator, spinner, close button)
+until the engine's own loading screen is up, so there's no blank page while it starts.
+
+## devices
+
+needs webgl (2 is used when there, 1 otherwise) and cross-origin isolation. gpus without dxt
+(most arm chromebooks and phones) are fine, the engine decodes dxt textures on the cpu.
+
 ## serving
 
 the page needs `Cross-Origin-Opener-Policy: same-origin` and `Cross-Origin-Embedder-Policy: require-corp`
@@ -67,6 +75,7 @@ location = /webrelay {
     proxy_http_version 1.1;
     proxy_set_header Upgrade $http_upgrade;
     proxy_set_header Connection "upgrade";
+    proxy_set_header Cookie "";
     proxy_read_timeout 3600;
 }
 ```

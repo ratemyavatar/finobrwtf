@@ -168,6 +168,14 @@ static void joinGamePlaceId(StartGameParams sgp, shared_ptr<RBX::Game> game)
     {
         int retrys = 5;
 
+        if (sgp.placeId > 0)
+        {
+            boost::shared_ptr<RBX::DataModel> dataModel = game->getDataModel();
+            RBX::DataModel::LegacyLock lock(dataModel, RBX::DataModelJob::Write);
+            if (dataModel->getPlaceID() <= 0)
+                dataModel->setPlaceID(sgp.placeId, false);
+        }
+
         RBX::StandardOut::singleton()->printf(RBX::MESSAGE_INFO,"PlaceLauncher::joinGamePlaceId placeId = %i, userId = %d, accessCode = %s, gameId = %s, joinRequestType: %d\n", sgp.placeId, sgp.userId, sgp.accessCode.c_str(), sgp.gameId.c_str(), sgp.joinRequestType);
 
         const char* base = GetBaseURL().c_str();

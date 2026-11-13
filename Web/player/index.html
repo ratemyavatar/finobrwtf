@@ -5,50 +5,139 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Finobe Web Player</title>
 <style>
-  html, body { margin: 0; height: 100%; background: #000; color: #fff; font-family: sans-serif; overflow: hidden; }
+  @font-face { font-family: 'RbxSourceSans'; src: url('files/content/fonts/SourceSansPro-Regular.ttf'); }
+  @font-face { font-family: 'RbxSourceSans'; font-weight: bold; src: url('files/content/fonts/SourceSansPro-Bold.ttf'); }
+  html, body { margin: 0; height: 100%; background: #2d2d2d; color: #fff; font-family: 'RbxSourceSans', sans-serif; overflow: hidden; }
   #canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; outline: none; }
-  #status { position: absolute; left: 0; right: 0; top: 45%; text-align: center; font-size: 15px; }
-  #status.error { color: #ff6b6b; }
   #kb { position: absolute; opacity: 0; left: -1000px; }
+  #loading { position: absolute; inset: 0; z-index: 5; background-color: #2d2d2d; background-image: url('files/content/textures/loading/darkLoadingTexture.png'); background-repeat: repeat; background-size: 512px 512px; background-position: 0 0; transition: opacity .6s; }
+  #loading.gone { opacity: 0; pointer-events: none; }
+  #close { position: absolute; right: 5px; top: 5px; width: 32px; height: 32px; padding: 0; border: 0; background: url('files/content/textures/loading/cancelButton.png') center / 32px 32px no-repeat; cursor: pointer; opacity: 0; pointer-events: none; transition: opacity .6s; }
+  #close.shown { opacity: 1; pointer-events: auto; }
+  #spinner { position: absolute; right: 105px; bottom: 45px; width: 120px; height: 120px; }
+  #spinner img { position: absolute; inset: 0; width: 100%; height: 100%; animation: spin 2s linear infinite; }
+  #spinner span { position: absolute; left: 28px; width: 64px; top: 0; bottom: 0; display: flex; align-items: center; font-size: 18px; white-space: nowrap; }
+  #info { position: absolute; left: 100px; bottom: 40px; width: 40%; height: 110px; }
+  #place { position: absolute; left: 0; top: 0; width: 100%; height: 80px; display: flex; align-items: flex-end; line-height: 1; overflow: hidden; }
+  #creator { position: absolute; left: 0; top: 80px; width: 100%; height: 30px; font-size: 24px; line-height: 1.1; white-space: nowrap; overflow: hidden; }
+  #place, #creator { text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000; }
+  #error { position: absolute; left: 25%; top: 0; width: 50%; min-height: 80px; z-index: 8; background: rgba(253, 68, 72, .9); font-weight: bold; font-size: 14px; display: none; align-items: center; justify-content: center; text-align: center; padding: 0 12px; box-sizing: border-box; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @media (max-height: 500px) and (pointer: coarse) {
+    #spinner { right: 5px; bottom: 5px; width: 70px; height: 70px; }
+    #spinner span { left: 12px; width: 56px; font-size: 12px; }
+    #info { left: 20px; bottom: 10px; }
+  }
 </style>
 </head>
 <body>
 <canvas id="canvas" tabindex="0" oncontextmenu="event.preventDefault()"></canvas>
-<div id="status">Loading Finobe...</div>
+<div id="loading">
+  <button id="close" type="button" aria-label="Close"></button>
+  <div id="info"><div id="place"></div><div id="creator"></div></div>
+  <div id="spinner"><img src="files/content/textures/loading/loadingCircle.png" alt=""><span id="dots">Loading...</span></div>
+</div>
+<div id="error"></div>
 <input id="kb" type="text" autocomplete="off">
 <script>
 (function () {
-  var status = document.getElementById('status');
   var canvas = document.getElementById('canvas');
+  var loading = document.getElementById('loading');
+  var errorBox = document.getElementById('error');
   var params = new URLSearchParams(location.search);
-  function fail(msg) { status.className = 'error'; status.style.display = 'block'; status.textContent = msg; }
+  var origin = location.protocol + '//' + location.host;
+  var placeId = parseInt(params.get('placeId') || '0', 10) || 0;
+  var exitUrl = placeId > 0 ? origin + '/place/' + placeId : origin + '/';
+  var named = false;
+
+  function fail(msg) { errorBox.textContent = msg; errorBox.style.display = 'flex'; showClose(); }
+  function showClose() { document.getElementById('close').className = 'shown'; }
+  function hideLoading() { loading.className = 'gone'; setTimeout(function () { loading.style.display = 'none'; }, 700); }
+
+  document.getElementById('close').onclick = function () { location.href = exitUrl; };
+  setTimeout(showClose, 5000);
+
+  var dots = '...';
+  var dotTimer = setInterval(function () {
+    if (named) { document.getElementById('dots').textContent = 'Loading...'; return; }
+    dots = dots === '...' ? '' : dots + '.';
+    document.getElementById('dots').textContent = 'Loading' + dots;
+  }, 200);
+
+  function fitPlace() {
+    var el = document.getElementById('place');
+    var size = 64;
+    el.style.fontSize = size + 'px';
+    el.style.whiteSpace = 'nowrap';
+    while (size > 18 && el.scrollWidth > el.clientWidth) { size -= 2; el.style.fontSize = size + 'px'; }
+    if (el.scrollWidth > el.clientWidth) el.style.whiteSpace = 'normal';
+  }
+
+  if (placeId > 0) {
+    fetch(origin + '/web/api/marketplace/productinfo?assetId=' + placeId, { credentials: 'same-origin' })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (info) {
+        if (!info || !info.Name) return;
+        document.getElementById('place').textContent = info.Name;
+        if (info.Creator && info.Creator.Name) document.getElementById('creator').textContent = 'By ' + info.Creator.Name;
+        named = true;
+        fitPlace();
+      })
+      .catch(function () {});
+  }
+  window.addEventListener('resize', function () { if (named) fitPlace(); });
+
   if (!window.crossOriginIsolated || typeof SharedArrayBuffer === 'undefined') {
     fail('This browser can not run the web player here (cross-origin isolation is off). Use a recent Chrome, Edge or Firefox.');
     return;
   }
-  var origin = location.protocol + '//' + location.host;
-  var dpr = window.devicePixelRatio || 1;
+  var probeCanvas = document.createElement('canvas');
+  var probe = probeCanvas.getContext('webgl2') || probeCanvas.getContext('webgl');
+  if (!probe) {
+    fail('This browser or device does not support WebGL, which the web player needs.');
+    return;
+  }
+  var lose = probe.getExtension('WEBGL_lose_context');
+  if (lose) lose.loseContext();
+
+  var dpr = Math.min(window.devicePixelRatio || 1, 2);
   canvas.width = Math.floor(canvas.clientWidth * dpr);
   canvas.height = Math.floor(canvas.clientHeight * dpr);
+  var engineShown = false;
+  var engineImages = {};
+  var hideTimer = null;
+  function engineLog(t) {
+    var m = t.match(/Image loaded from rbxasset:\/\/textures\/loading\/(darkLoadingTexture|loadingCircle)\.png/);
+    if (m) engineImages[m[1]] = true;
+    if (!engineShown && t.indexOf('PlaceLauncher::joinGamePlaceId') >= 0) {
+      engineShown = true;
+      hideTimer = setTimeout(hideLoading, 25000);
+    }
+    if (engineShown && hideTimer && engineImages.darkLoadingTexture && engineImages.loadingCircle) {
+      clearTimeout(hideTimer);
+      hideTimer = null;
+      clearInterval(dotTimer);
+      setTimeout(hideLoading, 300);
+    }
+  }
   window.Module = {
     canvas: canvas,
     rbxConfig: {
       baseUrl: params.get('base') || (location.protocol + '//www.finobe.wtf/'),
-      placeId: params.get('placeId') || '0',
+      placeId: String(placeId),
       width: canvas.width,
       height: canvas.height,
       touch: ('ontouchstart' in window) ? '1' : '0',
       proxyOrigin: origin,
       relayUrl: params.get('relay') || ((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/webrelay')
     },
-    setStatus: function (t) { if (t) status.textContent = t; },
-    monitorRunDependencies: function (left) { if (left === 0) status.style.display = 'none'; },
-    onExitGame: function (err) { if (err) fail('Disconnected: ' + err); else location.href = origin + '/'; },
+    setStatus: function () {},
+    onExitGame: function (err) { if (err) { loading.style.display = ''; loading.className = ''; fail('Disconnected: ' + err); } else location.href = exitUrl; },
     showKeyboard: function () { document.getElementById('kb').focus(); },
     hideKeyboard: function () { canvas.focus(); },
-    print: function (t) { console.log(t); },
-    printErr: function (t) { console.warn(t); },
-    onAbort: function (what) { fail('The player crashed: ' + what); }
+    print: function (t) { console.log(t); engineLog(t); },
+    printErr: function (t) { console.warn(t); engineLog(t); },
+    onAbort: function (what) { loading.style.display = ''; loading.className = ''; fail('The player crashed: ' + what); }
   };
   var s = document.createElement('script');
   s.src = 'WebPlayer.js';
