@@ -52,6 +52,10 @@
                             <br>
                             <p>Otherwise, here:</p>
                             <a href="/download" class="btn btn-success btn-lg"><i class="far fa-download"></i> download client</a>
+                            {% if (data.place.additional.version ?: '2016') == '2016' %}
+                            <br>
+                            <a href="/play/web/?placeId={{ data.place.id }}" class="btn btn-primary btn-lg mt-2">play in browser</a>
+                            {% endif %}
                         </div>
 						<hr>
 						<div class="card-body text-center" style="padding-top: 0;">
