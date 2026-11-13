@@ -54,6 +54,9 @@ class PlaceLauncher
             if (!$server) {
                 return self::result(Status::GameEnded, $jobId, 'That server has shut down.');
             }
+            if ((string) $server->status === '1') {
+                return self::result(Status::Loading, $jobId, 'The server is starting...');
+            }
             if (!self::isAlive($server)) {
                 return self::result(Status::GameEnded, $jobId, 'That server has shut down.');
             }

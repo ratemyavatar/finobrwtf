@@ -1,3 +1,4 @@
+#include <arpa/inet.h>
 #include <cassert>
 #include <cstddef>
 #include <cstdio>
@@ -336,7 +337,7 @@ int main(int argc, char *argv[])
   struct sockaddr_in server;
   server.sin_family = AF_INET;
   server.sin_port = htons(port);
-  server.sin_addr.s_addr = htonl(INADDR_ANY);
+  server.sin_addr.s_addr = inet_addr(getenv("WEBRELAY_BIND") ? getenv("WEBRELAY_BIND") : "127.0.0.1");
 
   int opt_val = 1;
   setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, (SETSOCKOPT_PTR_TYPE)&opt_val, sizeof opt_val);

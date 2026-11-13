@@ -49,6 +49,10 @@ class GameJoinControlller extends Controller
             case 'requestgamejob':
                 $jobId = (string) ($request->input('gameId') ?? $request->input('gameid') ?? '');
                 break;
+            case 'checkgamejobstatus':
+                $jobId = (string) ($request->input('jobId') ?? $request->input('jobid') ?? '');
+                $placeId = (int) (\Illuminate\Support\Facades\DB::connection('finobe')->table('servers')->where('jobId', $jobId)->value('placeid') ?? 0);
+                break;
             case 'requestgame':
             case 'requestfollowuser':
             default:

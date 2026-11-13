@@ -10,6 +10,7 @@ it's emscripten's websocket_to_posix_proxy with an allow list on top:
 - connect and sendto only to hosts in `WEBRELAY_ALLOW` (comma separated, default `127.0.0.1`)
   and ports in `WEBRELAY_PORTS` (default `53000-65535`)
 - listen, accept, socketpair, sendmsg and recvmsg are refused
+- it only listens on `127.0.0.1` unless you set `WEBRELAY_BIND`
 
 ## build and run
 
