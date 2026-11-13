@@ -699,6 +699,66 @@ do
 		end)
 	end
 
+	if IS_SERVER then
+		local sg = game:GetService("StarterGui")
+		local store = Instance.new("Folder")
+		store.Name = "__compat_startergui"
+		store.Parent = game:GetService("ServerStorage")
+		local function stash(c)
+			if c:IsA("LocalScript") or c:IsA("Script") then return end
+			c.Parent = store
+		end
+		for _, c in ipairs(sg:GetChildren()) do stash(c) end
+		sg.ChildAdded:connect(function(c)
+			wait()
+			if c.Parent == sg then stash(c) end
+		end)
+		pcall(setidx, sg, "ResetPlayerGuiOnSpawn", false)
+		local given = C.weak()
+		local function scriptsLast(o)
+			local scripts = {}
+			for _, c in ipairs(o:GetChildren()) do
+				if c:IsA("LocalScript") then
+					scripts[#scripts + 1] = c
+				else
+					scriptsLast(c)
+				end
+			end
+			for _, c in ipairs(scripts) do
+				c.Parent = nil
+				c.Parent = o
+			end
+		end
+		local function giveGui(player)
+			local pg = player:FindFirstChild("PlayerGui") or player:WaitForChild("PlayerGui", 10)
+			if not pg then return end
+			local first = not given[player]
+			given[player] = true
+			for _, template in ipairs(store:GetChildren()) do
+				local okt, isSg = pcall(template.IsA, template, "ScreenGui")
+				local resets = not (okt and isSg) or props(template).ResetOnSpawn ~= false
+				if first or resets then
+					if not first then
+						local old = pg:FindFirstChild(template.Name)
+						if old then old:Destroy() end
+					end
+					local copy = template:Clone()
+					scriptsLast(copy)
+					copy.Parent = pg
+				end
+			end
+		end
+		local function watch(player)
+			player.CharacterAdded:connect(function(character)
+				wait(0.25)
+				if player.Character == character then giveGui(player) end
+			end)
+			if player.Character then giveGui(player) end
+		end
+		Players.PlayerAdded:connect(watch)
+		for _, player in ipairs(Players:GetPlayers()) do watch(player) end
+	end
+
 	if IS_CLIENT then
 		local function start()
 			local player = Players.LocalPlayer

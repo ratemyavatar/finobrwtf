@@ -656,17 +656,15 @@ class Converter:
             boot.set('Source', 'ProtectedString', CLIENT_BOOT)
             sps.children.remove(boot)
             sps.children.insert(0, boot)
-            if not self.opts.legacy_controls:
-                names = {c.name() for c in sps.children}
+            names = {c.name() for c in sps.children}
+            if not self.opts.legacy_controls and 'PlayerModule' in names:
                 for n in ('ControlScript', 'CameraScript'):
                     if n not in names:
                         s = self.new('LocalScript', n, sps)
                         s.set('Source', 'ProtectedString', '')
         sg = services.get('StarterGui')
         if sg is not None:
-            reset = [c.get('ResetOnSpawn') for c in sg.children if c.cls == 'ScreenGui']
-            if reset and sum(1 for r in reset if r is False) >= len(reset) / 2:
-                sg.set('ResetPlayerGuiOnSpawn', 'bool', False)
+            sg.set('ResetPlayerGuiOnSpawn', 'bool', False)
 
     def workspace_settings(self, services):
         ws = services['Workspace']

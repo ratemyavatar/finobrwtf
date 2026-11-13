@@ -28,7 +28,7 @@ then upload place2016.rbxlx as the place and set the game to the 2016 client.
 
 a script with the same name and class in that place is replaced. ports/ has the scripts for places made this way.
 
-`--legacy-controls` keeps the 2016 camera and movement scripts instead of the place's own player module.
+the 2016 camera and movement scripts are kept unless the place has its own player module. `--legacy-controls` keeps them even then.
 
 ## limits
 
