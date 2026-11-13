@@ -19,4 +19,5 @@ g++ -O2 -std=c++17 -pthread -o webrelay *.cpp
 WEBRELAY_ALLOW=1.2.3.4 ./webrelay 8090
 ```
 
-put it behind nginx at `/webrelay` with websocket upgrade headers.
+put it behind nginx at `/webrelay` with websocket upgrade headers, and `proxy_set_header Cookie "";`
+(the relay doesn't need cookies).

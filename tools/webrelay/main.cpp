@@ -5,6 +5,7 @@
 #include <cstdlib>
 #include <memory.h>
 #include <vector>
+#include <string>
 #include <sys/types.h>
 
 #include "posix_sockets.h"
@@ -201,37 +202,28 @@ THREAD_RETURN_T connection_thread(void *arg)
   printf("Established new proxy connection handler thread for incoming connection, at fd=%d\n", client_fd);
 
   char buf[BUFFER_SIZE];
-  int read = recv(client_fd, buf, BUFFER_SIZE, 0);
-
-  if (!read)
+  std::string request;
+  size_t headerEnd = std::string::npos;
+  while (headerEnd == std::string::npos)
+  {
+    int read = recv(client_fd, buf, BUFFER_SIZE, 0);
+    if (read <= 0 || request.size() + read > 16384)
+    {
+      CloseWebSocket(client_fd);
+      EXIT_THREAD(0);
+    }
+    request.append(buf, read);
+    headerEnd = request.find("\r\n\r\n");
+  }
+  std::string headers = request.substr(0, headerEnd + 4);
+  if (headers.find("Sec-WebSocket-Key: ") == std::string::npos)
   {
     CloseWebSocket(client_fd);
     EXIT_THREAD(0);
   }
+  SendHandshake(client_fd, headers.c_str());
 
-  if (read < 0)
-  {
-    fprintf(stderr, "Client read failed\n");
-    CloseWebSocket(client_fd);
-    EXIT_THREAD(0);
-  }
-
-#ifdef PROXY_DEEP_DEBUG
-  printf("Received:");
-  for(int i = 0; i < read; ++i)
-  {
-    printf(" %02X", buf[i]);
-  }
-  printf("\n");
-
-#endif
-  SendHandshake(client_fd, buf);
-
-#ifdef PROXY_DEEP_DEBUG
-  printf("Handshake received, entering message loop:\n");
-#endif
-
-  std::vector<uint8_t> fragmentData;
+  std::vector<uint8_t> fragmentData(request.begin() + headerEnd + 4, request.end());
 
   bool connectionAlive = true;
   while (connectionAlive)
@@ -242,7 +234,7 @@ THREAD_RETURN_T connection_thread(void *arg)
     if (read < 0)
     {
       fprintf(stderr, "Client read failed\n");
-      EXIT_THREAD(0);
+      break;
     }
 
 #ifdef PROXY_DEEP_DEBUG
@@ -369,6 +361,9 @@ int main(int argc, char *argv[])
       fprintf(stderr, "Failed to create a connection handler thread for incoming proxy connection!\n");
       continue;
     }
+#ifndef _WIN32
+    pthread_detach(connection);
+#endif
   }
 
 #ifdef _WIN32
