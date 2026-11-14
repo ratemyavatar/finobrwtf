@@ -4,38 +4,39 @@
 
 @section('head')
 <style>
-body { background: #fff; font-size: 13px; }
-.bar { padding: 8px; background: #f3f4f7; border-bottom: 1px solid #dcdfe5; }
-.bar select { margin-bottom: 6px; }
-.bar .row { overflow: hidden; }
-.bar .row input { float: left; width: 75%; }
-.bar .row .btn { float: right; width: 23%; padding: 7px 0; text-align: center; }
-#items { padding: 8px 4px 8px 8px; overflow: hidden; }
-.item { float: left; width: 76px; margin: 0 4px 8px 0; cursor: pointer; text-align: center; }
-.item .pic { width: 72px; height: 72px; border: 1px solid #dcdfe5; border-radius: 4px; background: #eceef2; overflow: hidden; margin: 0 auto; }
-.item .pic img { width: 70px; height: 70px; }
-.item .n { font-size: 11px; height: 28px; overflow: hidden; line-height: 14px; margin-top: 2px; word-wrap: break-word; }
-.item:hover .pic { border-color: #f82860; }
-.item.off { cursor: default; opacity: 0.5; }
-.item.off:hover .pic { border-color: #dcdfe5; }
-.pager { text-align: center; padding: 4px 0 10px 0; clear: both; }
-.pager span { margin: 0 8px; color: #5b5e66; }
-.empty { padding: 20px 10px; text-align: center; color: #7b7f88; }
-.hint { padding: 6px 8px 0 8px; font-size: 12px; color: #7b7f88; display: none; }
-.status { padding: 6px 8px; font-size: 12px; color: #2a7a3a; display: none; }
+body { background: #fff; font-size: 14px; }
+.bar { padding: 8px; background: #f2f2f2; border-bottom: 1px solid #e3e3e3; }
+.bar select { margin-bottom: 6px; height: 32px; font-size: 14px; }
+.bar .search { position: relative; }
+.bar .search input { height: 32px; font-size: 14px; padding-right: 64px; }
+.bar .search .btn-control { position: absolute; right: 0; top: 0; height: 32px; border-radius: 0 3px 3px 0; }
+#items { padding: 8px 2px 4px 8px; overflow: hidden; }
+.item { float: left; width: 78px; margin: 0 4px 8px 0; cursor: pointer; text-align: center; }
+.item .pic { width: 74px; height: 74px; border: 1px solid #e3e3e3; background: #fff; overflow: hidden; margin: 0 auto; }
+.item .pic img { width: 72px; height: 72px; }
+.item .n { font-size: 12px; height: 30px; overflow: hidden; line-height: 15px; margin-top: 3px; word-wrap: break-word; color: #191919; }
+.item:hover .pic { border-color: #00a2ff; }
+.item.off { cursor: default; }
+.item.off .pic img { opacity: 0.4; }
+.item.off:hover .pic { border-color: #e3e3e3; }
+.pager { text-align: center; padding: 4px 0 10px 0; clear: both; font-size: 14px; }
+.pager span { margin: 0 10px; color: #757575; }
+.empty { padding: 24px 10px; text-align: center; color: #757575; }
+.hint { padding: 6px 8px 0 8px; font-size: 12px; color: #757575; display: none; }
+.status { padding: 6px 8px; font-size: 12px; color: #fff; background: #02b757; display: none; }
 </style>
 @endsection
 
 @section('body')
 <div class="bar">
-    <select id="category" onchange="load(1)">
+    <select class="input-field" id="category" onchange="load(1)">
         @foreach ($categories as $category)
             <option value="{{ $category['key'] }}">{{ $category['name'] }}</option>
         @endforeach
     </select>
-    <div class="row">
-        <input type="text" id="q" placeholder="Search" onkeydown="if (event.keyCode === 13) { load(1); }">
-        <button class="btn small" onclick="load(1)">Go</button>
+    <div class="search">
+        <input class="input-field" type="text" id="q" placeholder="Search" onkeydown="if (event.keyCode === 13) { load(1); }">
+        <button class="btn-control" onclick="load(1)">Search</button>
     </div>
 </div>
 <div class="status" id="status"></div>
@@ -71,9 +72,9 @@ function render(data) {
     }
     document.getElementById('items').innerHTML = html || '<div class="empty">Nothing here.</div>';
     document.getElementById('pager').innerHTML = pages > 1
-        ? '<button class="btn grey small" onclick="load(' + Math.max(1, page - 1) + ')"' + (page <= 1 ? ' disabled' : '') + '>&lt;</button>'
-          + '<span>' + page + ' / ' + pages + '</span>'
-          + '<button class="btn grey small" onclick="load(' + Math.min(pages, page + 1) + ')"' + (page >= pages ? ' disabled' : '') + '>&gt;</button>'
+        ? (page > 1 ? '<a href="#" onclick="load(' + (page - 1) + '); return false;">&lt; Previous</a>' : '<span>&lt; Previous</span>')
+          + '<span>Page ' + page + ' of ' + pages + '</span>'
+          + (page < pages ? '<a href="#" onclick="load(' + (page + 1) + '); return false;">Next &gt;</a>' : '<span>Next &gt;</span>')
         : '';
 }
 function drag(i) {

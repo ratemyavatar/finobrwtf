@@ -273,7 +273,7 @@ Route::middleware([Moderation::class, SerializeWrites::class])->group(function (
         Route::get('/universes/get-universe-places', [\App\Http\Controllers\Studio\StudioDataController::class, 'universePlaces']);
         Route::get('/universes/{universeId}/cloudeditenabled', fn () => response()->json(['enabled' => false]))->whereNumber('universeId');
         Route::get('/universes/{universeId}/game-start-info', [\App\Http\Controllers\Studio\StudioDataController::class, 'gameStartInfo'])->whereNumber('universeId');
-        Route::get('/users/{userId}/canmanage/{assetId}', [\App\Http\Controllers\Studio\StudioDataController::class, 'canManage'])->whereNumber(['userId', 'assetId']);
+        Route::get('/users/{userId}/canmanage/{assetId}', [\App\Http\Controllers\Studio\StudioDataController::class, 'canManage'])->whereNumber(['userId', 'assetId'])->middleware('nostore');
     };
     Route::domain('api.' . $domain)->group($apiRoutes);
 

@@ -40,7 +40,7 @@ Route::group(['as' => 'client-routes.'], function(){
             return response($place ? \App\Services\ClientVersions::of($place) : \App\Services\ClientVersions::DEFAULT, 200)
                 ->header('Content-Type', 'text/plain');
         });
-        Route::get('getcurrentuser.ashx', [AuthenticationController::class,'getCurrentUser'])->name('get-current-user');
+        Route::get('getcurrentuser.ashx', [AuthenticationController::class,'getCurrentUser'])->name('get-current-user')->middleware('nostore');
 
         Route::post('validate-machine', fn() => response()->json(['success' => true, 'message' => '']));
         Route::match(['get', 'post'], 'machineconfiguration.ashx', fn() => response('', 200));
@@ -69,9 +69,9 @@ Route::group(['as' => 'client-routes.'], function(){
 
     Route::get('game/gamepass/gamepasshandler.ashx', [MarketplaceController::class, 'hasPass']);
 
-    Route::get('/penelope/login/negotiate', [AuthenticationController::class,'authenticateClient'])->name('negotiate');
+    Route::get('/penelope/login/negotiate', [AuthenticationController::class,'authenticateClient'])->name('negotiate')->middleware('nostore');
 
-    Route::get('login/negotiate.ashx', [AuthenticationController::class,'authenticateClient']);
+    Route::get('login/negotiate.ashx', [AuthenticationController::class,'authenticateClient'])->middleware('nostore');
     Route::get('login/requestauth.ashx', [AuthenticationController::class,'requestAuth'])->name('request-auth');
     Route::post('mobileapi/login', [\App\Http\Controllers\Client\LoginApiController::class,'mobile'])->middleware('limit:10,1');
 });

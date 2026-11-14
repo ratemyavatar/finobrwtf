@@ -1,30 +1,37 @@
 @extends('studio.layout')
 
-@section('title', 'Publish selection - Finobe Studio')
+@section('title', 'Publish Selection - Finobe Studio')
+
+@section('head')
+<style>
+body { background: #fff; }
+.dialog { padding: 16px 20px; max-width: 560px; }
+.dialog h1 { font-size: 24px; margin-bottom: 4px; }
+.dialog .sub { font-size: 14px; margin-bottom: 10px; }
+.footer { border-top: 1px solid #e3e3e3; margin-top: 16px; padding-top: 14px; overflow: hidden; }
+.footer .btn-primary, .footer .btn-secondary { float: right; margin-left: 8px; min-width: 110px; }
+</style>
+@endsection
 
 @section('body')
-<div class="top">
-    <div class="brand"><img src="/s/img/studio/logo.png" alt=""><span>Publish selection to Finobe</span></div>
-</div>
-<div class="wrap">
+<div class="dialog">
+    <h1>Publish Selection to Finobe</h1>
     @if (!$user)
-        <div class="panel">
-            <b>Log in to publish.</b>
-            <div class="muted">Open the Start Page and log in with your Finobe account, then try again.</div>
-            <div style="margin-top: 10px"><a class="btn" href="/ide/login">Log in</a></div>
-        </div>
+        <p class="sub text-secondary">You need to be logged in to publish.</p>
+        <a class="btn-primary" href="/ide/login">Log In</a>
     @else
-        <div id="error" class="error" style="display: none"></div>
-        <div id="done" class="note" style="display: none"></div>
-        <div class="panel" id="form">
-            <div class="muted">Your selection is published as a model. A moderator checks it before it shows up in the toolbox.</div>
-            <label for="name">Name</label>
-            <input type="text" id="name" maxlength="255">
-            <label for="description">Description</label>
-            <textarea id="description" maxlength="8192"></textarea>
-            <div style="margin-top: 14px; overflow: hidden">
-                <button class="btn" id="go" style="float: right" onclick="publish()">Publish</button>
-            </div>
+        <p class="sub text-secondary">Your selection is saved as a model. A moderator reviews it before it shows up in the toolbox.</p>
+        <div id="error" class="alert alert-warning" style="display: none"></div>
+        <div id="done" class="alert alert-success" style="display: none"></div>
+        <div id="form">
+            <label class="form-label" for="name">Name</label>
+            <input class="input-field" type="text" id="name" maxlength="255">
+            <label class="form-label" for="description">Description</label>
+            <textarea class="input-field" id="description" maxlength="8192"></textarea>
+        </div>
+        <div class="footer">
+            <button class="btn-secondary" id="close" onclick="window.close()">Cancel</button>
+            <button class="btn-primary" id="go" onclick="publish()">Publish</button>
         </div>
     @endif
 </div>
@@ -44,7 +51,9 @@ function publish() {
     if (/^\d+$/.test(String(result))) {
         document.getElementById('form').style.display = 'none';
         document.getElementById('error').style.display = 'none';
-        show('done', 'Published as model ' + result + '. It shows up in My Models now and in the toolbox once a moderator approves it. <a href="#" onclick="window.close(); return false">Close</a>');
+        document.getElementById('go').style.display = 'none';
+        document.getElementById('close').innerHTML = 'Close';
+        show('done', 'Published as model ' + result + '. It shows up in My Models now and in the toolbox once a moderator approves it.');
     } else {
         show('error', String(result || 'Could not publish your selection.'));
         document.getElementById('go').disabled = false;

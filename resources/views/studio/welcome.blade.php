@@ -4,81 +4,76 @@
 
 @section('head')
 <style>
-.side { float: left; width: 190px; padding: 18px 0 0 18px; }
-.side a { display: block; padding: 9px 12px; border-radius: 4px; color: #2b2d31; font-weight: bold; margin-bottom: 4px; }
-.side a.on, .side a:hover { background: #fff; color: #f82860; text-decoration: none; }
-.main { margin-left: 210px; }
-.hero { text-align: center; padding: 30px 10px 10px 10px; }
-.hero img { height: 90px; }
-.tpl .pic { background: #8fc6f0; }
+.nav { position: absolute; top: 51px; left: 0; bottom: 0; width: 200px; background: #fff; border-right: 1px solid #e3e3e3; padding-top: 12px; }
+.nav a { display: block; height: 40px; line-height: 40px; padding-left: 20px; color: #191919; font-size: 16px; border-left: 4px solid transparent; }
+.nav a:hover { background: #f2f2f2; text-decoration: none; }
+.nav a.active { border-left-color: #00a2ff; color: #00a2ff; background: #f2f2f2; }
+.nav .divider { height: 1px; background: #e3e3e3; margin: 12px 0; }
+.main { margin-left: 200px; }
+.empty { padding: 30px 0; text-align: center; }
 </style>
 @endsection
 
 @section('body')
-<div class="top">
-    <div class="brand"><img src="/s/img/studio/logo.png" alt=""><span>Finobe Studio</span></div>
-    <div class="who">
+<div class="header">
+    <a class="logo" href="/ide/welcome"><img src="/s/img/studio/logo.png" alt=""><span>Finobe Studio</span></a>
+    <div class="right">
         @if ($user)
-            <img src="{{ $avatar }}" alt="" onerror="this.onerror=null; this.src='/s/img/studio/logo.png'"><span class="name">{{ $user->username }}</span>
-            <a class="btn grey small" href="#" onclick="document.getElementById('logout').submit(); return false;">Log out</a>
+            <img class="avatar" src="{{ $avatar }}" alt="" onerror="this.onerror=null; this.src='/s/img/studio/logo.png'"><span class="name">{{ $user->username }}</span>
+            <a class="btn-control" href="#" onclick="document.getElementById('logout').submit(); return false;">Log Out</a>
         @else
-            <a class="btn" href="/ide/login">Log in</a>
+            <a class="btn-control" href="/ide/login">Log In</a>
         @endif
     </div>
 </div>
-
 @if ($user)
 <form method="post" action="/ide/logout" id="logout" style="display: none">@csrf</form>
 @endif
 
-<div class="side">
-    <a href="#new" class="on" onclick="show('new'); return false;" id="nav-new">New</a>
-    @if ($user)
-        <a href="#games" onclick="show('games'); return false;" id="nav-games">My Games</a>
-    @endif
-    <a href="https://{{ $domain }}/" target="_blank">Finobe.wtf</a>
+<div class="nav">
+    <a href="#new" class="active" onclick="show('new'); return false;" id="nav-new">New</a>
+    <a href="#games" onclick="show('games'); return false;" id="nav-games">My Games</a>
+    <div class="divider"></div>
+    <a href="https://www.{{ $domain }}/" target="_blank">Finobe.wtf</a>
 </div>
 
-<div class="main wrap">
+<div class="main content">
     <div id="tab-new">
-        <h2>New</h2>
-        <div class="grid">
+        <h2>New Project</h2>
+        <h3 class="text-secondary">Themes</h3>
+        <div class="tiles">
             @foreach ($templates as $template)
-                <div class="card tpl" onclick="openTemplate('{{ $template['key'] }}')">
-                    <div class="pic"><img src="/s/img/studio/tpl-{{ $template['key'] }}.png" alt=""></div>
-                    <div class="txt"><div class="t">{{ $template['name'] }}</div><div class="s">Template</div></div>
+                <div class="tile" onclick="openTemplate('{{ $template['key'] }}')" title="{{ $template['name'] }}">
+                    <div class="thumb"><img src="/s/img/studio/tpl-{{ $template['key'] }}.png" alt=""></div>
+                    <div class="info"><div class="title">{{ $template['name'] }}</div></div>
                 </div>
             @endforeach
         </div>
-        @if (!$user)
-            <div class="panel">
-                <b>Log in to edit and publish your games.</b>
-                <div class="muted">Use your Finobe email and password. You can still build and save places to your computer without logging in.</div>
-                <div style="margin-top: 10px"><a class="btn" href="/ide/login">Log in</a></div>
-            </div>
-        @endif
     </div>
 
-    @if ($user)
-        <div id="tab-games" style="display: none">
-            <h2>My Games</h2>
-            @if (count($places) === 0)
-                <div class="panel muted">You don't have any games yet. Start from a template, then use File &gt; Publish to Finobe As.</div>
-            @endif
-            <div class="grid">
+    <div id="tab-games" style="display: none">
+        <h2>My Games</h2>
+        @if (!$user)
+            <div class="section empty">
+                <p>Log in to see your games.</p>
+                <a class="btn-primary" href="/ide/login">Log In</a>
+            </div>
+        @elseif (count($places) === 0)
+            <div class="section empty text-secondary">You don't have any games yet. Start a new project, then use File &gt; Publish to Finobe As.</div>
+        @else
+            <div class="tiles">
                 @foreach ($places as $place)
-                    <div class="card" onclick="editPlace({{ $place['id'] }})" title="Edit {{ $place['title'] }}">
-                        <div class="pic"><img src="{{ $place['thumbnail'] }}" alt="" onerror="this.style.visibility='hidden'"></div>
-                        <div class="txt">
-                            <div class="t">{{ $place['title'] }}</div>
-                            <div class="s">{{ $place['updated'] }} <span class="tag">{{ $place['version'] }}</span></div>
+                    <div class="tile" onclick="editPlace({{ $place['id'] }})" title="{{ $place['title'] }}">
+                        <div class="thumb"><img src="{{ $place['thumbnail'] }}" alt="" onerror="this.style.visibility='hidden'"></div>
+                        <div class="info">
+                            <div class="title">{{ $place['title'] }}</div>
+                            <div class="meta">Updated {{ $place['updated'] }}</div>
                         </div>
                     </div>
                 @endforeach
             </div>
-            <div class="muted">Saving a game from Studio sets it to the 2016 client.</div>
-        </div>
-    @endif
+        @endif
+    </div>
 </div>
 
 <script>
@@ -86,10 +81,8 @@ var BASE = 'https://www.{{ $domain }}';
 function show(tab) {
     var tabs = ['new', 'games'];
     for (var i = 0; i < tabs.length; i++) {
-        var el = document.getElementById('tab-' + tabs[i]);
-        var nav = document.getElementById('nav-' + tabs[i]);
-        if (el) { el.style.display = tabs[i] === tab ? 'block' : 'none'; }
-        if (nav) { nav.className = tabs[i] === tab ? 'on' : ''; }
+        document.getElementById('tab-' + tabs[i]).style.display = tabs[i] === tab ? 'block' : 'none';
+        document.getElementById('nav-' + tabs[i]).className = tabs[i] === tab ? 'active' : '';
     }
 }
 function runScript(url) {

@@ -1,29 +1,34 @@
 @extends('studio.layout')
 
-@section('title', 'Published projects - Finobe Studio')
+@section('title', 'Published Projects - Finobe Studio')
+
+@section('head')
+<style>
+body { background: #fff; }
+.dialog { padding: 16px 20px; }
+.dialog h1 { font-size: 24px; margin-bottom: 4px; }
+.dialog .sub { font-size: 14px; margin-bottom: 14px; }
+.tile .meta a { font-size: 12px; }
+</style>
+@endsection
 
 @section('body')
-<div class="top">
-    <div class="brand"><img src="/s/img/studio/logo.png" alt=""><span>Published projects</span></div>
-</div>
-<div class="wrap">
+<div class="dialog">
+    <h1>Published Projects</h1>
     @if (!$user)
-        <div class="panel">
-            <b>Log in to see your games.</b>
-            <div class="muted">Open the Start Page and log in with your Finobe account, then try again.</div>
-            <div style="margin-top: 10px"><a class="btn" href="/ide/login">Log in</a></div>
-        </div>
+        <p class="sub text-secondary">You need to be logged in to see your games.</p>
+        <a class="btn-primary" href="/ide/login">Log In</a>
     @elseif (!$places)
-        <div class="panel muted">You haven't made any games yet.</div>
+        <p class="sub text-secondary">You haven't published any games yet.</p>
     @else
-        <div class="muted" style="margin-bottom: 12px">Click a game to open it.</div>
-        <div class="grid">
+        <p class="sub text-secondary">Click a game to open it.</p>
+        <div class="tiles">
             @foreach ($places as $place)
-                <div class="card" onclick="editPlace({{ $place['id'] }})" title="Edit {{ $place['title'] }}">
-                    <div class="pic"><img src="{{ $place['thumbnail'] }}" alt="" onerror="this.style.visibility='hidden'"></div>
-                    <div class="txt">
-                        <div class="t">{{ $place['title'] }}</div>
-                        <div class="s">{{ $place['updated'] }} <span class="tag">{{ $place['version'] }}</span> <a href="https://www.{{ $domain }}/place/{{ $place['id'] }}" onclick="event.stopPropagation()">Page</a></div>
+                <div class="tile" onclick="editPlace({{ $place['id'] }})" title="{{ $place['title'] }}">
+                    <div class="thumb"><img src="{{ $place['thumbnail'] }}" alt="" onerror="this.style.visibility='hidden'"></div>
+                    <div class="info">
+                        <div class="title">{{ $place['title'] }}</div>
+                        <div class="meta">Updated {{ $place['updated'] }} &middot; <a href="https://www.{{ $domain }}/place/{{ $place['id'] }}" target="_blank" onclick="event.stopPropagation()">Page</a></div>
                     </div>
                 </div>
             @endforeach

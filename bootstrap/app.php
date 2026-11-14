@@ -38,7 +38,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->web(append: [\App\Http\Middleware\AdminSitePolicy::class, \App\Http\Middleware\GrantDailyDius::class]);
         $middleware->redirectGuestsTo('/login');
         $middleware->redirectUsersTo('/');
-        $middleware->alias(['admin' => \App\Http\Middleware\RequireAdmin::class, 'limit' => \App\Http\Middleware\LimitRoute::class]);
+        $middleware->alias(['admin' => \App\Http\Middleware\RequireAdmin::class, 'limit' => \App\Http\Middleware\LimitRoute::class, 'nostore' => \App\Http\Middleware\NoStore::class]);
         $middleware->validateCsrfTokens([
             '/marketplace/productinfo',
             '/data/upload.ashx',

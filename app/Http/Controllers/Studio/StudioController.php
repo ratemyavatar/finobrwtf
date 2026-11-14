@@ -22,6 +22,9 @@ class StudioController extends Controller
     public function welcome(Request $request)
     {
         $user = Auth::user();
+        if ($request->has('showlogin')) {
+            return $user ? self::signedIn() : redirect('/ide/login');
+        }
         $places = [];
 
         if ($user) {

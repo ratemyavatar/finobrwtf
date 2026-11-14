@@ -5,7 +5,7 @@ use App\Http\Controllers\Studio\StudioController;
 use App\Http\Controllers\Studio\StudioDataController;
 use Illuminate\Support\Facades\Route;
 
-Route::group(['as' => 'studio.'], function () {
+Route::group(['as' => 'studio.', 'middleware' => 'nostore'], function () {
     Route::get('/ide/welcome', [StudioController::class, 'welcome'])->name('welcome');
     Route::get('/ide/login', [StudioController::class, 'loginForm']);
     Route::post('/ide/login', [StudioController::class, 'login'])->middleware('limit:10,1');

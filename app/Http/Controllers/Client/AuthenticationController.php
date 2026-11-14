@@ -34,7 +34,7 @@ class AuthenticationController extends Controller
         $clientSession = bin2hex(random_bytes(24));
         Cache::put("client_session_{$clientSession}", $authToken->id, self::CLIENT_COOKIE_MINUTES * 60);
 
-        return response()->json(['code' => 1, 'message' => 'Successfully authenticated client'], 200)
+        return response('', 200)
             ->withCookie(cookie(self::CLIENT_COOKIE, $clientSession, self::CLIENT_COOKIE_MINUTES, '/', config('session.domain') ?: '.' . config('finobe.domain'), false, true, false, 'lax'));
     }
 
